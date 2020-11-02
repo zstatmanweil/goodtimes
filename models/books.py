@@ -1,24 +1,34 @@
 from dataclasses import dataclass
+from typing import Optional
+
 from dataclasses_json import dataclass_json
-from typing import Dict
+
+from enum import Enum
 
 
 @dataclass_json
 @dataclass
 class Book:
-    cover_id: int
     title: str
     author_name: str
     publish_year: int
+    cover_id: Optional[int] = None
+    cover_url: Optional[str] = None
 
 
-def from_open_lib_result(result: Dict) -> Dict:
-    clean_result = {}
+class CoverSize(Enum):
+    SMALL = 'S'
+    MEDIUM = 'M'
+    LARGE = 'L'
 
-    clean_result['cover_id'] = result.get('cover_i')
-    clean_result['title'] = result.get('title')
-    clean_result['author_name'] = result.get('author_name').pop(0)
-    clean_result['publish_year'] = result.get('publish_year').pop(0)
 
-    return clean_result
+class IdType(Enum):
+    ISBN = 'isbn'
+    OCLC = 'oclc'
+    LCCN = 'lccn'
+    OPEN_LIBRARY_ID = "olid"
+    COVER_ID = 'id'
+    GOODREADS = 'goodreads'
+    LIBRARYTHINGS = 'librarythings'
+
 
