@@ -6,7 +6,7 @@ movies = Blueprint("movies", __name__)
 
 
 @movies.route("/movies", methods=["GET"])
-def search_books():
+def search_movies():
     args = request.args
     title = args.get('title', None)
 

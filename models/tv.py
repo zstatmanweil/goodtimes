@@ -5,8 +5,8 @@ from dataclasses_json import dataclass_json
 
 @dataclass_json
 @dataclass
-class Movie:
+class TV:
     tmdb_id: int
     title: str
-    release_date: str
+    first_air_date: str
     poster_url: str
