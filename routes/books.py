@@ -3,9 +3,6 @@ from flask import jsonify, request, Blueprint
 from hooks.open_lib import OpenLibrary
 from models.books import CoverSize
 
-
-DATABASE = 'friends'
-
 books = Blueprint("books", __name__)
 
 
