@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List
 
 from dataclasses_json import dataclass_json
 
@@ -12,6 +12,7 @@ class Book:
     title: str
     author_name: str
     publish_year: int
+    isbns: List
     cover_id: Optional[int] = None
     cover_url: Optional[str] = None
 
