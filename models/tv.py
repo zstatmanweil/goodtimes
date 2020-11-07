@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from datetime import date
+from typing import List, Optional
 
 from dataclasses_json import dataclass_json
 
@@ -6,7 +8,9 @@ from dataclasses_json import dataclass_json
 @dataclass_json
 @dataclass
 class TV:
-    tmdb_id: int
+    source_id: int
+    source: str
     title: str
-    first_air_date: str
-    poster_url: str
+    networks: List[str]
+    poster_url: Optional[str] = None
+    first_air_date: Optional[date] = None

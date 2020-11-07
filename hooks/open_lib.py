@@ -30,12 +30,15 @@ class OpenLibrary:
     def book_from_open_lib_result(self, result: Dict, image_size: CoverSize) -> Book:
         clean_result = {}
 
+        source_id = result.get('key', None).split('/')[-1]
         cover_id = result.get('cover_i', None)
         isbns = result.get('isbn', [])
         title = result.get('title', None)
         author_names = result.get('author_name', [])
         publish_years = result.get('publish_year', [])
 
+        clean_result['source_id'] = source_id
+        clean_result['source'] = 'open library'
         clean_result['cover_id'] = cover_id
         clean_result['isbns'] = isbns
         clean_result['title'] = title.title()

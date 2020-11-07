@@ -9,6 +9,8 @@ from enum import Enum
 @dataclass_json
 @dataclass
 class Book:
+    source_id: str
+    source: str
     title: str
     author_name: str
     publish_year: int
