@@ -1,0 +1,13 @@
+Generic single-database configuration.
+
+# Setup
+
+Install alembic according to instructions here: https://alembic.sqlalchemy.org/en/latest/front.html#installation
+
+Create postgres database `goodtimes` locally and update `sqlalchemy.url` in alembic.ini file.
+
+Run:
+
+```bash
+alembic upgrade head
+```
