@@ -6,10 +6,10 @@ import sqlalchemy as sa
 from models.books import Book
 from models.user import ConsumptionStatus
 
-books = Blueprint("user", __name__)
+user = Blueprint("user", __name__)
 
 
-@books.route("/user/<int: user_id>/media/<str: media_type>", methods=["POST"])
+@user.route("/user/<int: user_id>/media/<str: media_type>", methods=["POST"])
 def add_book(user_id, media_type):
     # json body includes status
     # {

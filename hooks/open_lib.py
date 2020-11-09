@@ -39,8 +39,6 @@ class OpenLibrary:
 
         clean_result['source_id'] = source_id
         clean_result['source'] = 'open library'
-        clean_result['cover_id'] = cover_id
-        clean_result['isbns'] = isbns
         clean_result['title'] = title.title()
         clean_result['author_name'] = author_names.pop(0).title() if author_names else None
         clean_result['publish_year'] = publish_years.pop(0) if publish_years else None

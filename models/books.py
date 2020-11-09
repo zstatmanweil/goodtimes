@@ -32,8 +32,6 @@ class Book:
     title: str
     author_name: Optional[str]
     publish_year: Optional[int]
-    isbns: Optional[List]
-    cover_id: Optional[int]
     cover_url: Optional[str]
 
 
