@@ -2,5 +2,5 @@ alembic==1.4.3
 dataclasses-json==0.5.2
 flask==1.1.2
 psycopg2==2.8.6
-requests=2.24.0
+requests==2.24.0
 SQLAlchemy==1.4.0b1
