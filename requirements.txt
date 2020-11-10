@@ -4,3 +4,4 @@ flask==1.1.2
 psycopg2==2.8.6
 requests==2.24.0
 SQLAlchemy==1.4.0b1
+Flask-Cors==3.0.9

@@ -1,10 +1,14 @@
 from flask import Flask
+from flask_cors import CORS
+
 from routes.books import books
 from routes.movies import movies
 from routes.tv import tv
 
 app = Flask(__name__)
 app.secret_key = 'very secret key'  # Fix this later!
+
+CORS(app, resources={r"*": {"origins": "*"}})
 
 
 app.register_blueprint(books)
