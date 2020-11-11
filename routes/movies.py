@@ -1,7 +1,7 @@
 from datetime import date
 from flask import jsonify, request, Blueprint
 
-from hooks.tmdb import TMDB
+from wrappers.tmdb import TMDB
 
 movies = Blueprint("movies", __name__)
 

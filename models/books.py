@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from dataclasses import field
-from typing import Optional, List
+from typing import Optional
 
 from dataclasses_json import dataclass_json
 from enum import Enum
@@ -27,8 +27,8 @@ class Book:
     )
 
     id: int = field(init=False)
-    source_id: str
     source: str
+    source_id: str
     title: str
     author_name: Optional[str]
     publish_year: Optional[int]

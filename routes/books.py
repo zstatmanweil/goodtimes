@@ -1,6 +1,6 @@
 from flask import jsonify, request, Blueprint
 
-from hooks.open_lib import OpenLibrary
+from wrappers.open_lib import OpenLibrary
 from models.books import CoverSize
 
 books = Blueprint("books", __name__)
@@ -13,5 +13,5 @@ def search_books():
 
     open_library = OpenLibrary()
     result = open_library.get_books_by_title(title, cover_image_size=CoverSize.MEDIUM)
-    return jsonify(result)
+    return jsonify(sorted(result, key=lambda m: 0 if not m.publish_year else m.publish_year, reverse=True))
 
