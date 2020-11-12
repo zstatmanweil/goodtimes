@@ -1,9 +1,11 @@
+from datetime import datetime
+
 from flask import jsonify, request, Blueprint
 import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker
 
 from models.books import Book
-from models.user import ConsumptionStatus
+from models.user import ConsumptionStatus, Consumption
 
 user = Blueprint("user", __name__)
 
@@ -52,7 +54,15 @@ def add_book(user_id, media_type):
 
     media_id = db_resp.id
     print(media_id)
+
     # Add media item to consumption table
+    consumption_rec = Consumption(user_id=user_id,
+                                  media_type=media_type,
+                                  media_id=media_id,
+                                  status=status,
+                                  created=datetime.utcnow())
+
+    session.add(consumption_rec)
 
     session.commit()
     session.close()

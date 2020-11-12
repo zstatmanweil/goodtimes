@@ -33,6 +33,28 @@ class User:
     created: datetime
 
 
+@mapper_registry.mapped
+@dataclass_json
+@dataclass
+class Consumption:
+    __table__ = sa.Table(
+        'consumption',
+        mapper_registry.metadata,
+        sa.Column('id', sa.Integer, primary_key=True),
+        sa.Column('user_id', sa.Integer, sa.ForeignKey('user.id')),
+        sa.Column('media_type', sa.String(50)),
+        sa.Column('media_id', sa.Integer),
+        sa.Column('status', sa.String(50)),
+        sa.Column('created', sa.DateTime)
+    )
+
+    id: int = field(init=False)
+    user_id: int
+    media_type: str
+    media_id: int
+    status: str
+    created: datetime
+
 class ConsumptionStatus(Enum):
     WANT_TO_CONSUME = "want to consume"
     CONSUMING = "consuming"
