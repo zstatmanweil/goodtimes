@@ -54,13 +54,13 @@ def add_book(user_id, media_type):
     # if not in database, add media item to appropriate table
     if not db_resp:
         # TODO: figure out logging with blueprints
-        print("Media not in database, adding media with source_id %s to database", media_item.source_id)
+        print(f"Media not in database, adding media with source_id {media_item.source_id} to database" )
         session.add(media_item)
-        # get new item
-        db_resp = session.query(media_class).filter_by(source_id=media_item.source_id).first()
+        session.flush()
+        media_id = media_item.id
 
-    media_id = db_resp.id
-    print(media_id)
+    else:
+        media_id = db_resp.id
 
     # Add media item to consumption table
     consumption_rec = Consumption(user_id=user_id,
