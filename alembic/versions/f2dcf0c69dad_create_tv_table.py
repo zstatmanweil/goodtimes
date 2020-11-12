@@ -23,6 +23,7 @@ def upgrade():
         sa.Column('source', sa.String(50)),
         sa.Column('source_id', sa.Integer),
         sa.Column('title', sa.String(200)),
+        sa.Column('networks', sa.ARRAY(sa.String(50))),
         sa.Column('poster_url', sa.String(100)),
         sa.Column('first_air_date', sa.Date)
     )

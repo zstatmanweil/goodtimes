@@ -15,8 +15,8 @@ mapper_registry = registry()
 @dataclass
 class User:
     __table__ = sa.Table(
-        mapper_registry.metadata,
         'user',
+        mapper_registry.metadata,
         sa.Column('id', sa.Integer, primary_key=True),
         sa.Column('username', sa.String(100)),
         sa.Column('email', sa.String(100)),

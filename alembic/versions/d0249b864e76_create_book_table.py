@@ -23,7 +23,6 @@ def upgrade():
         sa.Column('source', sa.String(50)),
         sa.Column('source_id', sa.String(50)),
         sa.Column('title', sa.String(200)),
-        sa.Column('networks', sa.ARRAY(sa.String(50))),
         sa.Column('author_name', sa.String(100)),
         sa.Column('cover_url', sa.String(100)),
         sa.Column('publish_year', sa.Integer)
