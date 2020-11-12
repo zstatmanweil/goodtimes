@@ -5,6 +5,8 @@ import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker
 
 from models.books import Book
+from models.movies import Movie
+from models.tv import TV
 from models.user import ConsumptionStatus, Consumption
 
 user = Blueprint("user", __name__)
@@ -13,18 +15,23 @@ engine = sa.create_engine('postgresql://zoe:123@localhost/goodtimes', echo=True)
 Session = sessionmaker(bind=engine)
 
 medias = {
-    "book": Book
+    "book": Book,
+    "movie": Movie,
+    "tv": TV
 }
+
 
 @user.route("/user/<int:user_id>/media/<media_type>", methods=["POST"])
 def add_book(user_id, media_type):
-    # json body includes status
-    # {
-    #     status: str
-    #     media body
-    #
-    # }
-    # check if in book table in database, if not add, then add to user table. Make sure to index source id
+    """
+    json body includes status
+    {
+        status: str
+        media body
+
+    }
+    """
+    # TODO: index source id in media tables
     session = Session()
 
     request_body = request.get_json()
