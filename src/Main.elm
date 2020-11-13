@@ -1,11 +1,13 @@
 module Main exposing (..)
 
+import Book exposing (Book)
 import Browser
-import Html exposing (Html)
-import Html.Attributes exposing (height, src, width)
+import Html exposing (Attribute, Html)
+import Html.Attributes as Attr exposing (class, id)
 import Html.Events
 import Http
-import Json.Decode exposing (Decoder)
+import Json.Decode as Decode exposing (Decoder)
+import RemoteData exposing (RemoteData(..), WebData)
 
 
 main =
@@ -17,17 +19,13 @@ main =
         }
 
 
+
+-- Model
+
+
 type alias Model =
-    { books : List Book
+    { books : WebData (List Book)
     , query : String
-    }
-
-
-type alias Book =
-    { title : String
-    , authorName : Maybe String
-    , publishYear : Maybe Int
-    , coverUrl : Maybe String
     }
 
 
@@ -35,52 +33,18 @@ type Msg
     = None
     | SearchBooks
     | UpdateQuery String
-    | GotBooks (Result Http.Error (List Book))
+    | BooksResponse (Result Http.Error (List Book))
 
 
 init : () -> ( Model, Cmd Msg )
 init flags =
-    ( { books = [], query = "" }
+    ( { books = NotAsked, query = "" }
     , Cmd.none
     )
 
 
-view : Model -> Html Msg
-view model =
-    Html.div []
-        [ Html.input
-            [ Html.Attributes.id "our-input"
-            , Html.Attributes.value model.query
-            , Html.Events.onInput UpdateQuery
-            ]
-            []
-        , Html.button
-            [ Html.Events.onClick SearchBooks ]
-            [ Html.text "Search!" ]
-        , viewBooks model.books
-        ]
 
-
-viewBooks : List Book -> Html Msg
-viewBooks books =
-    if List.isEmpty books then
-        Html.div [] [ Html.text "No books matched your search. Try again!" ]
-
-    else
-        Html.ul []
-            (List.map viewBook books)
-
-
-viewBook : Book -> Html Msg
-viewBook book =
-    Html.li []
-        [ Html.div []
-            [ Html.div [] [ Html.img [ src (Maybe.withDefault "http://covers.openlibrary.org/b/id/9405185-S.jpg" book.coverUrl) ] [] ]
-            , Html.text book.title
-            , Html.div [] [ Html.text (Maybe.withDefault "Unknown" book.authorName) ]
-            , Html.div [] [ Html.text (String.fromInt (Maybe.withDefault 0 book.publishYear)) ]
-            ]
-        ]
+-- Update
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -89,17 +53,12 @@ update msg model =
         SearchBooks ->
             ( model, searchBooks model.query )
 
-        GotBooks booksResult ->
-            case booksResult of
-                Ok booksList ->
-                    ( { books = booksList
-                      , query = ""
-                      }
-                    , Cmd.none
-                    )
-
-                Err httpError ->
-                    ( model, Cmd.none )
+        BooksResponse booksResponse ->
+            let
+                receivedBooks =
+                    RemoteData.fromResult booksResponse
+            in
+            ( { model | books = receivedBooks }, Cmd.none )
 
         UpdateQuery newString ->
             ( { model | query = newString }, Cmd.none )
@@ -112,29 +71,119 @@ searchBooks : String -> Cmd Msg
 searchBooks titleString =
     Http.get
         { url = "http://localhost:5000/books?title=" ++ titleString
-        , expect = bookExpectation
+        , expect = Http.expectJson BooksResponse (Decode.list Book.decoder)
         }
 
 
-bookExpectation : Http.Expect Msg
-bookExpectation =
-    Http.expectJson GotBooks booksDecoder
+
+-- View
 
 
-booksDecoder : Decoder (List Book)
-booksDecoder =
-    Json.Decode.list bookDecoder
+view : Model -> Html Msg
+view model =
+    Html.div [ class "container" ]
+        [ header model
+        , body model
+        ]
 
 
-bookDecoder : Decoder Book
-bookDecoder =
-    Json.Decode.map4 Book
-        (Json.Decode.field "title" Json.Decode.string)
-        (Json.Decode.field "author_name" (Json.Decode.nullable Json.Decode.string))
-        (Json.Decode.field "publish_year" (Json.Decode.nullable Json.Decode.int))
-        (Json.Decode.field "cover_url" (Json.Decode.nullable Json.Decode.string))
+header : Model -> Html Msg
+header model =
+    Html.header [ class "header" ]
+        [ Html.h1 [] [ Html.text "good times" ]
+        , Html.p [] [ Html.text "a book finder - for having a good time" ]
+        ]
+
+
+body : Model -> Html Msg
+body model =
+    Html.main_ [ class "content" ]
+        [ Html.form
+            [ class "book-searcher"
+            , onSubmit SearchBooks
+            ]
+            [ Html.input
+                [ Attr.value model.query
+                , Html.Events.onInput UpdateQuery
+                ]
+                []
+            , Html.button
+                [ Attr.disabled <| String.isEmpty model.query ]
+                [ Html.text "Find a book!" ]
+            ]
+        , Html.div [ class "book-results" ]
+            [ viewBooks model.books ]
+        ]
+
+
+viewBooks : WebData (List Book) -> Html Msg
+viewBooks receivedBooks =
+    case receivedBooks of
+        NotAsked ->
+            Html.text "go ahead, search for a book!"
+
+        Loading ->
+            Html.text "entering the book database!"
+
+        Failure error ->
+            -- TODO show better error!
+            Html.text "something went wrong"
+
+        Success books ->
+            if List.isEmpty books then
+                Html.text "no results..."
+
+            else
+                Html.ul [ class "book-list" ]
+                    (List.map viewBook books)
+
+
+viewBook : Book -> Html Msg
+viewBook book =
+    Html.li []
+        [ Html.div [ class "media-card" ]
+            [ Html.div [ class "media-image" ] [ viewBookCover book.coverUrl ]
+            , Html.div [ class "media-info" ]
+                [ Html.b [] [ Html.text book.title ]
+                , Html.div []
+                    [ Html.text "by "
+                    , Html.text (Maybe.withDefault "Unknown" book.authorName)
+                    ]
+                , case book.publishYear of
+                    Just year ->
+                        Html.text <| "(" ++ String.fromInt year ++ ")"
+
+                    Nothing ->
+                        Html.text ""
+                ]
+            ]
+        ]
+
+
+viewBookCover : Maybe String -> Html Msg
+viewBookCover maybeCoverUrl =
+    case maybeCoverUrl of
+        Just srcUrl ->
+            Html.img
+                [ Attr.src srcUrl ]
+                []
+
+        Nothing ->
+            Html.div [ class "no-media" ] []
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.none
+
+
+
+-- Helpers
+
+
+{-| This has to do with the default behavior of forms
+-}
+onSubmit : msg -> Attribute msg
+onSubmit msg =
+    Html.Events.preventDefaultOn "submit"
+        (Decode.map (\a -> ( a, True )) (Decode.succeed msg))

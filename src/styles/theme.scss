@@ -1,0 +1,69 @@
+$theme-colors: (
+  'primary': (
+    'base': #1F624D,
+    'light': #3bb68f,
+    'dark': #154435
+  ),
+  'accent': (
+    'base': #E28D38,
+    'light': #F5AC62,
+    'dark': #7d5021
+  ),
+  'scale': (
+    'light': #f8f5f5,
+    'mid': #6e6e6e,
+    'dark': #111
+  ),
+);
+
+@function color($key: 'primary', $variant: 'base') {
+  $map: map-get($theme-colors, $key);
+  @return map-get($map, $variant);
+}
+
+$base-font-size: 1rem;
+$base-line-height: 1.25 * $base-font-size;
+
+$text-settings: (
+  'xs': (
+    font-size: .75rem, // 12px
+    line-height: $base-line-height
+  ),
+  'sm': (
+    font-size: .875rem, // 14px
+    line-height: $base-line-height
+  ),
+  'base': (
+    font-size: 1rem, // 16px
+    line-height: $base-line-height
+  ),
+  'md': (
+    font-size: 1.125rem, // 18px
+    line-height: $base-line-height * 2
+  ),
+  'lg': (
+    font-size: 1.25rem, // 20px
+    line-height: $base-line-height * 2
+  ),
+  'xl': (
+    font-size: 1.5rem, // 24px
+    line-height: $base-line-height * 2
+  )
+);
+
+@function text-scale($level) {
+  @return map-get(map-get($text-settings, $level), 'font-size');
+}
+
+@function line-height($level) {
+  @return map-get(map-get($text-settings, $level), 'line-height');
+}
+
+@mixin text-setting($level) {
+  font-size: text-scale($level);
+  line-height: line-height($level);
+}
+
+body {
+    font-family: sans-serif;
+}

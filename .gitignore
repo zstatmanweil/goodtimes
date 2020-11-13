@@ -132,5 +132,7 @@ dmypy.json
 # specific to tis project
 secrets.py
 alembic.ini
+
+# Frontend
 elm-stuff/
-index.html
+node_modules/

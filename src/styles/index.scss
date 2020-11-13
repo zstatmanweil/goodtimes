@@ -1,0 +1,43 @@
+@use './reset.scss';
+@use './theme.scss';
+
+.header {
+    padding: 8px;
+    background-color: theme.color('primary', 'base');
+    color: theme.color('scale', 'light');
+}
+
+.content {
+    .book-searcher {
+        padding: 8px;
+        background-color: theme.color('primary', 'light');
+
+        > * {
+            margin-right: 8px;
+        }
+    }
+
+    .book-results {
+        padding: 8px;
+    }
+}
+
+
+// Re-Usable stuff
+
+.media-card {
+    @include theme.text-setting('sm');
+    display: flex;
+    border: 1px solid theme.color('primary', 'light');
+    padding: 8px;
+    height: 120px;
+
+    .media-image {
+        width: 60px;
+    }
+    .media-info {
+        display: flex;
+        flex-direction: column;
+        padding-left: 8px;
+    }
+}
