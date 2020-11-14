@@ -84,6 +84,7 @@ view model =
     Html.div [ class "container", id "page-container" ]
         [ header model
         , body model
+        , Html.footer [ id "footer" ] [ footer model ]
         ]
 
 
@@ -97,14 +98,12 @@ header model =
 
 footer : Model -> Html Msg
 footer model =
-    Html.footer [ class "footer" ]
-        [ Html.p []
-            [ Html.text "made by "
-            , Html.a [ class "footer-url", Attr.href "https://zoestatmanweil.com" ] [ Html.text "zboknows" ]
-            , Html.text " and "
-            , Html.a [ class "footer-url", Attr.href "https://aaronstrick.com" ] [ Html.text "strickinato" ]
-            , Html.text " - powered by openlibrary and tmdb"
-            ]
+    Html.p []
+        [ Html.text "made by "
+        , Html.a [ class "footer-url", Attr.href "https://zoestatmanweil.com" ] [ Html.text "zboknows" ]
+        , Html.text " and "
+        , Html.a [ class "footer-url", Attr.href "https://aaronstrick.com" ] [ Html.text "strickinato" ]
+        , Html.text " - powered by openlibrary and tmdb"
         ]
 
 
@@ -129,7 +128,6 @@ body model =
             , Html.div [ class "book-results" ]
                 [ viewBooks model.books ]
             ]
-        , Html.footer [ id "footer" ] [ footer model ]
         ]
 
 
@@ -182,7 +180,7 @@ viewBookCover maybeCoverUrl =
     case maybeCoverUrl of
         Just srcUrl ->
             Html.img
-                [ class "media-cover", Attr.src srcUrl ]
+                [ Attr.src srcUrl ]
                 []
 
         Nothing ->

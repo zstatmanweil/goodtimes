@@ -7,6 +7,18 @@
     color: theme.color('scale', 'light');
 }
 
+#footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2.5rem;            /* Footer height */
+  padding: 8px;
+  background-color: theme.color('primary', 'base');
+  color: theme.color('scale', 'light');
+  text-align: center;
+}
+
 .footer-url {
    background-color: theme.color('primary', 'base');
    color: theme.color('scale', 'light');
@@ -56,14 +68,4 @@
   padding-bottom: 2.5rem;    /* Footer height */
 }
 
-#footer {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 2.5rem;            /* Footer height */
-  padding: 8px;
-  background-color: theme.color('primary', 'base');
-  color: theme.color('scale', 'light');
-  text-align: center;
-}
+
