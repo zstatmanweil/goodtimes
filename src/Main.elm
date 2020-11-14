@@ -3,7 +3,7 @@ module Main exposing (..)
 import Book exposing (Book)
 import Browser
 import Html exposing (Attribute, Html)
-import Html.Attributes as Attr exposing (class, id)
+import Html.Attributes as Attr exposing (class, id, placeholder)
 import Html.Events
 import Http
 import Json.Decode as Decode exposing (Decoder)
@@ -81,7 +81,7 @@ searchBooks titleString =
 
 view : Model -> Html Msg
 view model =
-    Html.div [ class "container" ]
+    Html.div [ class "container", id "page-container" ]
         [ header model
         , body model
         ]
@@ -95,24 +95,41 @@ header model =
         ]
 
 
+footer : Model -> Html Msg
+footer model =
+    Html.footer [ class "footer" ]
+        [ Html.p []
+            [ Html.text "made by "
+            , Html.a [ class "footer-url", Attr.href "https://zoestatmanweil.com" ] [ Html.text "zboknows" ]
+            , Html.text " and "
+            , Html.a [ class "footer-url", Attr.href "https://aaronstrick.com" ] [ Html.text "strickinato" ]
+            , Html.text " - powered by openlibrary and tmdb"
+            ]
+        ]
+
+
 body : Model -> Html Msg
 body model =
     Html.main_ [ class "content" ]
-        [ Html.form
-            [ class "book-searcher"
-            , onSubmit SearchBooks
-            ]
-            [ Html.input
-                [ Attr.value model.query
-                , Html.Events.onInput UpdateQuery
+        [ Html.div [ id "content-wrap" ]
+            [ Html.form
+                [ class "book-searcher"
+                , onSubmit SearchBooks
                 ]
-                []
-            , Html.button
-                [ Attr.disabled <| String.isEmpty model.query ]
-                [ Html.text "Find a book!" ]
+                [ Html.input
+                    [ placeholder "book title"
+                    , Attr.value model.query
+                    , Html.Events.onInput UpdateQuery
+                    ]
+                    []
+                , Html.button
+                    [ Attr.disabled <| String.isEmpty model.query ]
+                    [ Html.text "Find a book!" ]
+                ]
+            , Html.div [ class "book-results" ]
+                [ viewBooks model.books ]
             ]
-        , Html.div [ class "book-results" ]
-            [ viewBooks model.books ]
+        , Html.footer [ id "footer" ] [ footer model ]
         ]
 
 
@@ -165,7 +182,7 @@ viewBookCover maybeCoverUrl =
     case maybeCoverUrl of
         Just srcUrl ->
             Html.img
-                [ Attr.src srcUrl ]
+                [ class "media-cover", Attr.src srcUrl ]
                 []
 
         Nothing ->
