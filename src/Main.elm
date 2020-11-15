@@ -92,7 +92,7 @@ header : Model -> Html Msg
 header model =
     Html.header [ class "header" ]
         [ Html.h1 [] [ Html.text "good times" ]
-        , Html.p [] [ Html.text "a book finder - for having a good time" ]
+        , Html.p [] [ Html.text "a book, movie & tv finder - for having a good time" ]
         ]
 
 
@@ -170,6 +170,16 @@ viewBook book =
 
                     Nothing ->
                         Html.text ""
+
+                --TODO: add Html.Events.onClick with Msg for adding book to profile?
+                , Html.div [ class "dropdown" ]
+                    [ Html.button [ class "dropbtn" ] [ Html.text "Add Book >>" ]
+                    , Html.div [ class "dropdown-content" ]
+                        [ Html.p [] [ Html.text "to read" ]
+                        , Html.p [] [ Html.text "reading" ]
+                        , Html.p [] [ Html.text "read" ]
+                        ]
+                    ]
                 ]
             ]
         ]
