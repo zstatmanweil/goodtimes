@@ -9,6 +9,7 @@ from db.helpers import MEDIAS, get_consumption_records
 
 user = Blueprint("user", __name__)
 
+#TODO: how should we pass in postgresql database location? config file? .env?
 engine = sa.create_engine('postgresql://zoe:123@localhost/goodtimes', echo=True)
 Session = sessionmaker(bind=engine)
 

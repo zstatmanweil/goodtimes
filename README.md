@@ -1,6 +1,28 @@
 # goodtimes
 Web-app to track, share and recommend books and media our friends are enjoying
 
+# The Backend:
+
+## Quickstart
+
+```sh
+# Install dependencies into virtual environment
+pip install -r requirements
+
+# Run app
+python main.py
+```
+
+While this will run the application, most endpoints will require use of the backend database. 
+
+## Database
+
+Create a local Postgres database called `goodtimes`. Follow README in `alembic/` folder to build
+database tables. For testing, you will need at least one user:
+
+```shell script
+python scripts/create_user.py
+```
 
 # The Frontend:
 
