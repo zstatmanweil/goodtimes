@@ -24,7 +24,7 @@ def upgrade():
         sa.Column('source_id', sa.String(50), index=True),
         sa.Column('title', sa.String(200)),
         sa.Column('author_name', sa.String(100)),
-        sa.Column('cover_url', sa.String(100)),
+        sa.Column('cover_url', sa.String(250)),
         sa.Column('publish_year', sa.Integer)
     )
 
