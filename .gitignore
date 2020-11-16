@@ -137,3 +137,4 @@ alembic.ini
 elm-stuff/
 node_modules/
 index.html
+secrets.py
