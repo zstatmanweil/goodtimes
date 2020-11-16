@@ -12,7 +12,7 @@ class GoogleBooks:
         self.api_key = GOOGLE_BOOKS_API_KEY
 
     def get_books_by_title(self, title: str) -> List[Book]:
-        payload = {'q': f"intitle:{title}",
+        payload = {'q': f'intitle:"{title}"',
                    'key': self.api_key,
                    'maxResults': 40}
 
@@ -22,7 +22,7 @@ class GoogleBooks:
         response_body = response.json()
 
         items = response_body.get('items')
-        books = [self.book_from_open_lib_result(result=item) for item in items]
+        books = [self.book_from_google_books_result(result=item) for item in items]
         return books
 
     def book_from_google_books_result(self, result: Dict) -> Book:
