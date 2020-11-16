@@ -130,11 +130,10 @@ dmypy.json
 .pyre/
 
 # specific to tis project
-secrets.py
 alembic.ini
+secrets.py
 
 # Frontend
 elm-stuff/
 node_modules/
 index.html
-secrets.py

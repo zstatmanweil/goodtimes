@@ -1,1 +1,0 @@
-TMDB_TOKEN = '86a8ac91a3f26dd5bf9b40a695d2afcc'

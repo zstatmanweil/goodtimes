@@ -26,6 +26,7 @@ class Book:
         sa.Column('publish_year', sa.Integer)
     )
 
+    # TODO: make author_name a list
     id: int = field(init=False)
     source: str
     source_id: str
