@@ -23,7 +23,6 @@ def add_media(user_id, media_type):
     :param media_type: book, movie or tv
     :return:
     """
-    # TODO: index source id in media tables
     session = Session()
 
     request_body = request.get_json()
