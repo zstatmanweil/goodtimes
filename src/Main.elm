@@ -34,6 +34,8 @@ type Msg
     | SearchBooks
     | UpdateQuery String
     | BooksResponse (Result Http.Error (List Book))
+    | AddBookToProfile Book String
+    | BookAddedToProfile (Result Http.Error String)
 
 
 init : () -> ( Model, Cmd Msg )
@@ -63,6 +65,12 @@ update msg model =
         UpdateQuery newString ->
             ( { model | query = newString }, Cmd.none )
 
+        AddBookToProfile book status ->
+            ( model, addBookToProfile book status )
+
+        BookAddedToProfile result ->
+            ( { model | books = NotAsked }, Cmd.none )
+
         None ->
             ( model, Cmd.none )
 
@@ -72,6 +80,15 @@ searchBooks titleString =
     Http.get
         { url = "http://localhost:5000/books?title=" ++ titleString
         , expect = Http.expectJson BooksResponse (Decode.list Book.decoder)
+        }
+
+
+addBookToProfile : Book -> String -> Cmd Msg
+addBookToProfile book status =
+    Http.post
+        { url = "http://localhost:5000/user/" ++ String.fromInt 1 ++ "/media/book"
+        , body = Http.jsonBody (Book.encoderWithStatus book status)
+        , expect = Http.expectString BookAddedToProfile
         }
 
 
@@ -170,17 +187,20 @@ viewBook book =
 
                     Nothing ->
                         Html.text ""
-
-                --TODO: add Html.Events.onClick with Msg for adding book to profile?
-                , Html.div [ class "dropdown" ]
-                    [ Html.button [ class "dropbtn" ] [ Html.text "Add Book >>" ]
-                    , Html.div [ class "dropdown-content" ]
-                        [ Html.p [] [ Html.text "to read" ]
-                        , Html.p [] [ Html.text "reading" ]
-                        , Html.p [] [ Html.text "read" ]
-                        ]
-                    ]
+                , viewBookDropdown book
                 ]
+            ]
+        ]
+
+
+viewBookDropdown : Book -> Html Msg
+viewBookDropdown book =
+    Html.div [ class "dropdown" ]
+        [ Html.button [ class "dropbtn" ] [ Html.text "Add Book >>" ]
+        , Html.div [ class "dropdown-content" ]
+            [ Html.p [ Html.Events.onClick (AddBookToProfile book "want to consume") ] [ Html.text "to read" ]
+            , Html.p [ Html.Events.onClick (AddBookToProfile book "consuming") ] [ Html.text "reading" ]
+            , Html.p [ Html.Events.onClick (AddBookToProfile book "finished") ] [ Html.text "read" ]
             ]
         ]
 

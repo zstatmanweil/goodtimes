@@ -46,10 +46,11 @@ def add_book(user_id, media_type):
         media_item = media_class.from_dict(request_body)
     except KeyError:
         #TODO: update message
-        return jsonify("Object needs at least fields source, source_id, and title")
+        return jsonify("Object needs at least fields source, source_id, and title"), 400
 
     # check if media item is in database
     db_resp = session.query(media_class).filter_by(source_id=media_item.source_id).first()
+    print(db_resp)
 
     # if not in database, add media item to appropriate table
     if not db_resp:
