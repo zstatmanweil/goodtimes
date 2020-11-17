@@ -133,7 +133,7 @@ body model =
                 , onSubmit SearchBooks
                 ]
                 [ Html.input
-                    [ placeholder "book title"
+                    [ placeholder "book title or author"
                     , Attr.value model.query
                     , Html.Events.onInput UpdateQuery
                     ]

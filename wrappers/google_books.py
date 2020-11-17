@@ -13,8 +13,20 @@ class GoogleBooks:
 
     def get_books_by_title(self, title: str) -> List[Book]:
         payload = {'q': f'intitle:{title}',
-                   'key': self.api_key,
-                   'maxResults': 40}
+                   'key': self.api_key}
+
+        response = requests.get(self.base_uri, params=payload)
+
+        response.raise_for_status()
+        response_body = response.json()
+
+        items = response_body.get('items')
+        books = [self.book_from_google_books_result(result=item) for item in items]
+        return books
+
+    def get_books_by_query(self, query: str) -> List[Book]:
+        payload = {'q': query,
+                   'key': self.api_key}
 
         response = requests.get(self.base_uri, params=payload)
 

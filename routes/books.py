@@ -11,6 +11,6 @@ def search_books():
     title = args.get('title', None)
 
     google_books = GoogleBooks()
-    result = google_books.get_books_by_title(title)
+    result = google_books.get_books_by_query(title)
     return jsonify(result)
 
