@@ -38,7 +38,7 @@ class GoogleBooks:
 
         clean_result['source_id'] = source_id
         clean_result['source'] = 'google books api'
-        clean_result['title'] = title.title()
+        clean_result['title'] = title
         clean_result['author_name'] = author_name.pop(0).title() if author_name else None
         clean_result['publish_year'] = int(publish_year.split('-')[0].replace('*', '')) if publish_year else None
         clean_result['cover_url'] = image_links.get('thumbnail', None) if image_links else None
