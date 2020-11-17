@@ -179,7 +179,7 @@ viewBook book =
                 [ Html.b [] [ Html.text book.title ]
                 , Html.div []
                     [ Html.text "by "
-                    , Html.text (Maybe.withDefault "Unknown" book.authorName)
+                    , Html.text (String.join ", " book.authorNames)
                     ]
                 , case book.publishYear of
                     Just year ->

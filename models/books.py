@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from dataclasses import field
-from typing import Optional
+from typing import Optional, List
 
 from dataclasses_json import dataclass_json
 from enum import Enum
@@ -21,7 +21,7 @@ class Book:
         sa.Column('source', sa.String(50)),
         sa.Column('source_id', sa.String(50)),
         sa.Column('title', sa.String(200)),
-        sa.Column('author_name', sa.String(100)),
+        sa.Column('author_names', sa.ARRAY(sa.String(100))),
         sa.Column('cover_url', sa.String(250)),
         sa.Column('publish_year', sa.Integer)
     )
@@ -31,7 +31,7 @@ class Book:
     source: str
     source_id: str
     title: str
-    author_name: Optional[str]
+    author_names: Optional[List[str]]
     publish_year: Optional[int]
     cover_url: Optional[str]
 
