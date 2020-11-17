@@ -120,7 +120,7 @@ footer model =
         , Html.a [ class "footer-url", Attr.href "https://zoestatmanweil.com" ] [ Html.text "zboknows" ]
         , Html.text " and "
         , Html.a [ class "footer-url", Attr.href "https://aaronstrick.com" ] [ Html.text "strickinato" ]
-        , Html.text " - powered by openlibrary and tmdb"
+        , Html.text " - powered by google books api and tmdb"
         ]
 
 
