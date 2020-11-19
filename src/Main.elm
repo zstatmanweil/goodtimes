@@ -7,6 +7,7 @@ import Html.Attributes as Attr exposing (class, id, placeholder)
 import Html.Events
 import Http
 import Json.Decode as Decode exposing (Decoder)
+import Media exposing (Status(..))
 import RemoteData exposing (RemoteData(..), WebData)
 
 
@@ -34,7 +35,7 @@ type Msg
     | SearchBooks
     | UpdateQuery String
     | BooksResponse (Result Http.Error (List Book))
-    | AddBookToProfile Book String
+    | AddBookToProfile Book Media.Status
     | BookAddedToProfile (Result Http.Error String)
 
 
@@ -83,7 +84,7 @@ searchBooks titleString =
         }
 
 
-addBookToProfile : Book -> String -> Cmd Msg
+addBookToProfile : Book -> Media.Status -> Cmd Msg
 addBookToProfile book status =
     Http.post
         { url = "http://localhost:5000/user/" ++ String.fromInt 1 ++ "/media/book"
@@ -198,9 +199,9 @@ viewBookDropdown book =
     Html.div [ class "dropdown" ]
         [ Html.button [ class "dropbtn" ] [ Html.text "Add Book >>" ]
         , Html.div [ class "dropdown-content" ]
-            [ Html.p [ Html.Events.onClick (AddBookToProfile book "want to consume") ] [ Html.text "to read" ]
-            , Html.p [ Html.Events.onClick (AddBookToProfile book "consuming") ] [ Html.text "reading" ]
-            , Html.p [ Html.Events.onClick (AddBookToProfile book "finished") ] [ Html.text "read" ]
+            [ Html.p [ Html.Events.onClick (AddBookToProfile book WantToConsume) ] [ Html.text "to read" ]
+            , Html.p [ Html.Events.onClick (AddBookToProfile book Consuming) ] [ Html.text "reading" ]
+            , Html.p [ Html.Events.onClick (AddBookToProfile book Finished) ] [ Html.text "read" ]
             ]
         ]
 
