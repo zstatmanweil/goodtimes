@@ -1,8 +1,9 @@
-module Book exposing (Book, decoder, encoderWithStatus)
+module Book exposing (Book, decoder, encoderWithStatus, statusAsString)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
-import Media
+import Media exposing (Status(..))
+import RemoteData exposing (RemoteData(..), WebData)
 
 
 type alias Book =
@@ -12,18 +13,36 @@ type alias Book =
     , authorNames : List String
     , publishYear : Maybe Int
     , coverUrl : Maybe String
+    , status : WebData Media.Status
     }
+
+
+statusAsString : Media.Status -> String
+statusAsString status =
+    case status of
+        WantToConsume ->
+            "want to read"
+
+        Consuming ->
+            "reading it now!"
+
+        Finished ->
+            "i'm great! i read it!"
+
+        Abandoned ->
+            "better luck next time"
 
 
 decoder : Decoder Book
 decoder =
-    Decode.map6 Book
+    Decode.map7 Book
         (Decode.field "title" Decode.string)
         (Decode.field "source" Decode.string)
         (Decode.field "source_id" Decode.string)
         (Decode.field "author_names" (Decode.list Decode.string))
         (Decode.field "publish_year" (Decode.nullable Decode.int))
         (Decode.field "cover_url" (Decode.nullable Decode.string))
+        (Decode.succeed NotAsked)
 
 
 encoderWithStatus : Book -> Media.Status -> Encode.Value
@@ -35,5 +54,5 @@ encoderWithStatus book status =
         , ( "author_names", Encode.list Encode.string book.authorNames )
         , ( "publish_year", Encode.int (Maybe.withDefault 0 book.publishYear) )
         , ( "cover_url", Encode.string (Maybe.withDefault "" book.coverUrl) ) -- should we pass in None? or just empty string?
-        , ( "status", Media.encodeStatus status )
+        , ( "status", Media.statusEncoder status )
         ]

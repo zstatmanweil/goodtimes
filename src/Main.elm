@@ -7,6 +7,7 @@ import Html.Attributes as Attr exposing (class, id, placeholder)
 import Html.Events
 import Http
 import Json.Decode as Decode exposing (Decoder)
+import List.Extra
 import Media exposing (Status(..))
 import RemoteData exposing (RemoteData(..), WebData)
 
@@ -36,7 +37,7 @@ type Msg
     | UpdateQuery String
     | BooksResponse (Result Http.Error (List Book))
     | AddBookToProfile Book Media.Status
-    | BookAddedToProfile (Result Http.Error String)
+    | BookAddedToProfile (Result Http.Error AddToProfileResponse)
 
 
 init : () -> ( Model, Cmd Msg )
@@ -44,6 +45,19 @@ init flags =
     ( { books = NotAsked, query = "" }
     , Cmd.none
     )
+
+
+type alias AddToProfileResponse =
+    { status : Media.Status
+    , sourceId : String
+    }
+
+
+addToProfileResponseDecoder : Decoder AddToProfileResponse
+addToProfileResponseDecoder =
+    Decode.map2 AddToProfileResponse
+        (Decode.field "status" Media.statusDecoder)
+        (Decode.field "source_id" Decode.string)
 
 
 
@@ -67,10 +81,36 @@ update msg model =
             ( { model | query = newString }, Cmd.none )
 
         AddBookToProfile book status ->
-            ( model, addBookToProfile book status )
+            let
+                bookUpdater =
+                    List.Extra.updateIf
+                        (\b -> b == book)
+                        (\b -> { b | status = Loading })
+
+                newBooks =
+                    RemoteData.map bookUpdater model.books
+            in
+            ( { model | books = newBooks }, addBookToProfile book status )
 
         BookAddedToProfile result ->
-            ( { model | books = NotAsked }, Cmd.none )
+            case result of
+                Ok addToProfileResponse ->
+                    let
+                        bookUpdater =
+                            List.Extra.updateIf
+                                (\b -> b.sourceId == addToProfileResponse.sourceId)
+                                (\b -> { b | status = Success addToProfileResponse.status })
+
+                        newBooks =
+                            RemoteData.map bookUpdater model.books
+                    in
+                    ( { model | books = newBooks }
+                    , Cmd.none
+                    )
+
+                Err httpError ->
+                    -- TODO handle error!
+                    ( model, Cmd.none )
 
         None ->
             ( model, Cmd.none )
@@ -89,7 +129,7 @@ addBookToProfile book status =
     Http.post
         { url = "http://localhost:5000/user/" ++ String.fromInt 1 ++ "/media/book"
         , body = Http.jsonBody (Book.encoderWithStatus book status)
-        , expect = Http.expectString BookAddedToProfile
+        , expect = Http.expectJson BookAddedToProfile addToProfileResponseDecoder
         }
 
 
@@ -196,14 +236,25 @@ viewBook book =
 
 viewBookDropdown : Book -> Html Msg
 viewBookDropdown book =
-    Html.div [ class "dropdown" ]
-        [ Html.button [ class "dropbtn" ] [ Html.text "Add Book >>" ]
-        , Html.div [ class "dropdown-content" ]
-            [ Html.p [ Html.Events.onClick (AddBookToProfile book WantToConsume) ] [ Html.text "to read" ]
-            , Html.p [ Html.Events.onClick (AddBookToProfile book Consuming) ] [ Html.text "reading" ]
-            , Html.p [ Html.Events.onClick (AddBookToProfile book Finished) ] [ Html.text "read" ]
-            ]
-        ]
+    Html.div [ class "dropdown" ] <|
+        case book.status of
+            NotAsked ->
+                [ Html.button [ class "dropbtn" ] [ Html.text "Add Book >>" ]
+                , Html.div [ class "dropdown-content" ]
+                    [ Html.p [ Html.Events.onClick (AddBookToProfile book WantToConsume) ] [ Html.text "to read" ]
+                    , Html.p [ Html.Events.onClick (AddBookToProfile book Consuming) ] [ Html.text "reading" ]
+                    , Html.p [ Html.Events.onClick (AddBookToProfile book Finished) ] [ Html.text "read" ]
+                    ]
+                ]
+
+            Loading ->
+                [ Html.text "..." ]
+
+            Failure _ ->
+                [ Html.text "Something went wrong" ]
+
+            Success status ->
+                [ Html.text (Book.statusAsString status) ]
 
 
 viewBookCover : Maybe String -> Html Msg
@@ -233,3 +284,13 @@ onSubmit : msg -> Attribute msg
 onSubmit msg =
     Html.Events.preventDefaultOn "submit"
         (Decode.map (\a -> ( a, True )) (Decode.succeed msg))
+
+
+isJust : Maybe a -> Bool
+isJust maybe =
+    case maybe of
+        Just _ ->
+            True
+
+        Nothing ->
+            False
