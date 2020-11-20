@@ -3,14 +3,16 @@ This script is for creating a test user in the database.
 """
 from datetime import datetime
 
+from pyhocon import ConfigFactory
 import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker
 
 from models.user import User
 
+config = ConfigFactory.parse_file('config/config')
 
 def add_user():
-    engine = sa.create_engine('postgresql://zoe:123@localhost/goodtimes', echo=True)
+    engine = sa.create_engine(config.postgres_db, echo=True)
     Session = sessionmaker(bind=engine)
 
     first_user = User(username='zstat',

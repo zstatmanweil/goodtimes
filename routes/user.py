@@ -1,3 +1,4 @@
+from pyhocon import ConfigFactory
 from datetime import datetime
 
 from flask import current_app, jsonify, request, Blueprint
@@ -7,10 +8,10 @@ from sqlalchemy.orm import sessionmaker
 from models.user import ConsumptionStatus, Consumption
 from db.helpers import MEDIAS, get_consumption_records
 
+config = ConfigFactory.parse_file('config/config')
 user = Blueprint("user", __name__)
 
-#TODO: how should we pass in postgresql database location? config file? .env?
-engine = sa.create_engine('postgresql://strickinato:@localhost/goodtimes', echo=True)
+engine = sa.create_engine(config.postgres_db, echo=True)
 Session = sessionmaker(bind=engine)
 
 

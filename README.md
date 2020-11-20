@@ -24,6 +24,12 @@ database tables. For testing, you will need at least one user:
 python scripts/create_user.py
 ```
 
+Update a file `/config/config` to contain a variable postgres_db with your postgres username and password as follows:
+
+```
+postgres_db="postgresql://username:password@localhost/goodtimes"
+```
+
 # The Frontend:
 
 ## Quick Start
