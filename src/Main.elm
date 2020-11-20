@@ -8,7 +8,7 @@ import Html.Events
 import Http
 import Json.Decode as Decode exposing (Decoder)
 import List.Extra
-import Media exposing (Status(..))
+import Media exposing (Consumption, Status(..))
 import RemoteData exposing (RemoteData(..), WebData)
 
 
@@ -37,7 +37,7 @@ type Msg
     | UpdateQuery String
     | BooksResponse (Result Http.Error (List Book))
     | AddBookToProfile Book Media.Status
-    | BookAddedToProfile (Result Http.Error AddToProfileResponse)
+    | BookAddedToProfile (Result Http.Error Consumption)
 
 
 init : () -> ( Model, Cmd Msg )
@@ -45,19 +45,6 @@ init flags =
     ( { books = NotAsked, query = "" }
     , Cmd.none
     )
-
-
-type alias AddToProfileResponse =
-    { status : Media.Status
-    , sourceId : String
-    }
-
-
-addToProfileResponseDecoder : Decoder AddToProfileResponse
-addToProfileResponseDecoder =
-    Decode.map2 AddToProfileResponse
-        (Decode.field "status" Media.statusDecoder)
-        (Decode.field "source_id" Decode.string)
 
 
 
@@ -94,12 +81,12 @@ update msg model =
 
         BookAddedToProfile result ->
             case result of
-                Ok addToProfileResponse ->
+                Ok consumption ->
                     let
                         bookUpdater =
                             List.Extra.updateIf
-                                (\b -> b.sourceId == addToProfileResponse.sourceId)
-                                (\b -> { b | status = Success addToProfileResponse.status })
+                                (\b -> b.sourceId == consumption.sourceId)
+                                (\b -> { b | status = Success consumption.status })
 
                         newBooks =
                             RemoteData.map bookUpdater model.books
@@ -129,7 +116,7 @@ addBookToProfile book status =
     Http.post
         { url = "http://localhost:5000/user/" ++ String.fromInt 1 ++ "/media/book"
         , body = Http.jsonBody (Book.encoderWithStatus book status)
-        , expect = Http.expectJson BookAddedToProfile addToProfileResponseDecoder
+        , expect = Http.expectJson BookAddedToProfile Media.consumptionDecoder
         }
 
 

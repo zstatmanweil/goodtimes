@@ -2,6 +2,7 @@ module Media exposing (..)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
+import Media
 
 
 type Status
@@ -50,3 +51,24 @@ statusEncoder status =
 
         Abandoned ->
             Encode.string "abandoned"
+
+
+type alias Consumption =
+    { userId : Int
+    , sourceId : String
+    , mediaType : String
+    , mediaId : Int
+    , status : Media.Status
+    , created : String
+    }
+
+
+consumptionDecoder : Decoder Consumption
+consumptionDecoder =
+    Decode.map6 Consumption
+        (Decode.field "user_id" Decode.int)
+        (Decode.field "source_id" Decode.string)
+        (Decode.field "media_type" Decode.string)
+        (Decode.field "media_id" Decode.int)
+        (Decode.field "status" Media.statusDecoder)
+        (Decode.field "created" Decode.string)
