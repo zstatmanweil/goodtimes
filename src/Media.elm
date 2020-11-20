@@ -1,8 +1,15 @@
 module Media exposing (..)
 
+import Book exposing (..)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
 import Media
+
+
+type Media
+    = Book
+    | TV
+    | Movie
 
 
 type Status
