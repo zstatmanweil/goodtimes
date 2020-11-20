@@ -61,14 +61,15 @@ def add_media(user_id, media_type):
     consumption_rec = Consumption(user_id=user_id,
                                   media_type=media_type,
                                   media_id=media_id,
+                                  source_id=media_item.source_id,
                                   status=status,
                                   created=datetime.utcnow())
 
     session.add(consumption_rec)
-
+    consumption_resp = consumption_rec.to_json()
     session.commit()
     session.close()
-    return "success", 200
+    return consumption_resp, 200
 
 
 @user.route("/user/<int:user_id>/media/<media_type>", methods=["GET"])

@@ -44,6 +44,7 @@ class Consumption:
         sa.Column('user_id', sa.Integer, sa.ForeignKey('user.id')),
         sa.Column('media_type', sa.String(50)),
         sa.Column('media_id', sa.Integer),
+        sa.Column('source_id', sa.String(50), index=True),
         sa.Column('status', sa.String(50)),
         sa.Column('created', sa.DateTime)
     )
@@ -52,6 +53,7 @@ class Consumption:
     user_id: int
     media_type: str
     media_id: int
+    source_id: str
     status: str
     created: datetime
 

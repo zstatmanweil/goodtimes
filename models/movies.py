@@ -27,7 +27,7 @@ class Movie:
 
     id: int = field(init=False)
     source: str
-    source_id: int
+    source_id: str
     title: str
     poster_url: Optional[str] = None
     release_date: Optional[date] = None

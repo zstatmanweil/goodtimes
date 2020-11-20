@@ -21,7 +21,7 @@ def upgrade():
         'movie',
         sa.Column('id', sa.Integer, primary_key=True),
         sa.Column('source', sa.String(50)),
-        sa.Column('source_id', sa.Integer, index=True),
+        sa.Column('source_id', sa.String(50), index=True),
         sa.Column('title', sa.String(200)),
         sa.Column('poster_url', sa.String(100)),
         sa.Column('release_date', sa.Date)

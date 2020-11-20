@@ -27,7 +27,7 @@ class TV:
     )
 
     id: int = field(init=False)
-    source_id: int
+    source_id: str
     source: str
     title: str
     networks: List[str]

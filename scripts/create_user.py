@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 
 from models.user import User
 
-config = ConfigFactory.parse_file('config/config')
+config = ConfigFactory.parse_file('../config/config')
 
 def add_user():
     engine = sa.create_engine(config.postgres_db, echo=True)
