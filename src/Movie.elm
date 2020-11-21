@@ -1,8 +1,8 @@
 module Movie exposing (Movie, decoder, encoderWithStatus, statusAsString)
 
+import Consumption exposing (Status(..))
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
-import Media exposing (Status(..))
 import RemoteData exposing (RemoteData(..), WebData)
 
 
@@ -16,7 +16,7 @@ type alias Movie =
     }
 
 
-statusAsString : Media.Status -> String
+statusAsString : Consumption.Status -> String
 statusAsString status =
     case status of
         WantToConsume ->
@@ -43,7 +43,7 @@ decoder =
         (Decode.succeed NotAsked)
 
 
-encoderWithStatus : Movie -> Media.Status -> Encode.Value
+encoderWithStatus : Movie -> Consumption.Status -> Encode.Value
 encoderWithStatus movie status =
     Encode.object
         [ ( "source", Encode.string movie.source )
@@ -51,5 +51,5 @@ encoderWithStatus movie status =
         , ( "title", Encode.string movie.title )
         , ( "poster_url", Encode.string (Maybe.withDefault "" movie.posterUrl) )
         , ( "first_air_date", Encode.string movie.firstAirDate )
-        , ( "status", Media.statusEncoder status )
+        , ( "status", Consumption.statusEncoder status )
         ]

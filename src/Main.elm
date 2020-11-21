@@ -1,14 +1,15 @@
 module Main exposing (..)
 
-import Book exposing (Book)
+import Book exposing (..)
 import Browser
+import Consumption exposing (..)
 import Html exposing (Attribute, Html)
 import Html.Attributes as Attr exposing (class, id, placeholder)
 import Html.Events
 import Http
 import Json.Decode as Decode exposing (Decoder)
 import List.Extra
-import Media exposing (Consumption, Status(..))
+import Media exposing (..)
 import RemoteData exposing (RemoteData(..), WebData)
 
 
@@ -26,23 +27,27 @@ main =
 
 
 type alias Model =
-    { books : WebData (List Book)
+    { searchResults : WebData (List MediaType)
+    , selectedMediaType : MediaSelection
     , query : String
     }
 
 
 type Msg
     = None
-    | SearchBooks
+    | SearchMedia
     | UpdateQuery String
-    | BooksResponse (Result Http.Error (List Book))
-    | AddBookToProfile Book Media.Status
-    | BookAddedToProfile (Result Http.Error Consumption)
+    | BookResponse (Result Http.Error (List MediaType))
+    | AddMediaToProfile MediaType Consumption.Status
+    | MediaAddedToProfile (Result Http.Error Consumption)
 
 
 init : () -> ( Model, Cmd Msg )
 init flags =
-    ( { books = NotAsked, query = "" }
+    ( { searchResults = NotAsked
+      , selectedMediaType = BookSelection
+      , query = ""
+      }
     , Cmd.none
     )
 
@@ -54,44 +59,49 @@ init flags =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        SearchBooks ->
-            ( model, searchBooks model.query )
+        SearchMedia ->
+            if model.selectedMediaType == BookSelection then
+                ( model, searchBooks model.query )
 
-        BooksResponse booksResponse ->
+            else
+                ( model, Cmd.none )
+
+        BookResponse bookResponse ->
             let
-                receivedBooks =
-                    RemoteData.fromResult booksResponse
+                receivedMedia =
+                    RemoteData.fromResult bookResponse
             in
-            ( { model | books = receivedBooks }, Cmd.none )
+            ( { model | searchResults = receivedMedia }, Cmd.none )
 
         UpdateQuery newString ->
             ( { model | query = newString }, Cmd.none )
 
-        AddBookToProfile book status ->
+        AddMediaToProfile mediaType status ->
             let
-                bookUpdater =
+                mediaUpdater =
                     List.Extra.updateIf
-                        (\b -> b == book)
-                        (\b -> { b | status = Loading })
+                        (\b -> b == mediaType)
+                        (Media.setMediaStatus Loading)
 
                 newBooks =
-                    RemoteData.map bookUpdater model.books
+                    RemoteData.map mediaUpdater model.searchResults
             in
-            ( { model | books = newBooks }, addBookToProfile book status )
+            ( { model | searchResults = newBooks }, addMediaToProfile mediaType status )
 
-        BookAddedToProfile result ->
+        MediaAddedToProfile result ->
             case result of
                 Ok consumption ->
                     let
-                        bookUpdater =
+                        mediaUpdater : List MediaType -> List MediaType
+                        mediaUpdater =
                             List.Extra.updateIf
-                                (\b -> b.sourceId == consumption.sourceId)
-                                (\b -> { b | status = Success consumption.status })
+                                (\b -> Media.getSourceId b == consumption.sourceId)
+                                (Media.setMediaStatus (Success consumption.status))
 
                         newBooks =
-                            RemoteData.map bookUpdater model.books
+                            RemoteData.map mediaUpdater model.searchResults
                     in
-                    ( { model | books = newBooks }
+                    ( { model | searchResults = newBooks }
                     , Cmd.none
                     )
 
@@ -107,17 +117,25 @@ searchBooks : String -> Cmd Msg
 searchBooks titleString =
     Http.get
         { url = "http://localhost:5000/books?title=" ++ titleString
-        , expect = Http.expectJson BooksResponse (Decode.list Book.decoder)
+        , expect = Http.expectJson BookResponse (Decode.list (Media.bookToMediaDecoder Book.decoder))
         }
 
 
-addBookToProfile : Book -> Media.Status -> Cmd Msg
-addBookToProfile book status =
-    Http.post
-        { url = "http://localhost:5000/user/" ++ String.fromInt 1 ++ "/media/book"
-        , body = Http.jsonBody (Book.encoderWithStatus book status)
-        , expect = Http.expectJson BookAddedToProfile Media.consumptionDecoder
-        }
+addMediaToProfile : MediaType -> Consumption.Status -> Cmd Msg
+addMediaToProfile mediaType status =
+    case mediaType of
+        BookType book ->
+            Http.post
+                { url = "http://localhost:5000/user/" ++ String.fromInt 1 ++ "/media/book"
+                , body = Http.jsonBody (Book.encoderWithStatus book status)
+                , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
+                }
+
+        MovieType movie ->
+            Cmd.none
+
+        TVType tv ->
+            Cmd.none
 
 
 
@@ -158,7 +176,7 @@ body model =
         [ Html.div [ id "content-wrap" ]
             [ Html.form
                 [ class "book-searcher"
-                , onSubmit SearchBooks
+                , onSubmit SearchMedia
                 ]
                 [ Html.input
                     [ placeholder "book title or author"
@@ -171,54 +189,62 @@ body model =
                     [ Html.text "Find a book!" ]
                 ]
             , Html.div [ class "book-results" ]
-                [ viewBooks model.books ]
+                [ viewMedias model.searchResults ]
             ]
         ]
 
 
-viewBooks : WebData (List Book) -> Html Msg
-viewBooks receivedBooks =
-    case receivedBooks of
+viewMedias : WebData (List MediaType) -> Html Msg
+viewMedias receivedMedia =
+    case receivedMedia of
         NotAsked ->
-            Html.text "go ahead, search for a book!"
+            Html.text "go ahead, search!"
 
         Loading ->
-            Html.text "entering the book database!"
+            Html.text "entering the database!"
 
         Failure error ->
             -- TODO show better error!
             Html.text "something went wrong"
 
-        Success books ->
-            if List.isEmpty books then
+        Success media ->
+            if List.isEmpty media then
                 Html.text "no results..."
 
             else
                 Html.ul [ class "book-list" ]
-                    (List.map viewBook books)
+                    (List.map viewMediaType media)
 
 
-viewBook : Book -> Html Msg
-viewBook book =
-    Html.li []
-        [ Html.div [ class "media-card" ]
-            [ Html.div [ class "media-image" ] [ viewBookCover book.coverUrl ]
-            , Html.div [ class "media-info" ]
-                [ Html.b [] [ Html.text book.title ]
-                , Html.div []
-                    [ Html.text "by "
-                    , Html.text (String.join ", " book.authorNames)
+viewMediaType : MediaType -> Html Msg
+viewMediaType mediaType =
+    case mediaType of
+        BookType book ->
+            Html.li []
+                [ Html.div [ class "media-card" ]
+                    [ Html.div [ class "media-image" ] [ viewBookCover book.coverUrl ]
+                    , Html.div [ class "media-info" ]
+                        [ Html.b [] [ Html.text book.title ]
+                        , Html.div []
+                            [ Html.text "by "
+                            , Html.text (String.join ", " book.authorNames)
+                            ]
+                        , case book.publishYear of
+                            Just year ->
+                                Html.text <| "(" ++ String.fromInt year ++ ")"
+
+                            Nothing ->
+                                Html.text ""
+                        , viewBookDropdown book
+                        ]
                     ]
-                , case book.publishYear of
-                    Just year ->
-                        Html.text <| "(" ++ String.fromInt year ++ ")"
-
-                    Nothing ->
-                        Html.text ""
-                , viewBookDropdown book
                 ]
-            ]
-        ]
+
+        MovieType movie ->
+            Html.text "yes"
+
+        TVType tv ->
+            Html.text "no"
 
 
 viewBookDropdown : Book -> Html Msg
@@ -228,9 +254,9 @@ viewBookDropdown book =
             NotAsked ->
                 [ Html.button [ class "dropbtn" ] [ Html.text "Add Book >>" ]
                 , Html.div [ class "dropdown-content" ]
-                    [ Html.p [ Html.Events.onClick (AddBookToProfile book WantToConsume) ] [ Html.text "to read" ]
-                    , Html.p [ Html.Events.onClick (AddBookToProfile book Consuming) ] [ Html.text "reading" ]
-                    , Html.p [ Html.Events.onClick (AddBookToProfile book Finished) ] [ Html.text "read" ]
+                    [ Html.p [ Html.Events.onClick (AddMediaToProfile (BookType book) WantToConsume) ] [ Html.text "to read" ]
+                    , Html.p [ Html.Events.onClick (AddMediaToProfile (BookType book) Consuming) ] [ Html.text "reading" ]
+                    , Html.p [ Html.Events.onClick (AddMediaToProfile (BookType book) Finished) ] [ Html.text "read" ]
                     ]
                 ]
 

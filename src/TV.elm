@@ -1,8 +1,8 @@
 module TV exposing (TV, decoder, encoderWithStatus, statusAsString)
 
+import Consumption exposing (Status(..))
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
-import Media exposing (Status(..))
 import RemoteData exposing (RemoteData(..), WebData)
 
 
@@ -17,7 +17,7 @@ type alias TV =
     }
 
 
-statusAsString : Media.Status -> String
+statusAsString : Consumption.Status -> String
 statusAsString status =
     case status of
         WantToConsume ->
@@ -45,7 +45,7 @@ decoder =
         (Decode.succeed NotAsked)
 
 
-encoderWithStatus : TV -> Media.Status -> Encode.Value
+encoderWithStatus : TV -> Consumption.Status -> Encode.Value
 encoderWithStatus tv status =
     Encode.object
         [ ( "source", Encode.string tv.source )
@@ -54,5 +54,5 @@ encoderWithStatus tv status =
         , ( "networks", Encode.list Encode.string tv.networks )
         , ( "poster_url", Encode.string (Maybe.withDefault "" tv.posterUrl) )
         , ( "first_air_date", Encode.string tv.firstAirDate )
-        , ( "status", Media.statusEncoder status )
+        , ( "status", Consumption.statusEncoder status )
         ]

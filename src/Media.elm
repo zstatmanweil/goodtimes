@@ -1,81 +1,51 @@
 module Media exposing (..)
 
-import Book exposing (..)
+import Book exposing (Book)
+import Consumption exposing (Status)
 import Json.Decode as Decode exposing (Decoder)
-import Json.Encode as Encode exposing (Value)
-import Media
+import Movie exposing (Movie)
+import RemoteData exposing (WebData)
+import TV exposing (TV)
 
 
-type Media
-    = Book
-    | TV
-    | Movie
+type MediaSelection
+    = BookSelection
+    | TVSelection
+    | MovieSelection
 
 
-type Status
-    = WantToConsume
-    | Consuming
-    | Finished
-    | Abandoned
+type MediaType
+    = BookType Book
+    | TVType TV
+    | MovieType Movie
 
 
-statusDecoder : Decoder Status
-statusDecoder =
-    Decode.string
-        |> Decode.andThen stringToStatusDecoder
+bookToMediaDecoder : Decoder Book -> Decoder MediaType
+bookToMediaDecoder maybeBook =
+    Decode.map BookType maybeBook
 
 
-stringToStatusDecoder : String -> Decoder Status
-stringToStatusDecoder string =
-    case string of
-        "want to consume" ->
-            Decode.succeed WantToConsume
+setMediaStatus : WebData Status -> MediaType -> MediaType
+setMediaStatus status mediaType =
+    case mediaType of
+        BookType book ->
+            BookType { book | status = status }
 
-        "consuming" ->
-            Decode.succeed Consuming
+        MovieType movie ->
+            MovieType { movie | status = status }
 
-        "finished" ->
-            Decode.succeed Finished
-
-        "abandoned" ->
-            Decode.succeed Abandoned
-
-        invalidString ->
-            Decode.fail (invalidString ++ " is not a valid Status")
+        TVType tv ->
+            TVType { tv | status = status }
 
 
-statusEncoder : Status -> Value
-statusEncoder status =
-    case status of
-        WantToConsume ->
-            Encode.string "want to consume"
+getSourceId : MediaType -> String
+getSourceId mediaType =
+    case mediaType of
+        BookType book ->
+            book.sourceId
 
-        Consuming ->
-            Encode.string "consuming"
+        MovieType movie ->
+            movie.sourceId
 
-        Finished ->
-            Encode.string "finished"
-
-        Abandoned ->
-            Encode.string "abandoned"
-
-
-type alias Consumption =
-    { userId : Int
-    , sourceId : String
-    , mediaType : String
-    , mediaId : Int
-    , status : Media.Status
-    , created : String
-    }
-
-
-consumptionDecoder : Decoder Consumption
-consumptionDecoder =
-    Decode.map6 Consumption
-        (Decode.field "user_id" Decode.int)
-        (Decode.field "source_id" Decode.string)
-        (Decode.field "media_type" Decode.string)
-        (Decode.field "media_id" Decode.int)
-        (Decode.field "status" Media.statusDecoder)
-        (Decode.field "created" Decode.string)
+        TVType tv ->
+            tv.sourceId

@@ -1,8 +1,8 @@
-module Book exposing (Book, decoder, encoderWithStatus, statusAsString)
+module Book exposing (..)
 
+import Consumption exposing (..)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
-import Media exposing (Status(..))
 import RemoteData exposing (RemoteData(..), WebData)
 
 
@@ -13,11 +13,11 @@ type alias Book =
     , authorNames : List String
     , publishYear : Maybe Int
     , coverUrl : Maybe String
-    , status : WebData Media.Status
+    , status : WebData Consumption.Status
     }
 
 
-statusAsString : Media.Status -> String
+statusAsString : Consumption.Status -> String
 statusAsString status =
     case status of
         WantToConsume ->
@@ -45,7 +45,7 @@ decoder =
         (Decode.succeed NotAsked)
 
 
-encoderWithStatus : Book -> Media.Status -> Encode.Value
+encoderWithStatus : Book -> Consumption.Status -> Encode.Value
 encoderWithStatus book status =
     Encode.object
         [ ( "title", Encode.string book.title )
@@ -54,5 +54,5 @@ encoderWithStatus book status =
         , ( "author_names", Encode.list Encode.string book.authorNames )
         , ( "publish_year", Encode.int (Maybe.withDefault 0 book.publishYear) )
         , ( "cover_url", Encode.string (Maybe.withDefault "" book.coverUrl) ) -- should we pass in None? or just empty string?
-        , ( "status", Media.statusEncoder status )
+        , ( "status", Consumption.statusEncoder status )
         ]
