@@ -32,7 +32,7 @@ class TMDB:
     def movie_from_tmdb_result(self, result: Dict) -> Movie:
         clean_result = {}
 
-        clean_result['source_id'] = result.get('id', None)
+        clean_result['source_id'] = str(result.get('id', None))
         clean_result['source'] = 'tmdb'
         clean_result['title'] = result.get('title', None).title()
         clean_result['release_date'] = datetime.strptime(result.get('release_date'), '%Y-%m-%d').date() if result.get('release_date') else None
@@ -60,7 +60,7 @@ class TMDB:
 
         id = result.get('id', None)
 
-        clean_result['source_id'] = id
+        clean_result['source_id'] = str(id)
         clean_result['source'] = 'tmdb'
         clean_result['title'] = result.get('name', None).title()
         clean_result['first_air_date'] = datetime.strptime(result.get('first_air_date'), '%Y-%m-%d').date() if result.get('first_air_date') else None

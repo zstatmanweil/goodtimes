@@ -10,7 +10,9 @@ import Http
 import Json.Decode as Decode exposing (Decoder)
 import List.Extra
 import Media exposing (..)
+import Movie exposing (..)
 import RemoteData exposing (RemoteData(..), WebData)
+import TV exposing (..)
 
 
 main =
@@ -37,7 +39,7 @@ type Msg
     = None
     | SearchMedia
     | UpdateQuery String
-    | BookResponse (Result Http.Error (List MediaType))
+    | MediaResponse (Result Http.Error (List MediaType))
     | AddMediaToProfile MediaType Consumption.Status
     | MediaAddedToProfile (Result Http.Error Consumption)
 
@@ -45,7 +47,7 @@ type Msg
 init : () -> ( Model, Cmd Msg )
 init flags =
     ( { searchResults = NotAsked
-      , selectedMediaType = BookSelection
+      , selectedMediaType = TVSelection
       , query = ""
       }
     , Cmd.none
@@ -63,13 +65,19 @@ update msg model =
             if model.selectedMediaType == BookSelection then
                 ( model, searchBooks model.query )
 
+            else if model.selectedMediaType == MovieSelection then
+                ( model, searchMovies model.query )
+
+            else if model.selectedMediaType == TVSelection then
+                ( model, searchTV model.query )
+
             else
                 ( model, Cmd.none )
 
-        BookResponse bookResponse ->
+        MediaResponse mediaResponse ->
             let
                 receivedMedia =
-                    RemoteData.fromResult bookResponse
+                    RemoteData.fromResult mediaResponse
             in
             ( { model | searchResults = receivedMedia }, Cmd.none )
 
@@ -117,7 +125,23 @@ searchBooks : String -> Cmd Msg
 searchBooks titleString =
     Http.get
         { url = "http://localhost:5000/books?title=" ++ titleString
-        , expect = Http.expectJson BookResponse (Decode.list (Media.bookToMediaDecoder Book.decoder))
+        , expect = Http.expectJson MediaResponse (Decode.list (Media.bookToMediaDecoder Book.decoder))
+        }
+
+
+searchMovies : String -> Cmd Msg
+searchMovies titleString =
+    Http.get
+        { url = "http://localhost:5000/movies?title=" ++ titleString
+        , expect = Http.expectJson MediaResponse (Decode.list (Media.movieToMediaDecoder Movie.decoder))
+        }
+
+
+searchTV : String -> Cmd Msg
+searchTV titleString =
+    Http.get
+        { url = "http://localhost:5000/tv?title=" ++ titleString
+        , expect = Http.expectJson MediaResponse (Decode.list (Media.tvToMediaDecoder TV.decoder))
         }
 
 
@@ -132,10 +156,18 @@ addMediaToProfile mediaType status =
                 }
 
         MovieType movie ->
-            Cmd.none
+            Http.post
+                { url = "http://localhost:5000/user/" ++ String.fromInt 1 ++ "/media/movie"
+                , body = Http.jsonBody (Movie.encoderWithStatus movie status)
+                , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
+                }
 
         TVType tv ->
-            Cmd.none
+            Http.post
+                { url = "http://localhost:5000/user/" ++ String.fromInt 1 ++ "/media/tv"
+                , body = Http.jsonBody (TV.encoderWithStatus tv status)
+                , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
+                }
 
 
 
@@ -175,20 +207,20 @@ body model =
     Html.main_ [ class "content" ]
         [ Html.div [ id "content-wrap" ]
             [ Html.form
-                [ class "book-searcher"
+                [ class "media-searcher"
                 , onSubmit SearchMedia
                 ]
                 [ Html.input
-                    [ placeholder "book title or author"
+                    [ placeholder "title or author"
                     , Attr.value model.query
                     , Html.Events.onInput UpdateQuery
                     ]
                     []
                 , Html.button
                     [ Attr.disabled <| String.isEmpty model.query ]
-                    [ Html.text "Find a book!" ]
+                    [ Html.text "Search!" ]
                 ]
-            , Html.div [ class "book-results" ]
+            , Html.div [ class "media-results" ]
                 [ viewMedias model.searchResults ]
             ]
         ]
@@ -222,7 +254,7 @@ viewMediaType mediaType =
         BookType book ->
             Html.li []
                 [ Html.div [ class "media-card" ]
-                    [ Html.div [ class "media-image" ] [ viewBookCover book.coverUrl ]
+                    [ Html.div [ class "media-image" ] [ viewMediaCover book.coverUrl ]
                     , Html.div [ class "media-info" ]
                         [ Html.b [] [ Html.text book.title ]
                         , Html.div []
@@ -235,30 +267,68 @@ viewMediaType mediaType =
 
                             Nothing ->
                                 Html.text ""
-                        , viewBookDropdown book
+                        , viewMediaDropdown (BookType book)
                         ]
                     ]
                 ]
 
         MovieType movie ->
-            Html.text "yes"
-
-        TVType tv ->
-            Html.text "no"
-
-
-viewBookDropdown : Book -> Html Msg
-viewBookDropdown book =
-    Html.div [ class "dropdown" ] <|
-        case book.status of
-            NotAsked ->
-                [ Html.button [ class "dropbtn" ] [ Html.text "Add Book >>" ]
-                , Html.div [ class "dropdown-content" ]
-                    [ Html.p [ Html.Events.onClick (AddMediaToProfile (BookType book) WantToConsume) ] [ Html.text "to read" ]
-                    , Html.p [ Html.Events.onClick (AddMediaToProfile (BookType book) Consuming) ] [ Html.text "reading" ]
-                    , Html.p [ Html.Events.onClick (AddMediaToProfile (BookType book) Finished) ] [ Html.text "read" ]
+            Html.li []
+                [ Html.div [ class "media-card" ]
+                    [ Html.div [ class "media-image" ] [ viewMediaCover movie.posterUrl ]
+                    , Html.div [ class "media-info" ]
+                        [ Html.b [] [ Html.text movie.title ]
+                        , Html.text <| "(" ++ movie.releaseDate ++ ")"
+                        , viewMediaDropdown (MovieType movie)
+                        ]
                     ]
                 ]
+
+        TVType tv ->
+            Html.li []
+                [ Html.div [ class "media-card" ]
+                    [ Html.div [ class "media-image" ] [ viewMediaCover tv.posterUrl ]
+                    , Html.div [ class "media-info" ]
+                        [ Html.b [] [ Html.text tv.title ]
+                        , Html.text <| "(" ++ tv.firstAirDate ++ ")"
+                        , viewMediaDropdown (TVType tv)
+                        ]
+                    ]
+                ]
+
+
+viewMediaDropdown : MediaType -> Html Msg
+viewMediaDropdown mediaType =
+    Html.div [ class "dropdown" ] <|
+        case getMediaStatus mediaType of
+            NotAsked ->
+                case mediaType of
+                    BookType book ->
+                        [ Html.button [ class "dropbtn" ] [ Html.text "Add Book >>" ]
+                        , Html.div [ class "dropdown-content" ]
+                            [ Html.p [ Html.Events.onClick (AddMediaToProfile (BookType book) WantToConsume) ] [ Html.text "to read" ]
+                            , Html.p [ Html.Events.onClick (AddMediaToProfile (BookType book) Consuming) ] [ Html.text "reading" ]
+                            , Html.p [ Html.Events.onClick (AddMediaToProfile (BookType book) Finished) ] [ Html.text "read" ]
+                            ]
+                        ]
+
+                    MovieType movie ->
+                        [ Html.button [ class "dropbtn" ] [ Html.text "Add Movie >>" ]
+                        , Html.div [ class "dropdown-content" ]
+                            [ Html.p [ Html.Events.onClick (AddMediaToProfile (MovieType movie) WantToConsume) ] [ Html.text "to watch" ]
+                            , Html.p [ Html.Events.onClick (AddMediaToProfile (MovieType movie) Consuming) ] [ Html.text "watching" ]
+                            , Html.p [ Html.Events.onClick (AddMediaToProfile (MovieType movie) Finished) ] [ Html.text "watched" ]
+                            ]
+                        ]
+
+                    TVType tv ->
+                        [ Html.button [ class "dropbtn" ] [ Html.text "Add TV Show >>" ]
+                        , Html.div [ class "dropdown-content" ]
+                            [ Html.p [ Html.Events.onClick (AddMediaToProfile (TVType tv) WantToConsume) ] [ Html.text "to watch" ]
+                            , Html.p [ Html.Events.onClick (AddMediaToProfile (TVType tv) Consuming) ] [ Html.text "watching" ]
+                            , Html.p [ Html.Events.onClick (AddMediaToProfile (TVType tv) Finished) ] [ Html.text "watched" ]
+                            ]
+                        ]
 
             Loading ->
                 [ Html.text "..." ]
@@ -270,8 +340,8 @@ viewBookDropdown book =
                 [ Html.text (Book.statusAsString status) ]
 
 
-viewBookCover : Maybe String -> Html Msg
-viewBookCover maybeCoverUrl =
+viewMediaCover : Maybe String -> Html Msg
+viewMediaCover maybeCoverUrl =
     case maybeCoverUrl of
         Just srcUrl ->
             Html.img

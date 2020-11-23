@@ -19,7 +19,7 @@ class Movie:
         mapper_registry.metadata,
         sa.Column('id', sa.Integer, primary_key=True),
         sa.Column('source', sa.String(50)),
-        sa.Column('source_id', sa.Integer),
+        sa.Column('source_id', sa.String(50)),
         sa.Column('title', sa.String(200)),
         sa.Column('poster_url', sa.String(100)),
         sa.Column('release_date', sa.Date)

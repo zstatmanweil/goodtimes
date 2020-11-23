@@ -11,7 +11,7 @@ type alias Movie =
     , sourceId : String
     , title : String
     , posterUrl : Maybe String
-    , firstAirDate : String
+    , releaseDate : String
     , status : WebData Status
     }
 
@@ -39,7 +39,7 @@ decoder =
         (Decode.field "source_id" Decode.string)
         (Decode.field "title" Decode.string)
         (Decode.field "poster_url" (Decode.nullable Decode.string))
-        (Decode.field "first_air_date" Decode.string)
+        (Decode.field "release_date" Decode.string)
         (Decode.succeed NotAsked)
 
 
@@ -50,6 +50,6 @@ encoderWithStatus movie status =
         , ( "source_id", Encode.string movie.sourceId )
         , ( "title", Encode.string movie.title )
         , ( "poster_url", Encode.string (Maybe.withDefault "" movie.posterUrl) )
-        , ( "first_air_date", Encode.string movie.firstAirDate )
+        , ( "release_date", Encode.string movie.releaseDate )
         , ( "status", Consumption.statusEncoder status )
         ]

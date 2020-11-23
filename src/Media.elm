@@ -25,6 +25,16 @@ bookToMediaDecoder maybeBook =
     Decode.map BookType maybeBook
 
 
+movieToMediaDecoder : Decoder Movie -> Decoder MediaType
+movieToMediaDecoder maybeMovie =
+    Decode.map MovieType maybeMovie
+
+
+tvToMediaDecoder : Decoder TV -> Decoder MediaType
+tvToMediaDecoder maybeTV =
+    Decode.map TVType maybeTV
+
+
 setMediaStatus : WebData Status -> MediaType -> MediaType
 setMediaStatus status mediaType =
     case mediaType of
@@ -36,6 +46,19 @@ setMediaStatus status mediaType =
 
         TVType tv ->
             TVType { tv | status = status }
+
+
+getMediaStatus : MediaType -> WebData Status
+getMediaStatus mediaType =
+    case mediaType of
+        BookType book ->
+            book.status
+
+        MovieType movie ->
+            movie.status
+
+        TVType tv ->
+            tv.status
 
 
 getSourceId : MediaType -> String
