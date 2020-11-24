@@ -339,29 +339,17 @@ viewMediaDropdown mediaType =
                 case mediaType of
                     BookType book ->
                         [ Html.button [ class "dropbtn" ] [ Html.text "Add Book >>" ]
-                        , Html.div [ class "dropdown-content" ]
-                            [ Html.p [ Html.Events.onClick (AddMediaToProfile (BookType book) WantToConsume) ] [ Html.text "to read" ]
-                            , Html.p [ Html.Events.onClick (AddMediaToProfile (BookType book) Consuming) ] [ Html.text "reading" ]
-                            , Html.p [ Html.Events.onClick (AddMediaToProfile (BookType book) Finished) ] [ Html.text "read" ]
-                            ]
+                        , viewDropdownContent (BookType book) "to read" "reading" "read"
                         ]
 
                     MovieType movie ->
                         [ Html.button [ class "dropbtn" ] [ Html.text "Add Movie >>" ]
-                        , Html.div [ class "dropdown-content" ]
-                            [ Html.p [ Html.Events.onClick (AddMediaToProfile (MovieType movie) WantToConsume) ] [ Html.text "to watch" ]
-                            , Html.p [ Html.Events.onClick (AddMediaToProfile (MovieType movie) Consuming) ] [ Html.text "watching" ]
-                            , Html.p [ Html.Events.onClick (AddMediaToProfile (MovieType movie) Finished) ] [ Html.text "watched" ]
-                            ]
+                        , viewDropdownContent (MovieType movie) "to read" "reading" "read"
                         ]
 
                     TVType tv ->
                         [ Html.button [ class "dropbtn" ] [ Html.text "Add TV Show >>" ]
-                        , Html.div [ class "dropdown-content" ]
-                            [ Html.p [ Html.Events.onClick (AddMediaToProfile (TVType tv) WantToConsume) ] [ Html.text "to watch" ]
-                            , Html.p [ Html.Events.onClick (AddMediaToProfile (TVType tv) Consuming) ] [ Html.text "watching" ]
-                            , Html.p [ Html.Events.onClick (AddMediaToProfile (TVType tv) Finished) ] [ Html.text "watched" ]
-                            ]
+                        , viewDropdownContent (TVType tv) "to read" "reading" "read"
                         ]
 
             Loading ->
@@ -372,6 +360,15 @@ viewMediaDropdown mediaType =
 
             Success status ->
                 [ Html.text (Book.statusAsString status) ]
+
+
+viewDropdownContent : MediaType -> String -> String -> String -> Html Msg
+viewDropdownContent mediaType wantToConsume consuming finished =
+    Html.div [ class "dropdown-content" ]
+        [ Html.p [ Html.Events.onClick (AddMediaToProfile mediaType WantToConsume) ] [ Html.text wantToConsume ]
+        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Consuming) ] [ Html.text consuming ]
+        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Finished) ] [ Html.text finished ]
+        ]
 
 
 viewMediaCover : Maybe String -> Html Msg
