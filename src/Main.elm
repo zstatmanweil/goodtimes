@@ -4,7 +4,7 @@ import Book exposing (..)
 import Browser
 import Consumption exposing (..)
 import Html exposing (Attribute, Html)
-import Html.Attributes as Attr exposing (class, id, placeholder)
+import Html.Attributes as Attr exposing (class, id, placeholder, type_)
 import Html.Events
 import Http
 import Json.Decode as Decode exposing (Decoder)
@@ -39,6 +39,7 @@ type Msg
     = None
     | SearchMedia
     | UpdateQuery String
+    | UpdateMediaSelection MediaSelection
     | MediaResponse (Result Http.Error (List MediaType))
     | AddMediaToProfile MediaType Consumption.Status
     | MediaAddedToProfile (Result Http.Error Consumption)
@@ -47,7 +48,7 @@ type Msg
 init : () -> ( Model, Cmd Msg )
 init flags =
     ( { searchResults = NotAsked
-      , selectedMediaType = TVSelection
+      , selectedMediaType = NoSelection
       , query = ""
       }
     , Cmd.none
@@ -83,6 +84,9 @@ update msg model =
 
         UpdateQuery newString ->
             ( { model | query = newString }, Cmd.none )
+
+        UpdateMediaSelection mediaSelection ->
+            ( { model | selectedMediaType = mediaSelection }, Cmd.none )
 
         AddMediaToProfile mediaType status ->
             let
@@ -211,7 +215,18 @@ body model =
                 , onSubmit SearchMedia
                 ]
                 [ Html.input
-                    [ placeholder "title or author"
+                    [ case model.selectedMediaType of
+                        NoSelection ->
+                            placeholder "select a media type"
+
+                        BookSelection ->
+                            placeholder "book title or author"
+
+                        MovieSelection ->
+                            placeholder "title"
+
+                        TVSelection ->
+                            placeholder "title"
                     , Attr.value model.query
                     , Html.Events.onInput UpdateQuery
                     ]
@@ -219,6 +234,20 @@ body model =
                 , Html.button
                     [ Attr.disabled <| String.isEmpty model.query ]
                     [ Html.text "Search!" ]
+                ]
+            , Html.div [ class "media-selector" ]
+                [ Html.label []
+                    [ Html.input [ type_ "radio", Attr.name "media", Attr.value "books", Html.Events.onClick (UpdateMediaSelection BookSelection) ] []
+                    , Html.text "books"
+                    ]
+                , Html.label []
+                    [ Html.input [ type_ "radio", Attr.name "media", Attr.value "movies", Html.Events.onClick (UpdateMediaSelection MovieSelection) ] []
+                    , Html.text "movies"
+                    ]
+                , Html.label []
+                    [ Html.input [ type_ "radio", Attr.name "media", Attr.value "tv", Html.Events.onClick (UpdateMediaSelection TVSelection) ] []
+                    , Html.text "tv shows"
+                    ]
                 ]
             , Html.div [ class "media-results" ]
                 [ viewMedias model.searchResults ]
@@ -290,7 +319,12 @@ viewMediaType mediaType =
                     [ Html.div [ class "media-image" ] [ viewMediaCover tv.posterUrl ]
                     , Html.div [ class "media-info" ]
                         [ Html.b [] [ Html.text tv.title ]
-                        , Html.text <| "(" ++ tv.firstAirDate ++ ")"
+                        , case tv.firstAirDate of
+                            Just date ->
+                                Html.text <| "(" ++ date ++ ")"
+
+                            Nothing ->
+                                Html.text ""
                         , viewMediaDropdown (TVType tv)
                         ]
                     ]

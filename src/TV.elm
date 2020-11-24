@@ -12,7 +12,7 @@ type alias TV =
     , title : String
     , networks : List String
     , posterUrl : Maybe String
-    , firstAirDate : String
+    , firstAirDate : Maybe String
     , status : WebData Status
     }
 
@@ -41,7 +41,7 @@ decoder =
         (Decode.field "title" Decode.string)
         (Decode.field "networks" (Decode.list Decode.string))
         (Decode.field "poster_url" (Decode.nullable Decode.string))
-        (Decode.field "first_air_date" Decode.string)
+        (Decode.field "first_air_date" (Decode.nullable Decode.string))
         (Decode.succeed NotAsked)
 
 
@@ -53,6 +53,6 @@ encoderWithStatus tv status =
         , ( "title", Encode.string tv.title )
         , ( "networks", Encode.list Encode.string tv.networks )
         , ( "poster_url", Encode.string (Maybe.withDefault "" tv.posterUrl) )
-        , ( "first_air_date", Encode.string tv.firstAirDate )
+        , ( "first_air_date", Encode.string (Maybe.withDefault "unknown" tv.firstAirDate) )
         , ( "status", Consumption.statusEncoder status )
         ]

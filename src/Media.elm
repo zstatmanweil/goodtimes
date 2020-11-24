@@ -12,6 +12,7 @@ type MediaSelection
     = BookSelection
     | TVSelection
     | MovieSelection
+    | NoSelection
 
 
 type MediaType

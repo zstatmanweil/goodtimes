@@ -37,6 +37,13 @@
     .media-results {
         padding: 8px;
     }
+
+    .media-selector {
+        padding-left: 4px;
+        padding-bottom: 8px;
+        background-color: theme.color('primary', 'light');
+        color: theme.color('scale', 'light');
+    }
 }
 
 
