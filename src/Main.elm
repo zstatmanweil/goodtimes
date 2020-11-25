@@ -344,12 +344,12 @@ viewMediaDropdown mediaType =
 
                     MovieType movie ->
                         [ Html.button [ class "dropbtn" ] [ Html.text "Add Movie >>" ]
-                        , viewDropdownContent (MovieType movie) "to read" "reading" "read"
+                        , viewDropdownContent (MovieType movie) "to watch" "watching" "watched"
                         ]
 
                     TVType tv ->
                         [ Html.button [ class "dropbtn" ] [ Html.text "Add TV Show >>" ]
-                        , viewDropdownContent (TVType tv) "to read" "reading" "read"
+                        , viewDropdownContent (TVType tv) "to watch" "watching" "watched"
                         ]
 
             Loading ->

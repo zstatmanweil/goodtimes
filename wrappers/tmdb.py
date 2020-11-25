@@ -62,7 +62,7 @@ class TMDB:
 
         clean_result['source_id'] = str(id)
         clean_result['source'] = 'tmdb'
-        clean_result['title'] = result.get('name', None).title()
+        clean_result['title'] = result.get('name', None)
         clean_result['first_air_date'] = datetime.strptime(result.get('first_air_date'), '%Y-%m-%d').date() if result.get('first_air_date') else None
         clean_result['poster_url'] = f"{self.poster_cover_uri}{result.get('poster_path')}" if result.get('poster_path') else None
         clean_result['networks'] = self.get_tv_network_by_id(id)

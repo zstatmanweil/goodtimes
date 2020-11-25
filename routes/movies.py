@@ -1,6 +1,7 @@
 from datetime import date
-from flask import jsonify, request, Blueprint
+from flask import request, Blueprint
 
+from models.movies import Movie
 from wrappers.tmdb import TMDB
 
 movies = Blueprint("movies", __name__)
@@ -13,4 +14,5 @@ def search_movies():
 
     tmdb = TMDB()
     result = tmdb.get_movies_by_title(title)
-    return jsonify(sorted(result, key=lambda m: date(1900, 1, 1) if not m.release_date else m.release_date, reverse=True))
+    result = sorted(result, key=lambda m: date(1900, 1, 1) if not m.release_date else m.release_date, reverse=True)
+    return Movie.schema().dumps(result, many=True)

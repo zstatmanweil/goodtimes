@@ -3,7 +3,8 @@ from dataclasses import field
 from datetime import date
 from typing import List, Optional
 
-from dataclasses_json import dataclass_json
+from dataclasses_json import dataclass_json, config
+from marshmallow import fields
 import sqlalchemy as sa
 from sqlalchemy.orm import registry
 
@@ -31,5 +32,12 @@ class TV:
     source: str
     title: str
     networks: List[str]
-    poster_url: Optional[str] = None
-    first_air_date: Optional[date] = None
+    poster_url: Optional[str]
+    first_air_date: Optional[date] = field(
+        metadata=config(
+            encoder=date.isoformat,
+            decoder=lambda x: date.fromisoformat(str(x)) if x is not None else None,
+            mm_field=fields.Date(format='iso')
+        )
+    )
+

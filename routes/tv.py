@@ -2,6 +2,7 @@ from datetime import date
 
 from flask import jsonify, request, Blueprint
 
+from models.tv import TV
 from wrappers.tmdb import TMDB
 
 tv = Blueprint("tv", __name__)
@@ -14,4 +15,5 @@ def search_tv():
 
     tmdb = TMDB()
     result = tmdb.get_tv_by_title(title)
-    return jsonify(sorted(result, key=lambda m: date(1900, 1, 1) if not m.first_air_date else m.first_air_date, reverse=True))
+    result = sorted(result, key=lambda m: date(1900, 1, 1) if not m.first_air_date else m.first_air_date, reverse=True)
+    return TV.schema().dumps(result, many=True)
