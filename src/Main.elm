@@ -223,10 +223,10 @@ body model =
                             placeholder "book title or author"
 
                         MovieSelection ->
-                            placeholder "title"
+                            placeholder "movie title"
 
                         TVSelection ->
-                            placeholder "title"
+                            placeholder "tv title"
                     , Attr.value model.query
                     , Html.Events.onInput UpdateQuery
                     ]
@@ -359,7 +359,15 @@ viewMediaDropdown mediaType =
                 [ Html.text "Something went wrong" ]
 
             Success status ->
-                [ Html.text (Book.statusAsString status) ]
+                case mediaType of
+                    BookType book ->
+                        [ Html.text (Book.statusAsString status) ]
+
+                    MovieType movie ->
+                        [ Html.text (Movie.statusAsString status) ]
+
+                    TVType tv ->
+                        [ Html.text (TV.statusAsString status) ]
 
 
 viewDropdownContent : MediaType -> String -> String -> String -> Html Msg
