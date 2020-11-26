@@ -5,7 +5,7 @@ from flask import current_app, jsonify, request, Blueprint
 import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker
 
-from models.user import ConsumptionStatus, Consumption
+from models.user import ConsumptionStatus, Consumption, User
 from db.helpers import MEDIAS, get_consumption_records
 
 config = ConfigFactory.parse_file('config/config')
@@ -14,7 +14,12 @@ user = Blueprint("user", __name__)
 engine = sa.create_engine(config.postgres_db, echo=True)
 Session = sessionmaker(bind=engine)
 
+@user.route("/user/<int:user_id>", methods=["GET"])
+def get_user(user_id):
+    session = Session()
+    user = session.query(User).filter_by(id=user_id).first()
 
+    return user.to_json()
 
 @user.route("/user/<int:user_id>/media/<media_type>", methods=["POST"])
 def add_media(user_id, media_type):
