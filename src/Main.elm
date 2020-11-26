@@ -4,7 +4,7 @@ import Browser exposing (..)
 import Browser.Navigation as Nav
 import Html exposing (Html)
 import Page.Search as Search
-import Page.User as User
+import Page.UserProfile as UserProfile
 import Skeleton
 import Url
 
@@ -35,7 +35,7 @@ type alias Model =
 type Page
     = NotFound
     | Search Search.Model
-    | User User.Model
+    | UserProfile UserProfile.Model
 
 
 
@@ -46,7 +46,7 @@ init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init _ url key =
     ( { url = url
       , key = key
-      , page = User (Tuple.first (User.init ()))
+      , page = UserProfile (Tuple.first (UserProfile.init ()))
       }
     , Cmd.none
     )
@@ -69,8 +69,8 @@ view model =
         Search search ->
             Skeleton.view SearchMsg (Search.view search)
 
-        User user ->
-            Skeleton.view UserMsg (User.view user)
+        UserProfile user ->
+            Skeleton.view UserProfileMsg (UserProfile.view user)
 
 
 
@@ -82,7 +82,7 @@ type Msg
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | SearchMsg Search.Msg
-    | UserMsg User.Msg
+    | UserProfileMsg UserProfile.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -109,10 +109,10 @@ update msg model =
                 _ ->
                     ( model, Cmd.none )
 
-        UserMsg msge ->
+        UserProfileMsg msge ->
             case model.page of
-                User user ->
-                    stepUser model (User.update msge user)
+                UserProfile user ->
+                    stepUser model (UserProfile.update msge user)
 
                 _ ->
                     ( model, Cmd.none )
@@ -132,10 +132,10 @@ stepSearch model ( search, cmds ) =
     )
 
 
-stepUser : Model -> ( User.Model, Cmd User.Msg ) -> ( Model, Cmd Msg )
+stepUser : Model -> ( UserProfile.Model, Cmd UserProfile.Msg ) -> ( Model, Cmd Msg )
 stepUser model ( user, cmds ) =
-    ( { model | page = User user }
-    , Cmd.map UserMsg cmds
+    ( { model | page = UserProfile user }
+    , Cmd.map UserProfileMsg cmds
     )
 
 

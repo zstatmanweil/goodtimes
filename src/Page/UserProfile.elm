@@ -1,4 +1,4 @@
-module Page.User exposing (..)
+module Page.UserProfile exposing (..)
 
 import Book
 import Html exposing (Attribute, Html)
@@ -11,6 +11,7 @@ import Movie
 import RemoteData exposing (RemoteData(..), WebData)
 import Skeleton
 import TV
+import User
 
 
 
@@ -18,7 +19,8 @@ import TV
 
 
 type alias Model =
-    { searchResults : WebData (List MediaType)
+    { user : User.User
+    , searchResults : WebData (List MediaType)
     , selectedMediaType : MediaSelection
     }
 
@@ -27,14 +29,16 @@ type Msg
     = None
     | SearchUserMedia MediaSelection
     | MediaResponse (Result Http.Error (List MediaType))
+    | UserResponse (Result Http.Error User.User)
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( { searchResults = NotAsked
+    ( { user = User.User "" "" ""
+      , searchResults = NotAsked
       , selectedMediaType = NoSelection
       }
-    , Cmd.none
+    , getUser
     )
 
 
@@ -65,6 +69,15 @@ update msg model =
             in
             ( { model | searchResults = receivedMedia }, Cmd.none )
 
+        UserResponse userResponse ->
+            case userResponse of
+                Ok user ->
+                    ( { model | user = user }, Cmd.none )
+
+                -- TODO: handle error
+                Err resp ->
+                    ( model, Cmd.none )
+
         None ->
             ( model, Cmd.none )
 
@@ -93,6 +106,14 @@ searchUserTV =
         }
 
 
+getUser : Cmd Msg
+getUser =
+    Http.get
+        { url = "http://localhost:5000/user/1"
+        , expect = Http.expectJson UserResponse User.decoder
+        }
+
+
 view : Model -> Skeleton.Details Msg
 view model =
     { title = "User Profile"
@@ -109,7 +130,8 @@ body : Model -> Html Msg
 body model =
     Html.main_ [ class "content" ]
         [ Html.div [ id "content-wrap" ]
-            [ Html.div [ class "media-selector" ]
+            [ Html.div [ id "user-profile" ] [ Html.text ("Welcome" ++ model.user.username ++ "!") ]
+            , Html.div [ class "media-selector" ]
                 [ Html.label []
                     [ Html.input [ type_ "radio", Attr.name "media", Attr.value "books", Html.Events.onClick (SearchUserMedia BookSelection) ] []
                     , Html.text "books"
