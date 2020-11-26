@@ -1,7 +1,8 @@
 module Main exposing (..)
 
 import Book exposing (..)
-import Browser
+import Browser exposing (..)
+import Browser.Navigation as Nav
 import Consumption exposing (..)
 import Html exposing (Attribute, Html)
 import Html.Attributes as Attr exposing (class, id, placeholder, type_)
@@ -13,14 +14,18 @@ import Media exposing (..)
 import Movie exposing (..)
 import RemoteData exposing (RemoteData(..), WebData)
 import TV exposing (..)
+import Url
 
 
+main : Program () Model Msg
 main =
-    Browser.element
+    Browser.application
         { init = init
         , view = view
         , update = update
         , subscriptions = subscriptions
+        , onUrlChange = UrlChanged
+        , onUrlRequest = LinkClicked
         }
 
 
@@ -29,7 +34,9 @@ main =
 
 
 type alias Model =
-    { searchResults : WebData (List MediaType)
+    { key : Nav.Key
+    , url : Url.Url
+    , searchResults : WebData (List MediaType)
     , selectedMediaType : MediaSelection
     , query : String
     }
@@ -43,11 +50,15 @@ type Msg
     | MediaResponse (Result Http.Error (List MediaType))
     | AddMediaToProfile MediaType Consumption.Status
     | MediaAddedToProfile (Result Http.Error Consumption)
+    | LinkClicked Browser.UrlRequest
+    | UrlChanged Url.Url
 
 
-init : () -> ( Model, Cmd Msg )
-init flags =
-    ( { searchResults = NotAsked
+init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
+init flags url key =
+    ( { key = key
+      , url = url
+      , searchResults = NotAsked
       , selectedMediaType = NoSelection
       , query = ""
       }
@@ -121,6 +132,19 @@ update msg model =
                     -- TODO handle error!
                     ( model, Cmd.none )
 
+        LinkClicked urlRequest ->
+            case urlRequest of
+                Browser.Internal url ->
+                    ( model, Nav.pushUrl model.key (Url.toString url) )
+
+                Browser.External href ->
+                    ( model, Nav.load href )
+
+        UrlChanged url ->
+            ( { model | url = url }
+            , Cmd.none
+            )
+
         None ->
             ( model, Cmd.none )
 
@@ -178,13 +202,17 @@ addMediaToProfile mediaType status =
 -- View
 
 
-view : Model -> Html Msg
+view : Model -> Document Msg
 view model =
-    Html.div [ class "container", id "page-container" ]
-        [ header model
-        , body model
-        , Html.footer [ id "footer" ] [ footer model ]
+    { title = "good times"
+    , body =
+        [ Html.div [ class "container", id "page-container" ]
+            [ header model
+            , body model
+            , Html.footer [ id "footer" ] [ footer model ]
+            ]
         ]
+    }
 
 
 header : Model -> Html Msg
