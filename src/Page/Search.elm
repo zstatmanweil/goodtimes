@@ -16,7 +16,7 @@ import TV exposing (..)
 
 
 
--- Model
+-- MODEL
 
 
 type alias Model =
@@ -84,7 +84,7 @@ update msg model =
                 mediaUpdater =
                     List.Extra.updateIf
                         (\b -> b == mediaType)
-                        (Media.setMediaStatus Loading)
+                        (Media.setMediaStatus status)
 
                 newBooks =
                     RemoteData.map mediaUpdater model.searchResults
@@ -99,7 +99,7 @@ update msg model =
                         mediaUpdater =
                             List.Extra.updateIf
                                 (\b -> Media.getSourceId b == consumption.sourceId)
-                                (Media.setMediaStatus (Success consumption.status))
+                                (Media.setMediaStatus consumption.status)
 
                         newBooks =
                             RemoteData.map mediaUpdater model.searchResults
@@ -171,7 +171,7 @@ addMediaToProfile mediaType status =
 
 view : Model -> Skeleton.Details Msg
 view model =
-    { title = "Elm Packages"
+    { title = "Media Search"
     , attrs = []
     , kids =
         [ Html.div [ class "container", id "page-container" ]
@@ -309,39 +309,35 @@ viewMediaType mediaType =
 viewMediaDropdown : MediaType -> Html Msg
 viewMediaDropdown mediaType =
     Html.div [ class "dropdown" ] <|
-        case getMediaStatus mediaType of
-            NotAsked ->
-                case mediaType of
-                    BookType book ->
+        case mediaType of
+            BookType book ->
+                case book.status of
+                    Nothing ->
                         [ Html.button [ class "dropbtn" ] [ Html.text "Add Book >>" ]
                         , viewDropdownContent (BookType book) "to read" "reading" "read"
                         ]
 
-                    MovieType movie ->
+                    Just status ->
+                        [ Html.text (Book.statusAsString status) ]
+
+            MovieType movie ->
+                case movie.status of
+                    Nothing ->
                         [ Html.button [ class "dropbtn" ] [ Html.text "Add Movie >>" ]
                         , viewDropdownContent (MovieType movie) "to watch" "watching" "watched"
                         ]
 
-                    TVType tv ->
+                    Just status ->
+                        [ Html.text (Movie.statusAsString status) ]
+
+            TVType tv ->
+                case tv.status of
+                    Nothing ->
                         [ Html.button [ class "dropbtn" ] [ Html.text "Add TV Show >>" ]
                         , viewDropdownContent (TVType tv) "to watch" "watching" "watched"
                         ]
 
-            Loading ->
-                [ Html.text "..." ]
-
-            Failure _ ->
-                [ Html.text "Something went wrong" ]
-
-            Success status ->
-                case mediaType of
-                    BookType book ->
-                        [ Html.text (Book.statusAsString status) ]
-
-                    MovieType movie ->
-                        [ Html.text (Movie.statusAsString status) ]
-
-                    TVType tv ->
+                    Just status ->
                         [ Html.text (TV.statusAsString status) ]
 
 

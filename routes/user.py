@@ -78,7 +78,7 @@ def add_media(user_id, media_type):
 
 
 @user.route("/user/<int:user_id>/media/<media_type>", methods=["GET"])
-def add_book(user_id, media_type):
+def get_media(user_id, media_type):
     """
     Endpoint for getting all media associated with a given user.
     :param user_id:
@@ -91,9 +91,10 @@ def add_book(user_id, media_type):
     result = []
     for consumption, media in record_results:
         c = consumption.to_dict()
-        # Remove id and media_id associated with consumption as not necessary
-        c.pop('id'), c.pop('media_id')
-        c['media'] = media.to_dict()
+        # Remove id, media_id, and user_id associated with consumption as not necessary
+        # TODO: this is just temporary - need to figure out what to return
+        c.pop('id'), c.pop('media_id'), c.pop('user_id'), c.pop('media_type'), c.pop('created')
+        c.update(media.to_dict())
         result.append(c)
 
     return jsonify(result), 200

@@ -4,6 +4,7 @@ import Browser exposing (..)
 import Browser.Navigation as Nav
 import Html exposing (Html)
 import Page.Search as Search
+import Page.User as User
 import Skeleton
 import Url
 
@@ -34,6 +35,7 @@ type alias Model =
 type Page
     = NotFound
     | Search Search.Model
+    | User User.Model
 
 
 
@@ -44,7 +46,7 @@ init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init _ url key =
     ( { url = url
       , key = key
-      , page = Search (Tuple.first (Search.init ()))
+      , page = User (Tuple.first (User.init ()))
       }
     , Cmd.none
     )
@@ -67,6 +69,9 @@ view model =
         Search search ->
             Skeleton.view SearchMsg (Search.view search)
 
+        User user ->
+            Skeleton.view UserMsg (User.view user)
+
 
 
 -- UPDATE
@@ -77,6 +82,7 @@ type Msg
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | SearchMsg Search.Msg
+    | UserMsg User.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -103,6 +109,14 @@ update msg model =
                 _ ->
                     ( model, Cmd.none )
 
+        UserMsg msge ->
+            case model.page of
+                User user ->
+                    stepUser model (User.update msge user)
+
+                _ ->
+                    ( model, Cmd.none )
+
         None ->
             ( model, Cmd.none )
 
@@ -115,6 +129,13 @@ stepSearch : Model -> ( Search.Model, Cmd Search.Msg ) -> ( Model, Cmd Msg )
 stepSearch model ( search, cmds ) =
     ( { model | page = Search search }
     , Cmd.map SearchMsg cmds
+    )
+
+
+stepUser : Model -> ( User.Model, Cmd User.Msg ) -> ( Model, Cmd Msg )
+stepUser model ( user, cmds ) =
+    ( { model | page = User user }
+    , Cmd.map UserMsg cmds
     )
 
 

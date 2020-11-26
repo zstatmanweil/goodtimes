@@ -1,9 +1,8 @@
-module TV exposing (TV, decoder, encoderWithStatus, statusAsString)
+module TV exposing (TV, decoder, encoderWithStatus, maybeStatusAsString, statusAsString)
 
-import Consumption exposing (Status(..))
+import Consumption exposing (..)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
-import RemoteData exposing (RemoteData(..), WebData)
 
 
 type alias TV =
@@ -13,7 +12,7 @@ type alias TV =
     , networks : List String
     , posterUrl : Maybe String
     , firstAirDate : Maybe String
-    , status : WebData Status
+    , status : Maybe Consumption.Status
     }
 
 
@@ -24,13 +23,23 @@ statusAsString status =
             "want to watch"
 
         Consuming ->
-            "watching it now!"
+            "watching it now! why am I on good times while watching a movie?!"
 
         Finished ->
             "totally watched it!"
 
         Abandoned ->
-            "better luck next time"
+            "couldn't finish"
+
+
+maybeStatusAsString : Maybe Consumption.Status -> String
+maybeStatusAsString maybeStatus =
+    case maybeStatus of
+        Just status ->
+            statusAsString status
+
+        Nothing ->
+            "no status"
 
 
 decoder : Decoder TV
@@ -42,7 +51,7 @@ decoder =
         (Decode.field "networks" (Decode.list Decode.string))
         (Decode.field "poster_url" (Decode.nullable Decode.string))
         (Decode.field "first_air_date" (Decode.nullable Decode.string))
-        (Decode.succeed NotAsked)
+        (Decode.maybe (Decode.field "status" Consumption.statusDecoder))
 
 
 encoderWithStatus : TV -> Consumption.Status -> Encode.Value

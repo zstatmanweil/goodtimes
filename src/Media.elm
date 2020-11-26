@@ -4,7 +4,7 @@ import Book exposing (Book)
 import Consumption exposing (Status)
 import Json.Decode as Decode exposing (Decoder)
 import Movie exposing (Movie)
-import RemoteData exposing (WebData)
+import RemoteData exposing (RemoteData(..), WebData)
 import TV exposing (TV)
 
 
@@ -36,20 +36,20 @@ tvToMediaDecoder maybeTV =
     Decode.map TVType maybeTV
 
 
-setMediaStatus : WebData Status -> MediaType -> MediaType
+setMediaStatus : Consumption.Status -> MediaType -> MediaType
 setMediaStatus status mediaType =
     case mediaType of
         BookType book ->
-            BookType { book | status = status }
+            BookType { book | status = Just status }
 
         MovieType movie ->
-            MovieType { movie | status = status }
+            MovieType { movie | status = Just status }
 
         TVType tv ->
-            TVType { tv | status = status }
+            TVType { tv | status = Just status }
 
 
-getMediaStatus : MediaType -> WebData Status
+getMediaStatus : MediaType -> Maybe Consumption.Status
 getMediaStatus mediaType =
     case mediaType of
         BookType book ->
@@ -60,6 +60,32 @@ getMediaStatus mediaType =
 
         TVType tv ->
             tv.status
+
+
+
+--
+--getMediaStatusAsString : MediaType -> String
+--getMediaStatusAsString mediaType =
+--    case getMediaStatus mediaType of
+--        NotAsked ->
+--            "no status"
+--
+--        Loading ->
+--            "..."
+--
+--        Failure _ ->
+--            "Something went wrong"
+--
+--        Success status ->
+--            case mediaType of
+--                BookType _ ->
+--                    Book.statusAsString status
+--
+--                MovieType _ ->
+--                    Movie.statusAsString status
+--
+--                TVType _ ->
+--                    TV.statusAsString status
 
 
 getSourceId : MediaType -> String

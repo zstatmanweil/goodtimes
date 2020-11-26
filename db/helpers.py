@@ -25,9 +25,9 @@ def get_consumption_records(user_id: int, media_type: str, session: session) -> 
     """
     media_class = MEDIAS.get(media_type)
     # Get most recent record for each item in consumption table
-    subq = session.query(Consumption.media_id, Consumption.media_type,
+    subq = session.query(Consumption.user_id, Consumption.media_id, Consumption.media_type,
                          func.max(Consumption.created).label("max_created")) \
-        .group_by(Consumption.media_id, Consumption.media_type) \
+        .group_by(Consumption.user_id, Consumption.media_id, Consumption.media_type) \
         .subquery()
 
     # Get most recent consumption data for selected media for user

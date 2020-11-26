@@ -17,7 +17,7 @@ type alias Details msg =
 
 
 
--- View
+-- VIEW
 
 
 view : (a -> msg) -> Details a -> Document msg

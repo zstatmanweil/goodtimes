@@ -3,7 +3,6 @@ module Book exposing (..)
 import Consumption exposing (..)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
-import RemoteData exposing (RemoteData(..), WebData)
 
 
 type alias Book =
@@ -13,7 +12,7 @@ type alias Book =
     , authorNames : List String
     , publishYear : Maybe Int
     , coverUrl : Maybe String
-    , status : WebData Consumption.Status
+    , status : Maybe Consumption.Status
     }
 
 
@@ -33,6 +32,16 @@ statusAsString status =
             "better luck next time"
 
 
+maybeStatusAsString : Maybe Consumption.Status -> String
+maybeStatusAsString maybeStatus =
+    case maybeStatus of
+        Just status ->
+            statusAsString status
+
+        Nothing ->
+            "no status"
+
+
 decoder : Decoder Book
 decoder =
     Decode.map7 Book
@@ -42,7 +51,11 @@ decoder =
         (Decode.field "author_names" (Decode.list Decode.string))
         (Decode.field "publish_year" (Decode.nullable Decode.int))
         (Decode.field "cover_url" (Decode.nullable Decode.string))
-        (Decode.succeed NotAsked)
+        (Decode.maybe (Decode.field "status" Consumption.statusDecoder))
+
+
+
+--TODO: how do I make the default NotAsked but it able to decode a status if it exists?
 
 
 encoderWithStatus : Book -> Consumption.Status -> Encode.Value

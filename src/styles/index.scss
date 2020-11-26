@@ -59,11 +59,20 @@
     .media-image {
         width: 60px;
     }
+
     .media-info {
         display: flex;
         flex-direction: column;
         padding-left: 8px;
     }
+
+    .media-status {
+        display: flex;
+        flex-direction: column;
+        color: theme.color('primary', 'base');
+        top: 4px;
+        font-weight: bold
+        }
 }
 
 #page-container {

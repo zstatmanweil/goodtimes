@@ -1,9 +1,8 @@
-module Movie exposing (Movie, decoder, encoderWithStatus, statusAsString)
+module Movie exposing (Movie, decoder, encoderWithStatus, maybeStatusAsString, statusAsString)
 
-import Consumption exposing (Status(..))
+import Consumption exposing (..)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
-import RemoteData exposing (RemoteData(..), WebData)
 
 
 type alias Movie =
@@ -12,7 +11,7 @@ type alias Movie =
     , title : String
     , posterUrl : Maybe String
     , releaseDate : String
-    , status : WebData Status
+    , status : Maybe Consumption.Status
     }
 
 
@@ -32,6 +31,16 @@ statusAsString status =
             "Stopped it midway"
 
 
+maybeStatusAsString : Maybe Consumption.Status -> String
+maybeStatusAsString maybeStatus =
+    case maybeStatus of
+        Just status ->
+            statusAsString status
+
+        Nothing ->
+            "no status"
+
+
 decoder : Decoder Movie
 decoder =
     Decode.map6 Movie
@@ -40,7 +49,7 @@ decoder =
         (Decode.field "title" Decode.string)
         (Decode.field "poster_url" (Decode.nullable Decode.string))
         (Decode.field "release_date" Decode.string)
-        (Decode.succeed NotAsked)
+        (Decode.maybe (Decode.field "status" Consumption.statusDecoder))
 
 
 encoderWithStatus : Movie -> Consumption.Status -> Encode.Value
