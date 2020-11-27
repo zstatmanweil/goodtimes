@@ -6,7 +6,7 @@ import Html.Attributes as Attr exposing (class, id, type_)
 import Html.Events
 import Http
 import Json.Decode as Decode
-import Media exposing (MediaSelection(..), MediaType(..))
+import Media exposing (..)
 import Movie
 import RemoteData exposing (RemoteData(..), WebData)
 import Skeleton
@@ -21,22 +21,30 @@ import User
 type alias Model =
     { user : User.User
     , searchResults : WebData (List MediaType)
-    , selectedMediaType : MediaSelection
+    , selectedTab : TabSelection
     }
 
 
 type Msg
     = None
-    | SearchUserMedia MediaSelection
+    | SearchUserMedia TabSelection
     | MediaResponse (Result Http.Error (List MediaType))
     | UserResponse (Result Http.Error User.User)
+
+
+type TabSelection
+    = BookTab
+    | MovieTab
+    | TVTab
+    | RecommendationTab
+    | NoTab
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
     ( { user = User.User "" "" ""
       , searchResults = NotAsked
-      , selectedMediaType = NoSelection
+      , selectedTab = NoTab
       }
     , getUser
     )
@@ -49,15 +57,15 @@ init _ =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        SearchUserMedia mediaSelection ->
-            if mediaSelection == BookSelection then
-                ( model, searchUserBooks )
+        SearchUserMedia tabSelection ->
+            if tabSelection == BookTab then
+                ( { model | selectedTab = BookTab }, searchUserBooks )
 
-            else if mediaSelection == MovieSelection then
-                ( model, searchUserMovies )
+            else if tabSelection == MovieTab then
+                ( { model | selectedTab = MovieTab }, searchUserMovies )
 
-            else if mediaSelection == TVSelection then
-                ( model, searchUserTV )
+            else if tabSelection == TVTab then
+                ( { model | selectedTab = TVTab }, searchUserTV )
 
             else
                 ( model, Cmd.none )
@@ -131,19 +139,10 @@ body model =
     Html.main_ [ class "content" ]
         [ Html.div [ id "content-wrap" ]
             [ Html.div [ id "user-profile" ] [ Html.text ("Welcome" ++ model.user.username ++ "!") ]
-            , Html.div [ class "media-selector" ]
-                [ Html.label []
-                    [ Html.input [ type_ "radio", Attr.name "media", Attr.value "books", Html.Events.onClick (SearchUserMedia BookSelection) ] []
-                    , Html.text "books"
-                    ]
-                , Html.label []
-                    [ Html.input [ type_ "radio", Attr.name "media", Attr.value "movies", Html.Events.onClick (SearchUserMedia MovieSelection) ] []
-                    , Html.text "movies"
-                    ]
-                , Html.label []
-                    [ Html.input [ type_ "radio", Attr.name "media", Attr.value "tv", Html.Events.onClick (SearchUserMedia TVSelection) ] []
-                    , Html.text "tv shows"
-                    ]
+            , Html.div [ class "tab" ]
+                [ createTab model BookTab "books"
+                , createTab model MovieTab "movies"
+                , createTab model TVTab "tv shows"
                 ]
             , Html.div [ class "media-results" ]
                 [ viewMedias model.searchResults ]
@@ -237,3 +236,16 @@ viewMediaCover maybeCoverUrl =
 
         Nothing ->
             Html.div [ class "no-media" ] []
+
+
+
+-- TABS
+
+
+createTab : Model -> TabSelection -> String -> Html Msg
+createTab model tabSelection tabString =
+    if model.selectedTab == tabSelection then
+        Html.button [ class "tablinks active", Html.Events.onClick (SearchUserMedia tabSelection) ] [ Html.text tabString ]
+
+    else
+        Html.button [ class "tablinks", Html.Events.onClick (SearchUserMedia tabSelection) ] [ Html.text tabString ]

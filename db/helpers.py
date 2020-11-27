@@ -40,4 +40,6 @@ def get_consumption_records(user_id: int, media_type: str, session: session) -> 
         .order_by(desc(Consumption.created)) \
         .all()
 
+    session.close()
+
     return results
