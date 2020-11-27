@@ -23,7 +23,7 @@ statusAsString status =
             "want to watch"
 
         Consuming ->
-            "watching it now! why am I on good times while watching a movie?!"
+            "watching it now!"
 
         Finished ->
             "totally watched it!"

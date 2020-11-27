@@ -4,7 +4,6 @@ import Book exposing (Book)
 import Consumption exposing (Status)
 import Json.Decode as Decode exposing (Decoder)
 import Movie exposing (Movie)
-import RemoteData exposing (RemoteData(..), WebData)
 import TV exposing (TV)
 
 
@@ -60,32 +59,6 @@ getMediaStatus mediaType =
 
         TVType tv ->
             tv.status
-
-
-
---
---getMediaStatusAsString : MediaType -> String
---getMediaStatusAsString mediaType =
---    case getMediaStatus mediaType of
---        NotAsked ->
---            "no status"
---
---        Loading ->
---            "..."
---
---        Failure _ ->
---            "Something went wrong"
---
---        Success status ->
---            case mediaType of
---                BookType _ ->
---                    Book.statusAsString status
---
---                MovieType _ ->
---                    Movie.statusAsString status
---
---                TVType _ ->
---                    TV.statusAsString status
 
 
 getSourceId : MediaType -> String

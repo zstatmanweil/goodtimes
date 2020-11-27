@@ -19,7 +19,7 @@ import User
 
 
 type alias Model =
-    { user : User.User
+    { user : WebData User.User
     , searchResults : WebData (List MediaType)
     , selectedTab : TabSelection
     }
@@ -40,13 +40,9 @@ type TabSelection
     | NoTab
 
 
-
--- TODO: make model take WebData User, and pass in userId throughout
-
-
 init : Int -> ( Model, Cmd Msg )
 init userID =
-    ( { user = User.User "" "" ""
+    ( { user = NotAsked
       , searchResults = NotAsked
       , selectedTab = NoTab
       }
@@ -63,13 +59,13 @@ update msg model =
     case msg of
         SearchUserMedia tabSelection ->
             if tabSelection == BookTab then
-                ( { model | selectedTab = BookTab }, searchUserBooks )
+                ( { model | selectedTab = BookTab }, searchUserBooks model.user )
 
             else if tabSelection == MovieTab then
-                ( { model | selectedTab = MovieTab }, searchUserMovies )
+                ( { model | selectedTab = MovieTab }, searchUserMovies model.user )
 
             else if tabSelection == TVTab then
-                ( { model | selectedTab = TVTab }, searchUserTV )
+                ( { model | selectedTab = TVTab }, searchUserTV model.user )
 
             else
                 ( model, Cmd.none )
@@ -84,7 +80,7 @@ update msg model =
         UserResponse userResponse ->
             case userResponse of
                 Ok user ->
-                    ( { model | user = user }, Cmd.none )
+                    ( { model | user = Success user }, Cmd.none )
 
                 -- TODO: handle error
                 Err resp ->
@@ -94,26 +90,26 @@ update msg model =
             ( model, Cmd.none )
 
 
-searchUserBooks : Cmd Msg
-searchUserBooks =
+searchUserBooks : WebData User.User -> Cmd Msg
+searchUserBooks user =
     Http.get
-        { url = "http://localhost:5000/user/1/media/book"
+        { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/media/book"
         , expect = Http.expectJson MediaResponse (Decode.list (Media.bookToMediaDecoder Book.decoder))
         }
 
 
-searchUserMovies : Cmd Msg
-searchUserMovies =
+searchUserMovies : WebData User.User -> Cmd Msg
+searchUserMovies user =
     Http.get
-        { url = "http://localhost:5000/user/1/media/movie"
+        { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/media/movie"
         , expect = Http.expectJson MediaResponse (Decode.list (Media.movieToMediaDecoder Movie.decoder))
         }
 
 
-searchUserTV : Cmd Msg
-searchUserTV =
+searchUserTV : WebData User.User -> Cmd Msg
+searchUserTV user =
     Http.get
-        { url = "http://localhost:5000/user/1/media/tv"
+        { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/media/tv"
         , expect = Http.expectJson MediaResponse (Decode.list (Media.tvToMediaDecoder TV.decoder))
         }
 
@@ -142,7 +138,7 @@ body : Model -> Html Msg
 body model =
     Html.main_ [ class "content" ]
         [ Html.div [ id "content-wrap" ]
-            [ Html.div [ id "user-profile" ] [ Html.text ("Welcome " ++ model.user.username ++ "!") ]
+            [ Html.div [ id "user-profile" ] [ Html.text ("Welcome " ++ User.getUsername model.user ++ "!") ]
             , Html.div [ class "tab" ]
                 [ createTab model BookTab "books"
                 , createTab model MovieTab "movies"
