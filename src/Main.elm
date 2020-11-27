@@ -5,8 +5,10 @@ import Browser.Navigation as Nav
 import Html exposing (Html)
 import Page.Search as Search
 import Page.UserProfile as UserProfile
+import Routes exposing (..)
 import Skeleton
 import Url
+import Url.Parser as Parser
 
 
 main : Program () Model Msg
@@ -44,12 +46,11 @@ type Page
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init _ url key =
-    ( { url = url
-      , key = key
-      , page = UserProfile (Tuple.first (UserProfile.init ()))
-      }
-    , Cmd.none
-    )
+    stepUrl url
+        { url = url
+        , key = key
+        , page = NotFound
+        }
 
 
 
@@ -97,13 +98,12 @@ update msg model =
                     ( model, Nav.load href )
 
         UrlChanged url ->
-            ( { model | url = url }
-            , Cmd.none
-            )
+            stepUrl url { model | url = url }
 
         SearchMsg msge ->
             case model.page of
                 Search search ->
+                    -- if you receive a search message on the search page, update the Search page. If you recieve another message, ignore
                     stepSearch model (Search.update msge search)
 
                 _ ->
@@ -137,6 +137,33 @@ stepUser model ( user, cmds ) =
     ( { model | page = UserProfile user }
     , Cmd.map UserProfileMsg cmds
     )
+
+
+{-| URL to Page
+-}
+stepUrl : Url.Url -> Model -> ( Model, Cmd Msg )
+stepUrl url model =
+    case Parser.parse Routes.routeParser url of
+        Just route ->
+            case route of
+                Routes.User userID ->
+                    let
+                        ( userProfileModel, userProfileCommand ) =
+                            UserProfile.init userID
+                    in
+                    ( { model | page = UserProfile userProfileModel }
+                    , Cmd.map UserProfileMsg userProfileCommand
+                    )
+
+                Routes.Search ->
+                    ( { model | page = Search (Tuple.first (Search.init ())) }
+                    , Cmd.none
+                    )
+
+        Nothing ->
+            ( { model | page = NotFound }
+            , Cmd.none
+            )
 
 
 

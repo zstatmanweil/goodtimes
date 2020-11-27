@@ -2,7 +2,7 @@ module Page.UserProfile exposing (..)
 
 import Book
 import Html exposing (Attribute, Html)
-import Html.Attributes as Attr exposing (class, id, type_)
+import Html.Attributes as Attr exposing (class, id)
 import Html.Events
 import Http
 import Json.Decode as Decode
@@ -40,13 +40,17 @@ type TabSelection
     | NoTab
 
 
-init : () -> ( Model, Cmd Msg )
-init _ =
+
+-- TODO: make model take WebData User, and pass in userId throughout
+
+
+init : Int -> ( Model, Cmd Msg )
+init userID =
     ( { user = User.User "" "" ""
       , searchResults = NotAsked
       , selectedTab = NoTab
       }
-    , getUser
+    , getUser userID
     )
 
 
@@ -114,10 +118,10 @@ searchUserTV =
         }
 
 
-getUser : Cmd Msg
-getUser =
+getUser : Int -> Cmd Msg
+getUser userID =
     Http.get
-        { url = "http://localhost:5000/user/1"
+        { url = "http://localhost:5000/user/" ++ String.fromInt userID
         , expect = Http.expectJson UserResponse User.decoder
         }
 
@@ -138,7 +142,7 @@ body : Model -> Html Msg
 body model =
     Html.main_ [ class "content" ]
         [ Html.div [ id "content-wrap" ]
-            [ Html.div [ id "user-profile" ] [ Html.text ("Welcome" ++ model.user.username ++ "!") ]
+            [ Html.div [ id "user-profile" ] [ Html.text ("Welcome " ++ model.user.username ++ "!") ]
             , Html.div [ class "tab" ]
                 [ createTab model BookTab "books"
                 , createTab model MovieTab "movies"

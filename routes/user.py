@@ -19,6 +19,8 @@ def get_user(user_id):
     session = Session()
     user = session.query(User).filter_by(id=user_id).first()
 
+    if not user:
+        return f"user (id {user_id}) does not exist", 404
     return user.to_json()
 
 @user.route("/user/<int:user_id>/media/<media_type>", methods=["POST"])

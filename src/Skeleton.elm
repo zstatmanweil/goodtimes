@@ -7,6 +7,7 @@ import Html.Attributes as Attr exposing (class, id)
 
 
 -- NODE
+--TODO: switch to Config
 
 
 type alias Details msg =
