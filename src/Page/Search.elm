@@ -294,6 +294,7 @@ viewMediaType mediaType =
                     [ Html.div [ class "media-image" ] [ viewMediaCover tv.posterUrl ]
                     , Html.div [ class "media-info" ]
                         [ Html.b [] [ Html.text tv.title ]
+                        , Html.div [] [ Html.text (String.join ", " tv.networks) ]
                         , case tv.firstAirDate of
                             Just date ->
                                 Html.text <| "(" ++ date ++ ")"

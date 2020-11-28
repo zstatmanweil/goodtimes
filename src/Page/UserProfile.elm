@@ -1,6 +1,7 @@
 module Page.UserProfile exposing (..)
 
 import Book
+import Consumption exposing (Consumption, Status(..))
 import Html exposing (Attribute, Html)
 import Html.Attributes as Attr exposing (class, id)
 import Html.Events
@@ -30,6 +31,8 @@ type Msg
     | SearchUserMedia TabSelection
     | MediaResponse (Result Http.Error (List MediaType))
     | UserResponse (Result Http.Error User.User)
+    | AddMediaToProfile MediaType Consumption.Status
+    | MediaAddedToProfile (Result Http.Error Consumption)
 
 
 type TabSelection
@@ -86,6 +89,28 @@ update msg model =
                 Err resp ->
                     ( model, Cmd.none )
 
+        AddMediaToProfile mediaType status ->
+            ( model, addMediaToProfile mediaType status )
+
+        MediaAddedToProfile result ->
+            case result of
+                Ok consumption ->
+                    if model.selectedTab == BookTab then
+                        ( model, searchUserBooks model.user )
+
+                    else if model.selectedTab == MovieTab then
+                        ( model, searchUserMovies model.user )
+
+                    else if model.selectedTab == TVTab then
+                        ( model, searchUserTV model.user )
+
+                    else
+                        ( model, Cmd.none )
+
+                Err httpError ->
+                    -- TODO handle error!
+                    ( model, Cmd.none )
+
         None ->
             ( model, Cmd.none )
 
@@ -120,6 +145,35 @@ getUser userID =
         { url = "http://localhost:5000/user/" ++ String.fromInt userID
         , expect = Http.expectJson UserResponse User.decoder
         }
+
+
+addMediaToProfile : MediaType -> Consumption.Status -> Cmd Msg
+addMediaToProfile mediaType status =
+    case mediaType of
+        BookType book ->
+            Http.post
+                { url = "http://localhost:5000/user/" ++ String.fromInt 1 ++ "/media/book"
+                , body = Http.jsonBody (Book.encoderWithStatus book status)
+                , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
+                }
+
+        MovieType movie ->
+            Http.post
+                { url = "http://localhost:5000/user/" ++ String.fromInt 1 ++ "/media/movie"
+                , body = Http.jsonBody (Movie.encoderWithStatus movie status)
+                , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
+                }
+
+        TVType tv ->
+            Http.post
+                { url = "http://localhost:5000/user/" ++ String.fromInt 1 ++ "/media/tv"
+                , body = Http.jsonBody (TV.encoderWithStatus tv status)
+                , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
+                }
+
+
+
+-- VIEW
 
 
 view : Model -> Skeleton.Details Msg
@@ -191,7 +245,10 @@ viewMediaType mediaType =
 
                             Nothing ->
                                 Html.text ""
-                        , Html.div [ class "media-status" ] [ Html.text (Book.maybeStatusAsString book.status) ]
+                        , Html.div [ class "media-status" ]
+                            [ Html.text (Book.maybeStatusAsString book.status)
+                            , viewMediaDropdown (BookType book)
+                            ]
                         ]
                     ]
                 ]
@@ -203,7 +260,10 @@ viewMediaType mediaType =
                     , Html.div [ class "media-info" ]
                         [ Html.b [] [ Html.text movie.title ]
                         , Html.text <| "(" ++ movie.releaseDate ++ ")"
-                        , Html.div [ class "media-status" ] [ Html.text (Movie.maybeStatusAsString movie.status) ]
+                        , Html.div [ class "media-status" ]
+                            [ Html.text (Movie.maybeStatusAsString movie.status)
+                            , viewMediaDropdown (MovieType movie)
+                            ]
                         ]
                     ]
                 ]
@@ -214,16 +274,49 @@ viewMediaType mediaType =
                     [ Html.div [ class "media-image" ] [ viewMediaCover tv.posterUrl ]
                     , Html.div [ class "media-info" ]
                         [ Html.b [] [ Html.text tv.title ]
+                        , Html.div [] [ Html.text (String.join ", " tv.networks) ]
                         , case tv.firstAirDate of
                             Just date ->
                                 Html.text <| "(" ++ date ++ ")"
 
                             Nothing ->
                                 Html.text ""
-                        , Html.div [ class "media-status" ] [ Html.text (TV.maybeStatusAsString tv.status) ]
+                        , Html.div [ class "media-status" ]
+                            [ Html.text (TV.maybeStatusAsString tv.status)
+                            , viewMediaDropdown (TVType tv)
+                            ]
                         ]
                     ]
                 ]
+
+
+viewMediaDropdown : MediaType -> Html Msg
+viewMediaDropdown mediaType =
+    Html.div [ class "dropdown" ] <|
+        case mediaType of
+            BookType book ->
+                [ Html.button [ class "dropbtn" ] [ Html.text "update status >>" ]
+                , viewDropdownContent (BookType book) "to read" "reading" "read"
+                ]
+
+            MovieType movie ->
+                [ Html.button [ class "dropbtn" ] [ Html.text "update status >>" ]
+                , viewDropdownContent (MovieType movie) "to watch" "watching" "watched"
+                ]
+
+            TVType tv ->
+                [ Html.button [ class "dropbtn" ] [ Html.text "update status >>" ]
+                , viewDropdownContent (TVType tv) "to watch" "watching" "watched"
+                ]
+
+
+viewDropdownContent : MediaType -> String -> String -> String -> Html Msg
+viewDropdownContent mediaType wantToConsume consuming finished =
+    Html.div [ class "dropdown-content" ]
+        [ Html.p [ Html.Events.onClick (AddMediaToProfile mediaType WantToConsume) ] [ Html.text wantToConsume ]
+        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Consuming) ] [ Html.text consuming ]
+        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Finished) ] [ Html.text finished ]
+        ]
 
 
 viewMediaCover : Maybe String -> Html Msg

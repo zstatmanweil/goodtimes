@@ -2,6 +2,7 @@ module Media exposing (..)
 
 import Book exposing (Book)
 import Consumption exposing (Status)
+import Http
 import Json.Decode as Decode exposing (Decoder)
 import Movie exposing (Movie)
 import TV exposing (TV)

@@ -39,6 +39,11 @@ header : Html msg
 header =
     Html.header [ class "header" ]
         [ Html.h1 [] [ Html.text "good times" ]
+        , Html.ul []
+            [ Html.li [] [ Html.a [ Attr.href "/user/1" ] [ Html.text "My Profile" ] ]
+            , Html.li [] [ Html.a [ Attr.href "/search" ] [ Html.text "Search" ] ]
+            ]
+        , Html.br [] []
         , Html.p [] [ Html.text "a book, movie & tv finder - for having a good time" ]
         ]
 

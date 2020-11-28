@@ -10,12 +10,47 @@
 #content-wrap {
   padding-bottom: 2.5rem;    /* Footer height */
 }
+
+//  Header
 .header {
     padding: 8px;
     background-color: theme.color('primary', 'base');
     color: theme.color('scale', 'light');
 }
 
+
+.header ul {
+    text-align: right;
+    list-style: none;
+    margin-top: -35px;
+}
+
+.header ul li {
+    display: inline-block;
+    padding-left: 10px;
+}
+
+.header ul li:last-child{
+    padding-right: 10px;
+}
+
+.header a {
+  color: theme.color('primary', 'light') ;
+  -o-transition:.5s;
+  -ms-transition:.5s;
+  -moz-transition:.5s;
+  -webkit-transition:.5s;
+  transition:.5s;
+}
+.header a:hover { color:theme.color('scale', 'light') };
+
+
+.header a:link {text-decoration:none;}
+.header a:visited {text-decoration:none;}
+.header a:hover {text-decoration:none;}
+.header a:active {text-decoration:none;}
+
+// Footer
 #footer {
   position: absolute;
   bottom: 0;
@@ -62,7 +97,7 @@
     display: flex;
     border: 1px solid theme.color('primary', 'light');
     padding: 8px;
-    height: 120px;
+    height: 130px;
 
     .media-image {
         width: 60px;
@@ -90,7 +125,7 @@
 .dropbtn {
   background-color: theme.color('primary', 'base');
   color: white;
-  padding: 8px;
+  padding: 6px;
   border: none;
   cursor: pointer;
 }
@@ -98,7 +133,7 @@
 /* The container <div> - needed to position the dropdown content */
 .dropdown {
   position: relative;
-  display: inline-block;
+  display: flex;
   color: theme.color('primary', 'base');
   top: 4px;
   font-weight: bold
