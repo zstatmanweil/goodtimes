@@ -40,6 +40,7 @@ type TabSelection
     | MovieTab
     | TVTab
     | RecommendationTab
+    | FriendsTab
     | NoTab
 
 
@@ -90,7 +91,7 @@ update msg model =
                     ( model, Cmd.none )
 
         AddMediaToProfile mediaType status ->
-            ( model, addMediaToProfile mediaType status )
+            ( model, addMediaToProfile mediaType status model.user )
 
         MediaAddedToProfile result ->
             case result of
@@ -147,26 +148,26 @@ getUser userID =
         }
 
 
-addMediaToProfile : MediaType -> Consumption.Status -> Cmd Msg
-addMediaToProfile mediaType status =
+addMediaToProfile : MediaType -> Consumption.Status -> WebData User.User -> Cmd Msg
+addMediaToProfile mediaType status user =
     case mediaType of
         BookType book ->
             Http.post
-                { url = "http://localhost:5000/user/" ++ String.fromInt 1 ++ "/media/book"
+                { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/media/book"
                 , body = Http.jsonBody (Book.encoderWithStatus book status)
                 , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
                 }
 
         MovieType movie ->
             Http.post
-                { url = "http://localhost:5000/user/" ++ String.fromInt 1 ++ "/media/movie"
+                { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/media/movie"
                 , body = Http.jsonBody (Movie.encoderWithStatus movie status)
                 , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
                 }
 
         TVType tv ->
             Http.post
-                { url = "http://localhost:5000/user/" ++ String.fromInt 1 ++ "/media/tv"
+                { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/media/tv"
                 , body = Http.jsonBody (TV.encoderWithStatus tv status)
                 , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
                 }
