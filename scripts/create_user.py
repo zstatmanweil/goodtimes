@@ -11,7 +11,7 @@ from models.user import User
 
 config = ConfigFactory.parse_file('../config/config')
 
-def add_user():
+def add_users():
     engine = sa.create_engine(config.postgres_db, echo=True)
     Session = sessionmaker(bind=engine)
 
@@ -21,10 +21,17 @@ def add_user():
                 last_name='statman-weil',
                 created=datetime.utcnow())
 
+    second_user = User(username='strickinato',
+                      email='astrick@gmail.com',
+                      first_name='aaron',
+                      last_name='strick',
+                      created=datetime.utcnow())
+
     session = Session()
     session.add(first_user)
+    session.add(second_user)
     session.commit()
     session.close()
 
 if __name__ == '__main__':
-    add_user()
+    add_users()

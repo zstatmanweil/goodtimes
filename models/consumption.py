@@ -9,19 +9,19 @@ from sqlalchemy.orm import registry
 
 from models.user import User
 
+
 mapper_registry = registry()
 
 
 @mapper_registry.mapped
 @dataclass_json
 @dataclass
-class Recommendation:
+class Consumption:
     __table__ = sa.Table(
-        'recommendation',
+        'consumption',
         mapper_registry.metadata,
         sa.Column('id', sa.Integer, primary_key=True),
-        sa.Column('recommender_user_id', sa.Integer, sa.ForeignKey(User.id)),
-        sa.Column('recommended_user_id', sa.Integer, sa.ForeignKey(User.id)),
+        sa.Column('user_id', sa.Integer, sa.ForeignKey(User.id)),
         sa.Column('media_type', sa.String(50)),
         sa.Column('media_id', sa.Integer),
         sa.Column('source_id', sa.String(50), index=True),
@@ -30,8 +30,7 @@ class Recommendation:
     )
 
     id: int = field(init=False)
-    recommender_user_id: int
-    recommended_user_id: int
+    user_id: int
     media_type: str
     media_id: int
     source_id: str
@@ -39,6 +38,8 @@ class Recommendation:
     created: datetime
 
 
-class RecommendationStatus(Enum):
-    PENDING = "pending"
-    IGNORED = "ignored"
+class ConsumptionStatus(Enum):
+    WANT_TO_CONSUME = "want to consume"
+    CONSUMING = "consuming"
+    FINISHED = "finished"
+    ABANDONED = "abandoned"

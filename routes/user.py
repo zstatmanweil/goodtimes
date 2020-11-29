@@ -5,7 +5,9 @@ from flask import current_app, jsonify, request, Blueprint
 import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker
 
-from models.user import ConsumptionStatus, Consumption, User
+from models.consumption import Consumption, ConsumptionStatus
+from models.recommendation import RecommendationStatus, Recommendation
+from models.user import User
 from db.helpers import MEDIAS, get_consumption_records
 
 config = ConfigFactory.parse_file('config/config')
@@ -18,7 +20,7 @@ Session = sessionmaker(bind=engine)
 def get_user(user_id):
     session = Session()
     user_result = session.query(User).filter_by(id=user_id).first()
-
+    session.close()
     if not user_result:
         return f"user (id {user_id}) does not exist", 404
     return user_result.to_json()
@@ -107,8 +109,8 @@ def get_media(user_id, media_type):
         "title": "The Queen Of Nothing"
     },
     """
-    #TODO: should we be able to get all media together?
-    record_results = get_consumption_records(user_id, media_type, Session())
+    session = Session()
+    record_results = get_consumption_records(user_id, media_type, session)
 
     result = []
     for consumption, media in record_results:
@@ -119,17 +121,20 @@ def get_media(user_id, media_type):
         c.update(media.to_dict())
         result.append(c)
 
+    session.close()
     return jsonify(result), 200
 
 
 @user.route("/media/<media_type>/recommendation", methods=["POST"])
-def recommend_media(user_id, media_type):
+def add_recommended_media(media_type):
     """
-    Endpoint for adding media_type to consumption table under given user id. Posted body:
-    { "recommender_user_id": int
-    "recommended_user_id": int
-    "media_id": int
-    "source_id": string
+    Endpoint for adding a recommendation for a given media type. Posted body:
+    {
+        "recommender_user_id": int
+        "recommended_user_id": int
+        "media_id": int
+        "source_id": string
+        "status": string
     }
     :param user_id:
     :param media_type: book, movie or tv
@@ -139,44 +144,41 @@ def recommend_media(user_id, media_type):
 
     request_body = request.get_json()
     status = request_body.get('status')
-    media_class = MEDIAS.get(media_type)
 
-    if not status or status not in [v.value for v in ConsumptionStatus]:
-        return "Request body needs a status of 'want to consume', 'consuming', 'finished', or 'abandoned'", 400
-    request_body.pop('status')
+    if not status or status not in [v.value for v in RecommendationStatus]:
+        return "Request body needs a status of 'pending' or 'ignored'", 400
+
+    # Add media type and created
+    request_body['media_type'] = media_type
+    request_body['created'] = datetime.utcnow()
 
     try:
-        media_item = media_class.from_dict(request_body)
+        rec = Recommendation.from_dict(request_body)
     except KeyError:
-        # TODO: update message
-        return jsonify("Object needs at least fields source, source_id, and title"), 400
+        return jsonify("Object missing required fields."), 400
 
-    # check if media item is in database
-    db_resp = session.query(media_class).filter_by(source_id=media_item.source_id).first()
-
-    # if not in database, add media item to appropriate table
-    if not db_resp:
-        current_app.logger.info(
-            f"Media not in database, adding media with source_id {media_item.source_id} to database")
-        session.add(media_item)
-        session.flush()
-        media_id = media_item.id
-
-    else:
-        media_id = db_resp.id
-
-    current_app.logger.info(
-        f"Recording media with source_id {media_item.source_id} in consumption table {user_id} with status {status} (user id {user_id})")
-    # Add media item to consumption table
-    consumption_rec = Consumption(user_id=user_id,
-                                  media_type=media_type,
-                                  media_id=media_id,
-                                  source_id=media_item.source_id,
-                                  status=status,
-                                  created=datetime.utcnow())
-
-    session.add(consumption_rec)
-    consumption_resp = consumption_rec.to_json()
+    # add recommendation to DB
+    session.add(rec)
+    rec_json = rec.to_json()
     session.commit()
     session.close()
-    return consumption_resp, 200
+    return rec_json, 200
+
+
+# @user.route("user/<int: user_id>/media/<media_type>/recommendation", methods=["GET"])
+# def get_recommended_media(user_id, media_type):
+#     """
+#     :return:
+#     """
+#     record_results = get_consumption_records(user_id, media_type, Session())
+#
+#     result = []
+#     for consumption, media in record_results:
+#         c = consumption.to_dict()
+#         # Remove id, media_id, and user_id associated with consumption as not necessary
+#         # TODO: this is just temporary - need to figure out what to return
+#         c.pop('id'), c.pop('media_id'), c.pop('user_id'), c.pop('media_type'), c.pop('created')
+#         c.update(media.to_dict())
+#         result.append(c)
+#
+#     return jsonify(result), 200
