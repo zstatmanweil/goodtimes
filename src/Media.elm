@@ -86,3 +86,16 @@ getTitle mediaType =
 
         TVType tv ->
             tv.title
+
+
+getMediaTypeAsString : MediaType -> String
+getMediaTypeAsString mediaType =
+    case mediaType of
+        BookType _ ->
+            "book"
+
+        MovieType _ ->
+            "movie"
+
+        TVType _ ->
+            "tv"

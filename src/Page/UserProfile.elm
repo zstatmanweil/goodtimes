@@ -9,6 +9,7 @@ import Http
 import Json.Decode as Decode
 import Media exposing (..)
 import Movie
+import Recommendation
 import RemoteData exposing (RemoteData(..), WebData)
 import Skeleton
 import TV
@@ -35,6 +36,8 @@ type Msg
     | FriendResponse (Result Http.Error (List User.User))
     | AddMediaToProfile MediaType Consumption.Status
     | MediaAddedToProfile (Result Http.Error Consumption)
+    | Recommend MediaType User.User
+    | RecommendationResponse (Result Http.Error Recommendation.Recommendation)
 
 
 type TabSelection
@@ -124,6 +127,19 @@ update msg model =
                     -- TODO handle error!
                     ( model, Cmd.none )
 
+        Recommend mediaType friend ->
+            ( model, recommendMedia (User.getUserId model.user) friend.id mediaType )
+
+        RecommendationResponse rec ->
+            -- TODO: what do do with this response?
+            case rec of
+                Ok _ ->
+                    ( model, Cmd.none )
+
+                -- TODO: handle error
+                Err resp ->
+                    ( model, Cmd.none )
+
         None ->
             ( model, Cmd.none )
 
@@ -165,6 +181,15 @@ getFriends userID =
     Http.get
         { url = "http://localhost:5000/user/" ++ String.fromInt userID ++ "/friends"
         , expect = Http.expectJson FriendResponse (Decode.list User.decoder)
+        }
+
+
+recommendMedia : Int -> Int -> MediaType -> Cmd Msg
+recommendMedia recommenderUserID recommendedUserID mediaType =
+    Http.post
+        { url = "http://localhost:5000/media/" ++ Media.getMediaTypeAsString mediaType ++ "/recommendation"
+        , body = Http.jsonBody (Recommendation.encoder mediaType recommenderUserID recommendedUserID Recommendation.Pending)
+        , expect = Http.expectJson RecommendationResponse Recommendation.decoder
         }
 
 
@@ -268,7 +293,7 @@ viewMediaType friends mediaType =
                                 Html.text ""
                         , Html.div [ class "media-status" ]
                             [ viewMediaDropdown (BookType book)
-                            , Html.div [ class "media-recommend" ] [ viewRecommendDropdown friends ]
+                            , Html.div [ class "media-recommend" ] [ viewRecommendDropdown (BookType book) friends ]
                             ]
                         ]
                     ]
@@ -283,7 +308,7 @@ viewMediaType friends mediaType =
                         , Html.text <| "(" ++ movie.releaseDate ++ ")"
                         , Html.div [ class "media-status" ]
                             [ viewMediaDropdown (MovieType movie)
-                            , Html.div [ class "media-recommend" ] [ viewRecommendDropdown friends ]
+                            , Html.div [ class "media-recommend" ] [ viewRecommendDropdown (MovieType movie) friends ]
                             ]
                         ]
                     ]
@@ -304,7 +329,7 @@ viewMediaType friends mediaType =
                                 Html.text ""
                         , Html.div [ class "media-status" ]
                             [ viewMediaDropdown (TVType tv)
-                            , Html.div [ class "media-recommend" ] [ viewRecommendDropdown friends ]
+                            , Html.div [ class "media-recommend" ] [ viewRecommendDropdown (TVType tv) friends ]
                             ]
                         ]
                     ]
@@ -340,8 +365,8 @@ viewDropdownContent mediaType wantToConsume consuming finished =
         ]
 
 
-viewRecommendDropdown : WebData (List User.User) -> Html Msg
-viewRecommendDropdown userFriends =
+viewRecommendDropdown : MediaType -> WebData (List User.User) -> Html Msg
+viewRecommendDropdown mediaType userFriends =
     case userFriends of
         NotAsked ->
             Html.text ""
@@ -357,13 +382,13 @@ viewRecommendDropdown userFriends =
             Html.div [ class "dropdown" ] <|
                 [ Html.button [ class "dropbtn" ] [ Html.text "Recommend >>" ]
                 , Html.div [ class "dropdown-content" ]
-                    (List.map viewFriendUsername (List.sortBy .username friends))
+                    (List.map (viewFriendUsername mediaType) (List.sortBy .username friends))
                 ]
 
 
-viewFriendUsername : User.User -> Html Msg
-viewFriendUsername friend =
-    Html.p [] [ Html.text friend.username ]
+viewFriendUsername : MediaType -> User.User -> Html Msg
+viewFriendUsername mediaType friend =
+    Html.p [ Html.Events.onClick (Recommend mediaType friend) ] [ Html.text friend.username ]
 
 
 viewMediaCover : Maybe String -> Html Msg

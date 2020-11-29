@@ -37,7 +37,7 @@ def get_user_friends(user_id):
 
 
 @user.route("/user/<int:user_id>/media/<media_type>", methods=["POST"])
-def add_media(user_id, media_type):
+def add_media_to_profile(user_id, media_type):
     """
     Endpoint for adding media to consumption table under given user id. Posted body is media object + status, e.g.:
     {
@@ -100,7 +100,7 @@ def add_media(user_id, media_type):
 
 
 @user.route("/user/<int:user_id>/media/<media_type>", methods=["GET"])
-def get_media(user_id, media_type):
+def get_media_for_profile(user_id, media_type):
     """
     Endpoint for getting all media associated with a given user.
     :param user_id:
@@ -161,6 +161,11 @@ def add_recommended_media(media_type):
     # Add media type and created
     request_body['media_type'] = media_type
     request_body['created'] = datetime.utcnow()
+
+    # get media_id
+    media_class = MEDIAS.get(media_type)
+    db_resp = session.query(media_class).filter_by(source_id=request_body.get('source_id')).first()
+    request_body['media_id'] = db_resp.id
 
     try:
         rec = Recommendation.from_dict(request_body)
