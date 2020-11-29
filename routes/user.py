@@ -16,6 +16,7 @@ user = Blueprint("user", __name__)
 engine = sa.create_engine(config.postgres_db, echo=True)
 Session = sessionmaker(bind=engine)
 
+
 @user.route("/user/<int:user_id>", methods=["GET"])
 def get_user(user_id):
     session = Session()
@@ -24,6 +25,15 @@ def get_user(user_id):
     if not user_result:
         return f"user (id {user_id}) does not exist", 404
     return user_result.to_json()
+
+
+@user.route("/user/<int:user_id>/friends", methods=["GET"])
+def get_user_friends(user_id):
+    # TODO: get user's friends rather than all users
+    session = Session()
+    user_results = session.query(User).filter(User.id != user_id).all()
+    session.close()
+    return User.schema().dumps(user_results, many=True)
 
 
 @user.route("/user/<int:user_id>/media/<media_type>", methods=["POST"])

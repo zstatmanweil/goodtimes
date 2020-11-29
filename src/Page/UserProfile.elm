@@ -21,6 +21,7 @@ import User
 
 type alias Model =
     { user : WebData User.User
+    , friends : WebData (List User.User)
     , searchResults : WebData (List MediaType)
     , selectedTab : TabSelection
     }
@@ -31,6 +32,7 @@ type Msg
     | SearchUserMedia TabSelection
     | MediaResponse (Result Http.Error (List MediaType))
     | UserResponse (Result Http.Error User.User)
+    | FriendResponse (Result Http.Error (List User.User))
     | AddMediaToProfile MediaType Consumption.Status
     | MediaAddedToProfile (Result Http.Error Consumption)
 
@@ -47,6 +49,7 @@ type TabSelection
 init : Int -> ( Model, Cmd Msg )
 init userID =
     ( { user = NotAsked
+      , friends = NotAsked
       , searchResults = NotAsked
       , selectedTab = NoTab
       }
@@ -84,7 +87,16 @@ update msg model =
         UserResponse userResponse ->
             case userResponse of
                 Ok user ->
-                    ( { model | user = Success user }, Cmd.none )
+                    ( { model | user = Success user }, getFriends user.id )
+
+                -- TODO: handle error
+                Err resp ->
+                    ( model, Cmd.none )
+
+        FriendResponse friendResponse ->
+            case friendResponse of
+                Ok friends ->
+                    ( { model | friends = Success friends }, Cmd.none )
 
                 -- TODO: handle error
                 Err resp ->
@@ -148,6 +160,14 @@ getUser userID =
         }
 
 
+getFriends : Int -> Cmd Msg
+getFriends userID =
+    Http.get
+        { url = "http://localhost:5000/user/" ++ String.fromInt userID ++ "/friends"
+        , expect = Http.expectJson FriendResponse (Decode.list User.decoder)
+        }
+
+
 addMediaToProfile : MediaType -> Consumption.Status -> WebData User.User -> Cmd Msg
 addMediaToProfile mediaType status user =
     case mediaType of
@@ -200,13 +220,13 @@ body model =
                 , createTab model TVTab "tv shows"
                 ]
             , Html.div [ class "media-results" ]
-                [ viewMedias model.searchResults ]
+                [ viewMedias model.searchResults model.friends ]
             ]
         ]
 
 
-viewMedias : WebData (List MediaType) -> Html Msg
-viewMedias receivedMedia =
+viewMedias : WebData (List MediaType) -> WebData (List User.User) -> Html Msg
+viewMedias receivedMedia friends =
     case receivedMedia of
         NotAsked ->
             Html.text "select a media type to see what you are tracking"
@@ -224,11 +244,11 @@ viewMedias receivedMedia =
 
             else
                 Html.ul [ class "book-list" ]
-                    (List.map viewMediaType media)
+                    (List.map (viewMediaType friends) media)
 
 
-viewMediaType : MediaType -> Html Msg
-viewMediaType mediaType =
+viewMediaType : WebData (List User.User) -> MediaType -> Html Msg
+viewMediaType friends mediaType =
     case mediaType of
         BookType book ->
             Html.li []
@@ -248,6 +268,7 @@ viewMediaType mediaType =
                                 Html.text ""
                         , Html.div [ class "media-status" ]
                             [ viewMediaDropdown (BookType book)
+                            , Html.div [ class "media-recommend" ] [ viewRecommendDropdown friends ]
                             ]
                         ]
                     ]
@@ -262,6 +283,7 @@ viewMediaType mediaType =
                         , Html.text <| "(" ++ movie.releaseDate ++ ")"
                         , Html.div [ class "media-status" ]
                             [ viewMediaDropdown (MovieType movie)
+                            , Html.div [ class "media-recommend" ] [ viewRecommendDropdown friends ]
                             ]
                         ]
                     ]
@@ -282,6 +304,7 @@ viewMediaType mediaType =
                                 Html.text ""
                         , Html.div [ class "media-status" ]
                             [ viewMediaDropdown (TVType tv)
+                            , Html.div [ class "media-recommend" ] [ viewRecommendDropdown friends ]
                             ]
                         ]
                     ]
@@ -315,6 +338,32 @@ viewDropdownContent mediaType wantToConsume consuming finished =
         , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Consuming) ] [ Html.text consuming ]
         , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Finished) ] [ Html.text finished ]
         ]
+
+
+viewRecommendDropdown : WebData (List User.User) -> Html Msg
+viewRecommendDropdown userFriends =
+    case userFriends of
+        NotAsked ->
+            Html.text ""
+
+        Loading ->
+            Html.text "finding your friends"
+
+        Failure error ->
+            -- TODO show better error!
+            Html.text "something went wrong"
+
+        Success friends ->
+            Html.div [ class "dropdown" ] <|
+                [ Html.button [ class "dropbtn" ] [ Html.text "Recommend >>" ]
+                , Html.div [ class "dropdown-content" ]
+                    (List.map viewFriendUsername friends)
+                ]
+
+
+viewFriendUsername : User.User -> Html Msg
+viewFriendUsername friend =
+    Html.p [] [ Html.text friend.username ]
 
 
 viewMediaCover : Maybe String -> Html Msg
