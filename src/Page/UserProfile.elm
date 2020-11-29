@@ -247,8 +247,7 @@ viewMediaType mediaType =
                             Nothing ->
                                 Html.text ""
                         , Html.div [ class "media-status" ]
-                            [ Html.text (Book.maybeStatusAsString book.status)
-                            , viewMediaDropdown (BookType book)
+                            [ viewMediaDropdown (BookType book)
                             ]
                         ]
                     ]
@@ -262,8 +261,7 @@ viewMediaType mediaType =
                         [ Html.b [] [ Html.text movie.title ]
                         , Html.text <| "(" ++ movie.releaseDate ++ ")"
                         , Html.div [ class "media-status" ]
-                            [ Html.text (Movie.maybeStatusAsString movie.status)
-                            , viewMediaDropdown (MovieType movie)
+                            [ viewMediaDropdown (MovieType movie)
                             ]
                         ]
                     ]
@@ -283,8 +281,7 @@ viewMediaType mediaType =
                             Nothing ->
                                 Html.text ""
                         , Html.div [ class "media-status" ]
-                            [ Html.text (TV.maybeStatusAsString tv.status)
-                            , viewMediaDropdown (TVType tv)
+                            [ viewMediaDropdown (TVType tv)
                             ]
                         ]
                     ]
@@ -296,17 +293,17 @@ viewMediaDropdown mediaType =
     Html.div [ class "dropdown" ] <|
         case mediaType of
             BookType book ->
-                [ Html.button [ class "dropbtn" ] [ Html.text "update status >>" ]
+                [ Html.button [ class "dropbtn-existing-status " ] [ Html.text (Book.maybeStatusAsString book.status) ]
                 , viewDropdownContent (BookType book) "to read" "reading" "read"
                 ]
 
             MovieType movie ->
-                [ Html.button [ class "dropbtn" ] [ Html.text "update status >>" ]
+                [ Html.button [ class "dropbtn-existing-status " ] [ Html.text (Movie.maybeStatusAsString movie.status) ]
                 , viewDropdownContent (MovieType movie) "to watch" "watching" "watched"
                 ]
 
             TVType tv ->
-                [ Html.button [ class "dropbtn" ] [ Html.text "update status >>" ]
+                [ Html.button [ class "dropbtn-existing-status " ] [ Html.text (TV.maybeStatusAsString tv.status) ]
                 , viewDropdownContent (TVType tv) "to watch" "watching" "watched"
                 ]
 

@@ -15,13 +15,13 @@ MEDIAS = {
 }
 
 
-def get_consumption_records(user_id: int, media_type: str, session: session) -> List[Tuple[Consumption, Book]]:
+def get_consumption_records(user_id: int, media_type: str, session: session) -> List[Tuple]:
     """
     Get most recent records for all media associated with a user.
     :param user_id:
     :param media_type:
     :param session:
-    :return:
+    :return: Returns a tuple of the Consumption object and Media object
     """
     media_class = MEDIAS.get(media_type)
     # Get most recent record for each item in consumption table

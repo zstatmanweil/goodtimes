@@ -11,6 +11,7 @@ from models.user import User
 
 config = ConfigFactory.parse_file('../config/config')
 
+
 def add_users():
     engine = sa.create_engine(config.postgres_db, echo=True)
     Session = sessionmaker(bind=engine)

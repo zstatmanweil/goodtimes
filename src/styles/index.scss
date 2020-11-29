@@ -130,6 +130,15 @@
   cursor: pointer;
 }
 
+.dropbtn-existing-status {
+  background-color: theme.color('scale', 'light');
+  color: theme.color('primary', 'base');
+  font-weight: bold;
+  padding: 6px;
+  border: 1px solid theme.color('primary', 'base');
+  cursor: pointer;
+}
+
 /* The container <div> - needed to position the dropdown content */
 .dropdown {
   position: relative;

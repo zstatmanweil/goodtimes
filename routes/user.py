@@ -163,22 +163,3 @@ def add_recommended_media(media_type):
     session.commit()
     session.close()
     return rec_json, 200
-
-
-# @user.route("user/<int: user_id>/media/<media_type>/recommendation", methods=["GET"])
-# def get_recommended_media(user_id, media_type):
-#     """
-#     :return:
-#     """
-#     record_results = get_consumption_records(user_id, media_type, Session())
-#
-#     result = []
-#     for consumption, media in record_results:
-#         c = consumption.to_dict()
-#         # Remove id, media_id, and user_id associated with consumption as not necessary
-#         # TODO: this is just temporary - need to figure out what to return
-#         c.pop('id'), c.pop('media_id'), c.pop('user_id'), c.pop('media_type'), c.pop('created')
-#         c.update(media.to_dict())
-#         result.append(c)
-#
-#     return jsonify(result), 200
