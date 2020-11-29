@@ -28,9 +28,23 @@ def add_users():
                       last_name='strick',
                       created=datetime.utcnow())
 
+    third_user = User(username='jakey',
+                      email='jakejhanft@gmail.com',
+                      first_name='jake',
+                      last_name='hanft',
+                      created=datetime.utcnow())
+
+    fourth_user = User(username='lulu',
+                       email='lucyrosetaylor@gmail.com',
+                       first_name='lucy rose',
+                       last_name='taylor',
+                       created=datetime.utcnow())
+
     session = Session()
-    session.add(first_user)
-    session.add(second_user)
+    # session.add(first_user)
+    # session.add(second_user)
+    session.add(third_user)
+    session.add(fourth_user)
     session.commit()
     session.close()
 

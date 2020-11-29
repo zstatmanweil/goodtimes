@@ -73,3 +73,16 @@ getSourceId mediaType =
 
         TVType tv ->
             tv.sourceId
+
+
+getTitle : MediaType -> String
+getTitle mediaType =
+    case mediaType of
+        BookType book ->
+            book.title
+
+        MovieType movie ->
+            movie.title
+
+        TVType tv ->
+            tv.title

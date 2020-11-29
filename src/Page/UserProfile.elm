@@ -244,7 +244,7 @@ viewMedias receivedMedia friends =
 
             else
                 Html.ul [ class "book-list" ]
-                    (List.map (viewMediaType friends) media)
+                    (List.map (viewMediaType friends) (List.sortBy Media.getTitle media))
 
 
 viewMediaType : WebData (List User.User) -> MediaType -> Html Msg
@@ -357,7 +357,7 @@ viewRecommendDropdown userFriends =
             Html.div [ class "dropdown" ] <|
                 [ Html.button [ class "dropbtn" ] [ Html.text "Recommend >>" ]
                 , Html.div [ class "dropdown-content" ]
-                    (List.map viewFriendUsername friends)
+                    (List.map viewFriendUsername (List.sortBy .username friends))
                 ]
 
 
