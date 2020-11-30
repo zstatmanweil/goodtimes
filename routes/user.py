@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from models.consumption import Consumption, ConsumptionStatus
 from models.recommendation import RecommendationStatus, Recommendation
 from models.user import User
-from db.helpers import MEDIAS, get_consumption_records
+from db.helpers import MEDIAS, get_consumption_records, get_recommendation_records
 
 config = ConfigFactory.parse_file('config/config')
 user = Blueprint("user", __name__)
@@ -100,7 +100,7 @@ def add_media_to_profile(user_id, media_type):
 
 
 @user.route("/user/<int:user_id>/media/<media_type>", methods=["GET"])
-def get_media_for_profile(user_id, media_type):
+def get_consumed_media(user_id, media_type):
     """
     Endpoint for getting all media associated with a given user.
     :param user_id:
@@ -178,3 +178,38 @@ def add_recommended_media(media_type):
     session.commit()
     session.close()
     return rec_json, 200
+
+
+@user.route("/user/<int:user_id>/media/<media_type>/recommendation", methods=["GET"])
+def get_recommended_media(user_id, media_type):
+    """
+    Endpoint for getting all media associated with a given user.
+    :param user_id:
+    :param media_type: book, movie or tv
+    :return: media object + recommender_id + recommender_username, e.g.,
+    {
+        "author_names": [
+            "Holly Black"
+        ],
+        "cover_url": "http://covers.openlibrary.org/b/id/10381918-M.jpg",
+        "id": 2,
+        "publish_year": 2020,
+        "source": "open library",
+        "source_id": "0123",
+        "title": "The Queen Of Nothing",
+        "recommender_id": 1,
+        "recommender_username": "strickinato"
+    },
+    """
+    session = Session()
+    record_results = get_recommendation_records(user_id, media_type, session)
+    print(record_results)
+    result = []
+    for recommendation, media_class, user_class in record_results:
+        m = media_class.to_dict()
+        m['recommender_id'] = user_class.id
+        m['recommender_username'] = user_class.username
+        result.append(m)
+
+    session.close()
+    return jsonify(result), 200
