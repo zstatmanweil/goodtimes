@@ -5,6 +5,10 @@ import Json.Encode as Encode exposing (Value)
 import Media exposing (MediaType)
 
 
+
+-- Recommendation
+
+
 type alias Recommendation =
     { recommenderUserId : Int
     , recommendedUserId : Int
@@ -70,3 +74,19 @@ encoder mediaType recommenderUserID recommendedUserID status =
         , ( "source_id", Encode.string (Media.getSourceId mediaType) )
         , ( "status", statusEncoder status )
         ]
+
+
+
+-- Recommended Media
+
+
+type alias RecommendedMedia =
+    { media : MediaType
+    , recommenderId : Int
+    , recommenderUsername : String
+    , recommendationCreated : Float -- TODO: how do we deal with datatime??
+    }
+
+
+
+-- Decode.oneOf - see if decodes
