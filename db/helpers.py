@@ -47,11 +47,11 @@ def get_consumption_records(user_id: int, media_type: str, session: session) -> 
 
 def get_recommendation_records(user_id: int, media_type: str, session: session) -> List[Tuple]:
     """
-    Get most recent records for all media associated with a user.
+    Get most recent recommendations for specific media type associated with a user.
     :param user_id:
     :param media_type:
     :param session:
-    :return: Returns a tuple of the Consumption object and Media object
+    :return: Returns a tuple of the Recommendation object, Media object and User object
     """
     media_class = MEDIAS.get(media_type)
     # Get most recent record for each item in recommendation table
@@ -60,7 +60,7 @@ def get_recommendation_records(user_id: int, media_type: str, session: session) 
         .group_by(Recommendation.recommended_user_id, Recommendation.media_id, Recommendation.media_type) \
         .subquery()
 
-    # Get most recent consumption data for selected media for user
+    # Get most recent recommendation data for selected media for user
     results = session.query(Recommendation, media_class, User) \
         .filter_by(recommended_user_id=user_id, media_type=media_type) \
         .join(subq, and_(Recommendation.media_id == subq.c.media_id,

@@ -100,7 +100,7 @@ def add_media_to_profile(user_id, media_type):
 
 
 @user.route("/user/<int:user_id>/media/<media_type>", methods=["GET"])
-def get_consumed_media(user_id, media_type):
+def get_consumed_media_by_media_type(user_id, media_type):
     """
     Endpoint for getting all media associated with a given user.
     :param user_id:
@@ -138,7 +138,7 @@ def get_consumed_media(user_id, media_type):
 @user.route("/media/<media_type>/recommendation", methods=["POST"])
 def add_recommended_media(media_type):
     """
-    Endpoint for adding a recommendation for a given media type. Posted body:
+    Endpoint for adding a recommendation for a given media type. Post body:
     {
         "recommender_user_id": int
         "recommended_user_id": int
@@ -180,36 +180,39 @@ def add_recommended_media(media_type):
     return rec_json, 200
 
 
-@user.route("/user/<int:user_id>/media/<media_type>/recommendation", methods=["GET"])
-def get_recommended_media(user_id, media_type):
+@user.route("/user/<int:user_id>/recommendations", methods=["GET"])
+def get_recommended_media(user_id):
     """
     Endpoint for getting all media associated with a given user.
     :param user_id:
-    :param media_type: book, movie or tv
-    :return: media object + recommender_id + recommender_username, e.g.,
+    :return: media object + media_type + recommender_id + recommender_username, e.g.,
     {
-        "author_names": [
-            "Holly Black"
-        ],
-        "cover_url": "http://covers.openlibrary.org/b/id/10381918-M.jpg",
-        "id": 2,
-        "publish_year": 2020,
-        "source": "open library",
-        "source_id": "0123",
-        "title": "The Queen Of Nothing",
+        "media": {"author_names": [
+                    "Holly Black"
+                    ],
+                    "cover_url": "http://covers.openlibrary.org/b/id/10381918-M.jpg",
+                    "id": 2,
+                    "publish_year": 2020,
+                    "source": "open library",
+                    "source_id": "0123",
+                    "title": "The Queen Of Nothing"},
+        "media_type": "book",
         "recommender_id": 1,
         "recommender_username": "strickinato"
     },
     """
     session = Session()
-    record_results = get_recommendation_records(user_id, media_type, session)
-    print(record_results)
-    result = []
-    for recommendation, media_class, user_class in record_results:
-        m = media_class.to_dict()
-        m['recommender_id'] = user_class.id
-        m['recommender_username'] = user_class.username
-        result.append(m)
+
+    final = []
+    for media in MEDIAS.keys():
+        record_results = get_recommendation_records(user_id, media, session)
+        for recommendation, media_class, user_class in record_results:
+            media_result = {'media': media_class.to_dict(),
+                            "media_type": media,
+                            'recommender_id': user_class.id,
+                            'recommender_username': user_class.username,
+                            'created': recommendation.created}
+            final.append(media_result)
 
     session.close()
-    return jsonify(result), 200
+    return jsonify(sorted(final, key=lambda m: m.get('created'), reverse=True)), 200
