@@ -2,7 +2,6 @@ module Media exposing (..)
 
 import Book exposing (Book)
 import Consumption exposing (Status)
-import Http
 import Json.Decode as Decode exposing (Decoder)
 import Movie exposing (Movie)
 import TV exposing (TV)
@@ -22,18 +21,27 @@ type MediaType
 
 
 bookToMediaDecoder : Decoder Book -> Decoder MediaType
-bookToMediaDecoder maybeBook =
-    Decode.map BookType maybeBook
+bookToMediaDecoder book =
+    Decode.map BookType book
 
 
 movieToMediaDecoder : Decoder Movie -> Decoder MediaType
-movieToMediaDecoder maybeMovie =
-    Decode.map MovieType maybeMovie
+movieToMediaDecoder movie =
+    Decode.map MovieType movie
 
 
 tvToMediaDecoder : Decoder TV -> Decoder MediaType
-tvToMediaDecoder maybeTV =
-    Decode.map TVType maybeTV
+tvToMediaDecoder tv =
+    Decode.map TVType tv
+
+
+unknownMediaDecoder : Decoder MediaType
+unknownMediaDecoder =
+    Decode.oneOf
+        [ bookToMediaDecoder Book.decoder
+        , movieToMediaDecoder Movie.decoder
+        , tvToMediaDecoder TV.decoder
+        ]
 
 
 setMediaStatus : Consumption.Status -> MediaType -> MediaType

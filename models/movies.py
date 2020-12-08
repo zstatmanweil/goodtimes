@@ -34,7 +34,7 @@ class Movie:
     release_date: Optional[date] = field(
         metadata=config(
             encoder=date.isoformat,
-            decoder=lambda x: date.fromisoformat(str(x)),
+            decoder=lambda x: date.fromisoformat(str(x)) if x else date(1900, 1, 1),
             mm_field=fields.Date(format='iso')
         )
     )

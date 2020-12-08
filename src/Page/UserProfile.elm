@@ -9,7 +9,8 @@ import Http
 import Json.Decode as Decode
 import Media exposing (..)
 import Movie
-import Recommendation
+import Page.Search as Search
+import Recommendation exposing (RecommendedMedia)
 import RemoteData exposing (RemoteData(..), WebData)
 import Skeleton
 import TV
@@ -24,13 +25,14 @@ type alias Model =
     { user : WebData User.User
     , friends : WebData (List User.User)
     , searchResults : WebData (List MediaType)
+    , recommendedResults : WebData (List RecommendedMedia)
     , selectedTab : TabSelection
     }
 
 
 type Msg
     = None
-    | SearchUserMedia TabSelection
+    | SearchBasedOnTab TabSelection
     | MediaResponse (Result Http.Error (List MediaType))
     | UserResponse (Result Http.Error User.User)
     | FriendResponse (Result Http.Error (List User.User))
@@ -38,6 +40,7 @@ type Msg
     | MediaAddedToProfile (Result Http.Error Consumption)
     | Recommend MediaType User.User
     | RecommendationResponse (Result Http.Error Recommendation.Recommendation)
+    | RecommendedMediaResponse (Result Http.Error (List RecommendedMedia))
 
 
 type TabSelection
@@ -54,6 +57,7 @@ init userID =
     ( { user = NotAsked
       , friends = NotAsked
       , searchResults = NotAsked
+      , recommendedResults = NotAsked
       , selectedTab = NoTab
       }
     , getUser userID
@@ -67,18 +71,22 @@ init userID =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        SearchUserMedia tabSelection ->
-            if tabSelection == BookTab then
-                ( { model | selectedTab = BookTab }, searchUserBooks model.user )
+        SearchBasedOnTab tabSelection ->
+            case tabSelection of
+                BookTab ->
+                    ( { model | selectedTab = BookTab }, searchUserBooks model.user )
 
-            else if tabSelection == MovieTab then
-                ( { model | selectedTab = MovieTab }, searchUserMovies model.user )
+                MovieTab ->
+                    ( { model | selectedTab = MovieTab }, searchUserMovies model.user )
 
-            else if tabSelection == TVTab then
-                ( { model | selectedTab = TVTab }, searchUserTV model.user )
+                TVTab ->
+                    ( { model | selectedTab = TVTab }, searchUserTV model.user )
 
-            else
-                ( model, Cmd.none )
+                RecommendationTab ->
+                    ( { model | selectedTab = RecommendationTab }, getRecommendedMedia model.user )
+
+                _ ->
+                    ( model, Cmd.none )
 
         MediaResponse mediaResponse ->
             let
@@ -111,24 +119,25 @@ update msg model =
         MediaAddedToProfile result ->
             case result of
                 Ok consumption ->
-                    if model.selectedTab == BookTab then
-                        ( model, searchUserBooks model.user )
+                    case model.selectedTab of
+                        BookTab ->
+                            ( model, searchUserBooks model.user )
 
-                    else if model.selectedTab == MovieTab then
-                        ( model, searchUserMovies model.user )
+                        MovieTab ->
+                            ( model, searchUserMovies model.user )
 
-                    else if model.selectedTab == TVTab then
-                        ( model, searchUserTV model.user )
+                        TVTab ->
+                            ( model, searchUserTV model.user )
 
-                    else
-                        ( model, Cmd.none )
+                        _ ->
+                            ( model, Cmd.none )
 
                 Err httpError ->
                     -- TODO handle error!
                     ( model, Cmd.none )
 
         Recommend mediaType friend ->
-            ( model, recommendMedia (User.getUserId model.user) friend.id mediaType )
+            ( model, recommendMedia (User.getUserId model.user) friend.id mediaType Recommendation.Pending )
 
         RecommendationResponse rec ->
             -- TODO: what do do with this response?
@@ -139,6 +148,13 @@ update msg model =
                 -- TODO: handle error
                 Err resp ->
                     ( model, Cmd.none )
+
+        RecommendedMediaResponse recommendedMediaResponse ->
+            let
+                receivedRecommendation =
+                    RemoteData.fromResult recommendedMediaResponse
+            in
+            ( { model | recommendedResults = receivedRecommendation }, Cmd.none )
 
         None ->
             ( model, Cmd.none )
@@ -184,11 +200,19 @@ getFriends userID =
         }
 
 
-recommendMedia : Int -> Int -> MediaType -> Cmd Msg
-recommendMedia recommenderUserID recommendedUserID mediaType =
+getRecommendedMedia : WebData User.User -> Cmd Msg
+getRecommendedMedia user =
+    Http.get
+        { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/recommendations"
+        , expect = Http.expectJson RecommendedMediaResponse (Decode.list Recommendation.mediaDecoder)
+        }
+
+
+recommendMedia : Int -> Int -> MediaType -> Recommendation.Status -> Cmd Msg
+recommendMedia recommenderUserID recommendedUserID mediaType recommendation =
     Http.post
         { url = "http://localhost:5000/media/" ++ Media.getMediaTypeAsString mediaType ++ "/recommendation"
-        , body = Http.jsonBody (Recommendation.encoder mediaType recommenderUserID recommendedUserID Recommendation.Pending)
+        , body = Http.jsonBody (Recommendation.encoder mediaType recommenderUserID recommendedUserID recommendation)
         , expect = Http.expectJson RecommendationResponse Recommendation.decoder
         }
 
@@ -243,11 +267,22 @@ body model =
                 [ createTab model BookTab "books"
                 , createTab model MovieTab "movies"
                 , createTab model TVTab "tv shows"
+                , createTab model RecommendationTab "recommendations"
                 ]
             , Html.div [ class "media-results" ]
-                [ viewMedias model.searchResults model.friends ]
+                [ viewTabContent model ]
             ]
         ]
+
+
+viewTabContent : Model -> Html Msg
+viewTabContent model =
+    case model.selectedTab of
+        RecommendationTab ->
+            viewRecommendations model.recommendedResults
+
+        _ ->
+            viewMedias model.searchResults model.friends
 
 
 viewMedias : WebData (List MediaType) -> WebData (List User.User) -> Html Msg
@@ -293,7 +328,7 @@ viewMediaType friends mediaType =
                                 Html.text ""
                         , Html.div [ class "media-status" ]
                             [ viewMediaDropdown (BookType book)
-                            , Html.div [ class "media-recommend" ] [ viewRecommendDropdown (BookType book) friends ]
+                            , Html.div [ class "media-recommend" ] [ viewFriendsToRecommendDropdown (BookType book) friends ]
                             ]
                         ]
                     ]
@@ -308,7 +343,7 @@ viewMediaType friends mediaType =
                         , Html.text <| "(" ++ movie.releaseDate ++ ")"
                         , Html.div [ class "media-status" ]
                             [ viewMediaDropdown (MovieType movie)
-                            , Html.div [ class "media-recommend" ] [ viewRecommendDropdown (MovieType movie) friends ]
+                            , Html.div [ class "media-recommend" ] [ viewFriendsToRecommendDropdown (MovieType movie) friends ]
                             ]
                         ]
                     ]
@@ -329,7 +364,7 @@ viewMediaType friends mediaType =
                                 Html.text ""
                         , Html.div [ class "media-status" ]
                             [ viewMediaDropdown (TVType tv)
-                            , Html.div [ class "media-recommend" ] [ viewRecommendDropdown (TVType tv) friends ]
+                            , Html.div [ class "media-recommend" ] [ viewFriendsToRecommendDropdown (TVType tv) friends ]
                             ]
                         ]
                     ]
@@ -365,8 +400,8 @@ viewDropdownContent mediaType wantToConsume consuming finished =
         ]
 
 
-viewRecommendDropdown : MediaType -> WebData (List User.User) -> Html Msg
-viewRecommendDropdown mediaType userFriends =
+viewFriendsToRecommendDropdown : MediaType -> WebData (List User.User) -> Html Msg
+viewFriendsToRecommendDropdown mediaType userFriends =
     case userFriends of
         NotAsked ->
             Html.text ""
@@ -403,14 +438,144 @@ viewMediaCover maybeCoverUrl =
             Html.div [ class "no-media" ] []
 
 
+viewRecommendations : WebData (List RecommendedMedia) -> Html Msg
+viewRecommendations recommendedMedia =
+    case recommendedMedia of
+        NotAsked ->
+            Html.text "see your recommendations"
 
+        Loading ->
+            Html.text "entering the database!"
+
+        Failure error ->
+            -- TODO show better error!
+            Html.text "something went wrong"
+
+        Success media ->
+            if List.isEmpty media then
+                Html.text "no recommendations..."
+
+            else
+                Html.ul [ class "book-list" ]
+                    (List.map viewRecommendedMedia media)
+
+
+viewRecommendedMedia : RecommendedMedia -> Html Msg
+viewRecommendedMedia recommendedMedia =
+    viewRecommendedMediaType recommendedMedia
+
+
+viewRecommendedMediaType : RecommendedMedia -> Html Msg
+viewRecommendedMediaType recommendedMedia =
+    case recommendedMedia.media of
+        BookType book ->
+            Html.li []
+                [ Html.div [ class "media-card", class "media-card-long" ]
+                    [ Html.div [ class "media-image" ] [ viewMediaCover book.coverUrl ]
+                    , Html.div [ class "media-info" ]
+                        [ Html.i [] [ Html.text (recommendedMedia.recommenderUsername ++ " recommends...") ]
+                        , Html.b [] [ Html.text book.title ]
+                        , Html.div []
+                            [ Html.text "by "
+                            , Html.text (String.join ", " book.authorNames)
+                            ]
+                        , case book.publishYear of
+                            Just year ->
+                                Html.text <| "(" ++ String.fromInt year ++ ")"
+
+                            Nothing ->
+                                Html.text ""
+                        , viewRecommendedMediaDropdown (BookType book)
+                        ]
+                    ]
+                ]
+
+        MovieType movie ->
+            Html.li []
+                [ Html.div [ class "media-card", class "media-card-long" ]
+                    [ Html.div [ class "media-image" ] [ viewMediaCover movie.posterUrl ]
+                    , Html.div [ class "media-info" ]
+                        [ Html.i [] [ Html.text (recommendedMedia.recommenderUsername ++ " recommends...") ]
+                        , Html.b [] [ Html.text movie.title ]
+                        , Html.text <| "(" ++ movie.releaseDate ++ ")"
+                        , viewRecommendedMediaDropdown (MovieType movie)
+                        ]
+                    ]
+                ]
+
+        TVType tv ->
+            Html.li []
+                [ Html.div [ class "media-card", class "media-card-long" ]
+                    [ Html.div [ class "media-image" ] [ viewMediaCover tv.posterUrl ]
+                    , Html.div [ class "media-info" ]
+                        [ Html.i [] [ Html.text (recommendedMedia.recommenderUsername ++ " recommends...") ]
+                        , Html.b [] [ Html.text tv.title ]
+                        , Html.div [] [ Html.text (String.join ", " tv.networks) ]
+                        , case tv.firstAirDate of
+                            Just date ->
+                                Html.text <| "(" ++ date ++ ")"
+
+                            Nothing ->
+                                Html.text ""
+                        , viewRecommendedMediaDropdown (TVType tv)
+                        ]
+                    ]
+                ]
+
+
+viewRecommendedMediaDropdown : MediaType -> Html Msg
+viewRecommendedMediaDropdown mediaType =
+    Html.div [ class "dropdown" ] <|
+        case mediaType of
+            BookType book ->
+                case book.status of
+                    Nothing ->
+                        [ Html.button [ class "dropbtn" ] [ Html.text "Add Book >>" ]
+                        , viewDropdownContent (BookType book) "to read" "reading" "read"
+                        ]
+
+                    Just status ->
+                        [ Html.text (Book.statusAsString status) ]
+
+            MovieType movie ->
+                case movie.status of
+                    Nothing ->
+                        [ Html.button [ class "dropbtn" ] [ Html.text "Add Movie >>" ]
+                        , viewDropdownContent (MovieType movie) "to watch" "watching" "watched"
+                        ]
+
+                    Just status ->
+                        [ Html.text (Movie.statusAsString status) ]
+
+            TVType tv ->
+                case tv.status of
+                    Nothing ->
+                        [ Html.button [ class "dropbtn" ] [ Html.text "Add TV Show >>" ]
+                        , viewDropdownContent (TVType tv) "to watch" "watching" "watched"
+                        ]
+
+                    Just status ->
+                        [ Html.text (TV.statusAsString status) ]
+
+
+viewRecommendationDropdownContent : MediaType -> String -> String -> String -> Html Msg
+viewRecommendationDropdownContent mediaType wantToConsume consuming finished =
+    Html.div [ class "dropdown-content" ]
+        [ Html.p [ Html.Events.onClick (AddMediaToProfile mediaType WantToConsume) ] [ Html.text wantToConsume ]
+        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Consuming) ] [ Html.text consuming ]
+        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Finished) ] [ Html.text finished ]
+        ]
+
+
+
+-- TODO: add boolean to AddMediaToProfile to run second command OR add new message specific to this situation
 -- TABS
 
 
 createTab : Model -> TabSelection -> String -> Html Msg
 createTab model tabSelection tabString =
     if model.selectedTab == tabSelection then
-        Html.button [ class "tablinks active", Html.Events.onClick (SearchUserMedia tabSelection) ] [ Html.text tabString ]
+        Html.button [ class "tablinks active", Html.Events.onClick (SearchBasedOnTab tabSelection) ] [ Html.text tabString ]
 
     else
-        Html.button [ class "tablinks", Html.Events.onClick (SearchUserMedia tabSelection) ] [ Html.text tabString ]
+        Html.button [ class "tablinks", Html.Events.onClick (SearchBasedOnTab tabSelection) ] [ Html.text tabString ]

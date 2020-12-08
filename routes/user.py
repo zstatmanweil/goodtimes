@@ -205,10 +205,13 @@ def get_recommended_media(user_id):
 
     final = []
     for media in MEDIAS.keys():
+        print(media)
         # TODO: modify to only make one call to DB
         record_results = get_recommendation_records(user_id, media, session)
-        for recommendation, media_class, user_class in record_results:
-            media_result = {'media': media_class.to_dict(),
+        for recommendation, media_class, user_class, status in record_results:
+            m = media_class.to_dict()
+            m['status'] = status
+            media_result = {'media': m,
                             "media_type": media,
                             'recommender_id': user_class.id,
                             'recommender_username': user_class.username,

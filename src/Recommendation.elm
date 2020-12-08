@@ -22,6 +22,7 @@ type alias Recommendation =
 
 type Status
     = Pending
+    | Responded
     | Ignored
 
 
@@ -30,6 +31,9 @@ statusEncoder status =
     case status of
         Pending ->
             Encode.string "pending"
+
+        Responded ->
+            Encode.string "responded"
 
         Ignored ->
             Encode.string "ignored"
@@ -40,6 +44,9 @@ stringToStatusDecoder string =
     case string of
         "pending" ->
             Decode.succeed Pending
+
+        "responded" ->
+            Decode.succeed Responded
 
         "ignored" ->
             Decode.succeed Ignored
@@ -84,8 +91,17 @@ type alias RecommendedMedia =
     { media : MediaType
     , recommenderId : Int
     , recommenderUsername : String
-    , recommendationCreated : Float -- TODO: how do we deal with datatime??
+    , created : String -- TODO: how do we deal with datatime??
     }
+
+
+mediaDecoder : Decoder RecommendedMedia
+mediaDecoder =
+    Decode.map4 RecommendedMedia
+        (Decode.field "media" Media.unknownMediaDecoder)
+        (Decode.field "recommender_id" Decode.int)
+        (Decode.field "recommender_username" Decode.string)
+        (Decode.field "created" Decode.string)
 
 
 
