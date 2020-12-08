@@ -9,7 +9,6 @@ import Http
 import Json.Decode as Decode
 import Media exposing (..)
 import Movie
-import Page.Search as Search
 import Recommendation exposing (RecommendedMedia)
 import RemoteData exposing (RemoteData(..), WebData)
 import Skeleton
@@ -128,6 +127,9 @@ update msg model =
 
                         TVTab ->
                             ( model, searchUserTV model.user )
+
+                        RecommendationTab ->
+                            ( model, getRecommendedMedia model.user )
 
                         _ ->
                             ( model, Cmd.none )
@@ -558,17 +560,7 @@ viewRecommendedMediaDropdown mediaType =
                         [ Html.text (TV.statusAsString status) ]
 
 
-viewRecommendationDropdownContent : MediaType -> String -> String -> String -> Html Msg
-viewRecommendationDropdownContent mediaType wantToConsume consuming finished =
-    Html.div [ class "dropdown-content" ]
-        [ Html.p [ Html.Events.onClick (AddMediaToProfile mediaType WantToConsume) ] [ Html.text wantToConsume ]
-        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Consuming) ] [ Html.text consuming ]
-        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Finished) ] [ Html.text finished ]
-        ]
 
-
-
--- TODO: add boolean to AddMediaToProfile to run second command OR add new message specific to this situation
 -- TABS
 
 
