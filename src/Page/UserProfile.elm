@@ -25,13 +25,16 @@ type alias Model =
     , friends : WebData (List User.User)
     , searchResults : WebData (List MediaType)
     , recommendedResults : WebData (List RecommendedMedia)
-    , selectedTab : TabSelection
+    , firstSelectedTab : FirstTabSelection
+    , mediaSelectedTab : MediaTabSelection
     }
 
 
 type Msg
     = None
-    | SearchBasedOnTab TabSelection
+    | AddMediaTabRow
+    | SearchBasedOnTab MediaTabSelection
+    | SearchRecommendations
     | MediaResponse (Result Http.Error (List MediaType))
     | UserResponse (Result Http.Error User.User)
     | FriendResponse (Result Http.Error (List User.User))
@@ -42,13 +45,24 @@ type Msg
     | RecommendedMediaResponse (Result Http.Error (List RecommendedMedia))
 
 
-type TabSelection
+
+-- cascading tabs
+
+
+type FirstTabSelection
+    = FeedTab
+    | MediaTab
+    | RecommendationTab
+    | FriendsTab
+    | NoFirstTab
+
+
+type MediaTabSelection
     = BookTab
     | MovieTab
     | TVTab
-    | RecommendationTab
-    | FriendsTab
-    | NoTab
+    | NoSelectedMediaTab
+    | NoMediaTab
 
 
 init : Int -> ( Model, Cmd Msg )
@@ -57,7 +71,8 @@ init userID =
       , friends = NotAsked
       , searchResults = NotAsked
       , recommendedResults = NotAsked
-      , selectedTab = NoTab
+      , firstSelectedTab = NoFirstTab
+      , mediaSelectedTab = NoMediaTab
       }
     , getUser userID
     )
@@ -70,22 +85,35 @@ init userID =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        AddMediaTabRow ->
+            ( { model
+                | firstSelectedTab = MediaTab
+                , mediaSelectedTab = NoSelectedMediaTab
+              }
+            , Cmd.none
+            )
+
         SearchBasedOnTab tabSelection ->
             case tabSelection of
                 BookTab ->
-                    ( { model | selectedTab = BookTab }, searchUserBooks model.user )
+                    ( { model | mediaSelectedTab = BookTab }, searchUserBooks model.user )
 
                 MovieTab ->
-                    ( { model | selectedTab = MovieTab }, searchUserMovies model.user )
+                    ( { model | mediaSelectedTab = MovieTab }, searchUserMovies model.user )
 
                 TVTab ->
-                    ( { model | selectedTab = TVTab }, searchUserTV model.user )
-
-                RecommendationTab ->
-                    ( { model | selectedTab = RecommendationTab }, getRecommendedMedia model.user )
+                    ( { model | mediaSelectedTab = TVTab }, searchUserTV model.user )
 
                 _ ->
                     ( model, Cmd.none )
+
+        SearchRecommendations ->
+            ( { model
+                | firstSelectedTab = RecommendationTab
+                , mediaSelectedTab = NoMediaTab
+              }
+            , getRecommendedMedia model.user
+            )
 
         MediaResponse mediaResponse ->
             let
@@ -118,7 +146,7 @@ update msg model =
         MediaAddedToProfile result ->
             case result of
                 Ok consumption ->
-                    case model.selectedTab of
+                    case model.mediaSelectedTab of
                         BookTab ->
                             ( model, searchUserBooks model.user )
 
@@ -128,9 +156,8 @@ update msg model =
                         TVTab ->
                             ( model, searchUserTV model.user )
 
-                        RecommendationTab ->
-                            ( model, getRecommendedMedia model.user )
-
+                        --RecommendationTab ->
+                        --    ( model, getRecommendedMedia model.user )
                         _ ->
                             ( model, Cmd.none )
 
@@ -266,25 +293,42 @@ body model =
         [ Html.div [ id "content-wrap" ]
             [ Html.div [ id "user-profile" ] [ Html.text ("Welcome " ++ User.getUsername model.user ++ "!") ]
             , Html.div [ class "tab" ]
-                [ createTab model BookTab "books"
-                , createTab model MovieTab "movies"
-                , createTab model TVTab "tv shows"
-                , createTab model RecommendationTab "recommendations"
+                [ createFirstTab model FeedTab "my feed"
+                , createFirstTab model MediaTab "my media"
+                , createFirstTab model RecommendationTab "recommendations"
+                , createFirstTab model FriendsTab "friends"
                 ]
+            , viewMediaTabRow model
             , Html.div [ class "media-results" ]
                 [ viewTabContent model ]
             ]
         ]
 
 
+viewMediaTabRow : Model -> Html Msg
+viewMediaTabRow model =
+    if model.mediaSelectedTab /= NoMediaTab then
+        Html.div [ class "tab" ]
+            [ createMediaTab model BookTab "books"
+            , createMediaTab model MovieTab "movies"
+            , createMediaTab model TVTab "tv shows"
+            ]
+
+    else
+        Html.div [] []
+
+
 viewTabContent : Model -> Html Msg
 viewTabContent model =
-    case model.selectedTab of
+    case model.firstSelectedTab of
         RecommendationTab ->
             viewRecommendations model.recommendedResults
 
-        _ ->
+        MediaTab ->
             viewMedias model.searchResults model.friends
+
+        _ ->
+            Html.div [] [ Html.text "select a tab and start exploring!" ]
 
 
 viewMedias : WebData (List MediaType) -> WebData (List User.User) -> Html Msg
@@ -564,10 +608,32 @@ viewRecommendedMediaDropdown mediaType =
 -- TABS
 
 
-createTab : Model -> TabSelection -> String -> Html Msg
-createTab model tabSelection tabString =
-    if model.selectedTab == tabSelection then
-        Html.button [ class "tablinks active", Html.Events.onClick (SearchBasedOnTab tabSelection) ] [ Html.text tabString ]
+createFirstTab : Model -> FirstTabSelection -> String -> Html Msg
+createFirstTab model firstTabSelection tabString =
+    if model.firstSelectedTab == firstTabSelection then
+        createFirstTabWithActiveState firstTabSelection "tablinks active" tabString
 
     else
-        Html.button [ class "tablinks", Html.Events.onClick (SearchBasedOnTab tabSelection) ] [ Html.text tabString ]
+        createFirstTabWithActiveState firstTabSelection "tablinks" tabString
+
+
+createFirstTabWithActiveState : FirstTabSelection -> String -> String -> Html Msg
+createFirstTabWithActiveState firstTabSelection activeState tabString =
+    case firstTabSelection of
+        MediaTab ->
+            Html.button [ class activeState, Html.Events.onClick AddMediaTabRow ] [ Html.text tabString ]
+
+        RecommendationTab ->
+            Html.button [ class activeState, Html.Events.onClick SearchRecommendations ] [ Html.text tabString ]
+
+        _ ->
+            Html.button [ class activeState ] [ Html.text tabString ]
+
+
+createMediaTab : Model -> MediaTabSelection -> String -> Html Msg
+createMediaTab model secondTabSelection tabString =
+    if model.mediaSelectedTab == secondTabSelection then
+        Html.button [ class "tablinks active", Html.Events.onClick (SearchBasedOnTab secondTabSelection) ] [ Html.text tabString ]
+
+    else
+        Html.button [ class "tablinks", Html.Events.onClick (SearchBasedOnTab secondTabSelection) ] [ Html.text tabString ]
