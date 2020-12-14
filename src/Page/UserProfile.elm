@@ -87,7 +87,8 @@ update msg model =
     case msg of
         AddMediaTabRow ->
             ( { model
-                | firstSelectedTab = MediaTab
+                | searchResults = NotAsked
+                , firstSelectedTab = MediaTab
                 , mediaSelectedTab = NoSelectedMediaTab
               }
             , Cmd.none
@@ -631,9 +632,9 @@ createFirstTabWithActiveState firstTabSelection activeState tabString =
 
 
 createMediaTab : Model -> MediaTabSelection -> String -> Html Msg
-createMediaTab model secondTabSelection tabString =
-    if model.mediaSelectedTab == secondTabSelection then
-        Html.button [ class "tablinks active", Html.Events.onClick (SearchBasedOnTab secondTabSelection) ] [ Html.text tabString ]
+createMediaTab model mediaTabSelection tabString =
+    if model.mediaSelectedTab == mediaTabSelection then
+        Html.button [ class "tablinks active", Html.Events.onClick (SearchBasedOnTab mediaTabSelection) ] [ Html.text tabString ]
 
     else
-        Html.button [ class "tablinks", Html.Events.onClick (SearchBasedOnTab secondTabSelection) ] [ Html.text tabString ]
+        Html.button [ class "tablinks", Html.Events.onClick (SearchBasedOnTab mediaTabSelection) ] [ Html.text tabString ]
