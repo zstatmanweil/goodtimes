@@ -293,7 +293,7 @@ body model =
         [ Html.div [ id "content-wrap" ]
             [ Html.div [ id "user-profile" ] [ Html.text ("Welcome " ++ User.getUsername model.user ++ "!") ]
             , Html.div [ class "tab" ]
-                [ createFirstTab model FeedTab "my feed"
+                [ createFirstTab model FeedTab "feed"
                 , createFirstTab model MediaTab "my media"
                 , createFirstTab model RecommendationTab "recommendations"
                 , createFirstTab model FriendsTab "friends"
