@@ -24,9 +24,11 @@ type alias Model =
     { user : WebData User.User
     , friends : WebData (List User.User)
     , searchResults : WebData (List MediaType)
+    , filteredResults : WebData (List MediaType)
     , recommendedResults : WebData (List RecommendedMedia)
     , firstSelectedTab : FirstTabSelection
     , mediaSelectedTab : MediaTabSelection
+    , consumptionSelectedTab : ConsumptionTabSelection
     }
 
 
@@ -34,6 +36,7 @@ type Msg
     = None
     | AddMediaTabRow
     | SearchBasedOnTab MediaTabSelection
+    | FilterBasedOnConsumptionTab ConsumptionTabSelection
     | SearchRecommendations
     | MediaResponse (Result Http.Error (List MediaType))
     | UserResponse (Result Http.Error User.User)
@@ -43,6 +46,21 @@ type Msg
     | Recommend MediaType User.User
     | RecommendationResponse (Result Http.Error Recommendation.Recommendation)
     | RecommendedMediaResponse (Result Http.Error (List RecommendedMedia))
+
+
+init : Int -> ( Model, Cmd Msg )
+init userID =
+    ( { user = NotAsked
+      , friends = NotAsked
+      , searchResults = NotAsked
+      , filteredResults = NotAsked
+      , recommendedResults = NotAsked
+      , firstSelectedTab = NoFirstTab
+      , mediaSelectedTab = NoMediaTab
+      , consumptionSelectedTab = NoConsumptionTab
+      }
+    , getUser userID
+    )
 
 
 
@@ -65,17 +83,12 @@ type MediaTabSelection
     | NoMediaTab
 
 
-init : Int -> ( Model, Cmd Msg )
-init userID =
-    ( { user = NotAsked
-      , friends = NotAsked
-      , searchResults = NotAsked
-      , recommendedResults = NotAsked
-      , firstSelectedTab = NoFirstTab
-      , mediaSelectedTab = NoMediaTab
-      }
-    , getUser userID
-    )
+type ConsumptionTabSelection
+    = AllTab
+    | WantToConsumeTab
+    | ConsumingTab
+    | FinishedTab
+    | NoConsumptionTab
 
 
 
@@ -87,7 +100,7 @@ update msg model =
     case msg of
         AddMediaTabRow ->
             ( { model
-                | searchResults = NotAsked
+                | filteredResults = NotAsked
                 , firstSelectedTab = MediaTab
                 , mediaSelectedTab = NoSelectedMediaTab
               }
@@ -97,21 +110,49 @@ update msg model =
         SearchBasedOnTab tabSelection ->
             case tabSelection of
                 BookTab ->
-                    ( { model | mediaSelectedTab = BookTab }, searchUserBooks model.user )
+                    ( { model
+                        | mediaSelectedTab = BookTab
+                        , consumptionSelectedTab = AllTab
+                      }
+                    , searchUserBooks model.user
+                    )
 
                 MovieTab ->
-                    ( { model | mediaSelectedTab = MovieTab }, searchUserMovies model.user )
+                    ( { model
+                        | mediaSelectedTab = MovieTab
+                        , consumptionSelectedTab = AllTab
+                      }
+                    , searchUserMovies model.user
+                    )
 
                 TVTab ->
-                    ( { model | mediaSelectedTab = TVTab }, searchUserTV model.user )
+                    ( { model
+                        | mediaSelectedTab = TVTab
+                        , consumptionSelectedTab = AllTab
+                      }
+                    , searchUserTV model.user
+                    )
 
                 _ ->
                     ( model, Cmd.none )
+
+        FilterBasedOnConsumptionTab consumptionTab ->
+            let
+                filteredMedia =
+                    RemoteData.map (List.filter (resultMatchesStatus consumptionTab)) model.searchResults
+            in
+            ( { model
+                | filteredResults = filteredMedia
+                , consumptionSelectedTab = consumptionTab
+              }
+            , Cmd.none
+            )
 
         SearchRecommendations ->
             ( { model
                 | firstSelectedTab = RecommendationTab
                 , mediaSelectedTab = NoMediaTab
+                , consumptionSelectedTab = NoConsumptionTab
               }
             , getRecommendedMedia model.user
             )
@@ -121,7 +162,12 @@ update msg model =
                 receivedMedia =
                     RemoteData.fromResult mediaResponse
             in
-            ( { model | searchResults = receivedMedia }, Cmd.none )
+            ( { model
+                | searchResults = receivedMedia
+                , filteredResults = receivedMedia
+              }
+            , Cmd.none
+            )
 
         UserResponse userResponse ->
             case userResponse of
@@ -300,6 +346,7 @@ body model =
                 , createFirstTab model FriendsTab "friends"
                 ]
             , viewMediaTabRow model
+            , viewConsumptionTabRow model
             , Html.div [ class "media-results" ]
                 [ viewTabContent model ]
             ]
@@ -319,6 +366,20 @@ viewMediaTabRow model =
         Html.div [] []
 
 
+viewConsumptionTabRow : Model -> Html Msg
+viewConsumptionTabRow model =
+    if model.consumptionSelectedTab /= NoConsumptionTab then
+        Html.div [ class "tab" ]
+            [ createConsumptionTab model AllTab "all"
+            , createConsumptionTab model WantToConsumeTab "want to consume"
+            , createConsumptionTab model ConsumingTab "consuming"
+            , createConsumptionTab model FinishedTab "finished"
+            ]
+
+    else
+        Html.div [] []
+
+
 viewTabContent : Model -> Html Msg
 viewTabContent model =
     case model.firstSelectedTab of
@@ -326,7 +387,7 @@ viewTabContent model =
             viewRecommendations model.recommendedResults
 
         MediaTab ->
-            viewMedias model.searchResults model.friends
+            viewMedias model.filteredResults model.friends
 
         _ ->
             Html.div [] [ Html.text "select a tab and start exploring!" ]
@@ -638,3 +699,36 @@ createMediaTab model mediaTabSelection tabString =
 
     else
         Html.button [ class "tablinks", Html.Events.onClick (SearchBasedOnTab mediaTabSelection) ] [ Html.text tabString ]
+
+
+createConsumptionTab : Model -> ConsumptionTabSelection -> String -> Html Msg
+createConsumptionTab model consumptionTabSelection tabString =
+    if model.consumptionSelectedTab == consumptionTabSelection then
+        Html.button [ class "tablinks active", Html.Events.onClick (FilterBasedOnConsumptionTab consumptionTabSelection) ] [ Html.text tabString ]
+
+    else
+        Html.button [ class "tablinks", Html.Events.onClick (FilterBasedOnConsumptionTab consumptionTabSelection) ] [ Html.text tabString ]
+
+
+resultMatchesStatus : ConsumptionTabSelection -> MediaType -> Bool
+resultMatchesStatus consumptionTabSelection media =
+    case Media.getMediaStatus media of
+        Just status ->
+            case consumptionTabSelection of
+                AllTab ->
+                    True
+
+                WantToConsumeTab ->
+                    status == Consumption.WantToConsume
+
+                ConsumingTab ->
+                    status == Consumption.Consuming
+
+                FinishedTab ->
+                    status == Consumption.Finished
+
+                _ ->
+                    False
+
+        Nothing ->
+            False
