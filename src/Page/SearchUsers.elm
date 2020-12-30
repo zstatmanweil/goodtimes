@@ -132,6 +132,7 @@ viewUser user =
         [ Html.div [ class "user-card" ]
             [ Html.div [ class "user-info" ]
                 [ Html.b [] [ Html.text (user.firstName ++ " " ++ user.lastName) ]
+                , Html.text user.email
                 ]
             ]
         ]

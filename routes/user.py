@@ -42,7 +42,7 @@ def get_user_by_email():
     user_email = args.get('email', '')
 
     session = Session()
-    user_results = session.query(User).filter_by(email=user_email).all()
+    user_results = session.query(User).filter(User.email.contains(user_email)).all()
     session.close()
     return User.schema().dumps(user_results, many=True)
 

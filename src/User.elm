@@ -9,16 +9,18 @@ type alias User =
     , username : String
     , firstName : String
     , lastName : String
+    , email : String
     }
 
 
 decoder : Decoder User
 decoder =
-    Decode.map4 User
+    Decode.map5 User
         (Decode.field "id" Decode.int)
         (Decode.field "username" Decode.string)
         (Decode.field "first_name" Decode.string)
         (Decode.field "last_name" Decode.string)
+        (Decode.field "email" Decode.string)
 
 
 getUsername : WebData User -> String
