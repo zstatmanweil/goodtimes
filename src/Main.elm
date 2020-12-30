@@ -4,6 +4,7 @@ import Browser exposing (..)
 import Browser.Navigation as Nav
 import Html exposing (Html)
 import Page.Search as Search
+import Page.SearchUsers as SearchUsers
 import Page.UserProfile as UserProfile
 import Routes exposing (..)
 import Skeleton
@@ -37,6 +38,7 @@ type alias Model =
 type Page
     = NotFound
     | Search Search.Model
+    | SearchUsers SearchUsers.Model
     | UserProfile UserProfile.Model
 
 
@@ -70,6 +72,9 @@ view model =
         Search search ->
             Skeleton.view SearchMsg (Search.view search)
 
+        SearchUsers search ->
+            Skeleton.view SearchUsersMsg (SearchUsers.view search)
+
         UserProfile user ->
             Skeleton.view UserProfileMsg (UserProfile.view user)
 
@@ -83,6 +88,7 @@ type Msg
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | SearchMsg Search.Msg
+    | SearchUsersMsg SearchUsers.Msg
     | UserProfileMsg UserProfile.Msg
 
 
@@ -109,6 +115,14 @@ update msg model =
                 _ ->
                     ( model, Cmd.none )
 
+        SearchUsersMsg msge ->
+            case model.page of
+                SearchUsers search ->
+                    stepSearchUsers model (SearchUsers.update msge search)
+
+                _ ->
+                    ( model, Cmd.none )
+
         UserProfileMsg msge ->
             case model.page of
                 UserProfile user ->
@@ -121,14 +135,17 @@ update msg model =
             ( model, Cmd.none )
 
 
-
---TODO: what is this doing exactly?
-
-
 stepSearch : Model -> ( Search.Model, Cmd Search.Msg ) -> ( Model, Cmd Msg )
 stepSearch model ( search, cmds ) =
     ( { model | page = Search search }
     , Cmd.map SearchMsg cmds
+    )
+
+
+stepSearchUsers : Model -> ( SearchUsers.Model, Cmd SearchUsers.Msg ) -> ( Model, Cmd Msg )
+stepSearchUsers model ( search, cmds ) =
+    ( { model | page = SearchUsers search }
+    , Cmd.map SearchUsersMsg cmds
     )
 
 
@@ -157,6 +174,11 @@ stepUrl url model =
 
                 Routes.Search ->
                     ( { model | page = Search (Tuple.first (Search.init ())) }
+                    , Cmd.none
+                    )
+
+                Routes.SearchUsers ->
+                    ( { model | page = SearchUsers (Tuple.first (SearchUsers.init ())) }
                     , Cmd.none
                     )
 

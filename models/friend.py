@@ -15,7 +15,7 @@ mapper_registry = registry()
 @mapper_registry.mapped
 @dataclass_json
 @dataclass
-class Recommendation:
+class Friend:
     __table__ = sa.Table(
         'friend',
         mapper_registry.metadata,

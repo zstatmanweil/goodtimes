@@ -36,6 +36,17 @@ def get_user_friends(user_id):
     return User.schema().dumps(user_results, many=True)
 
 
+@user.route("/users", methods=["GET"])
+def get_user_by_email():
+    args = request.args
+    user_email = args.get('email', '')
+
+    session = Session()
+    user_results = session.query(User).filter_by(email=user_email).all()
+    session.close()
+    return User.schema().dumps(user_results, many=True)
+
+
 @user.route("/user/<int:user_id>/media/<media_type>", methods=["POST"])
 def add_media_to_profile(user_id, media_type):
     """

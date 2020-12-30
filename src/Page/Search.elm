@@ -186,7 +186,7 @@ body model =
     Html.main_ [ class "content" ]
         [ Html.div [ id "content-wrap" ]
             [ Html.form
-                [ class "media-searcher"
+                [ class "searcher"
                 , onSubmit SearchMedia
                 ]
                 [ Html.input
@@ -210,7 +210,7 @@ body model =
                     [ Attr.disabled <| String.isEmpty model.query ]
                     [ Html.text "Search!" ]
                 ]
-            , Html.div [ class "media-selector" ]
+            , Html.div [ class "selector" ]
                 [ Html.label []
                     [ Html.input [ type_ "radio", Attr.name "media", Attr.value "books", Html.Events.onClick (UpdateMediaSelection BookSelection) ] []
                     , Html.text "books"
@@ -224,7 +224,7 @@ body model =
                     , Html.text "tv shows"
                     ]
                 ]
-            , Html.div [ class "media-results" ]
+            , Html.div [ class "results" ]
                 [ viewMedias model.searchResults ]
             ]
         ]

@@ -68,9 +68,9 @@
    color: theme.color('scale', 'light');
 }
 
-// Media
+// Search
 .content {
-    .media-searcher {
+    .searcher {
         padding: 8px;
         background-color: theme.color('primary', 'light');
 
@@ -79,11 +79,11 @@
         }
     }
 
-    .media-results {
+    .results {
         padding: 8px;
     }
 
-    .media-selector {
+    .selector {
         padding-left: 4px;
         padding-bottom: 8px;
         background-color: theme.color('primary', 'light');
@@ -92,6 +92,7 @@
 
 }
 
+// MEDIA
 .media-card {
     @include theme.text-setting('sm');
     display: flex;
@@ -126,6 +127,25 @@
     height: 130px;
 }
 
+// Users
+
+.user-card {
+    @include theme.text-setting('sm');
+    display: flex;
+    border: 1px solid theme.color('accent', 'light');
+    padding: 8px;
+    height: 40px;
+
+    .user-info {
+        display: flex;
+        flex-direction: column;
+        padding-left: 8px;
+    }
+}
+
+.media-card-long {
+    height: 130px;
+}
 
 
 // Dropdown
