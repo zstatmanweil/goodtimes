@@ -41,6 +41,7 @@ type Msg
     | MediaResponse (Result Http.Error (List MediaType))
     | UserResponse (Result Http.Error User.User)
     | FriendResponse (Result Http.Error (List User.User))
+    | GetFriends
     | AddMediaToProfile MediaType Consumption.Status
     | MediaAddedToProfile (Result Http.Error Consumption)
     | Recommend MediaType User.User
@@ -177,6 +178,15 @@ update msg model =
                 -- TODO: handle error
                 Err resp ->
                     ( model, Cmd.none )
+
+        GetFriends ->
+            ( { model
+                | firstSelectedTab = FriendsTab
+                , mediaSelectedTab = NoMediaTab
+                , consumptionSelectedTab = NoConsumptionTab
+              }
+            , getFriends (User.getUserId model.user)
+            )
 
         FriendResponse friendResponse ->
             case friendResponse of
@@ -347,7 +357,7 @@ body model =
                 ]
             , viewMediaTabRow model
             , viewConsumptionTabRow model
-            , Html.div [ class "media-results" ]
+            , Html.div [ class "results" ]
                 [ viewTabContent model ]
             ]
         ]
@@ -389,8 +399,45 @@ viewTabContent model =
         MediaTab ->
             viewMedias model.filteredResults model.friends
 
+        FriendsTab ->
+            viewFriends model.friends
+
         _ ->
             Html.div [] [ Html.text "select a tab and start exploring!" ]
+
+
+viewFriends : WebData (List User.User) -> Html Msg
+viewFriends friends =
+    case friends of
+        NotAsked ->
+            Html.text "no friends"
+
+        Loading ->
+            Html.text "entering the database!"
+
+        Failure error ->
+            -- TODO show better error!
+            Html.text "something went wrong"
+
+        Success users ->
+            if List.isEmpty users then
+                Html.text "no results..."
+
+            else
+                Html.ul []
+                    (List.map viewFriend users)
+
+
+viewFriend : User.User -> Html Msg
+viewFriend user =
+    Html.li []
+        [ Html.div [ class "user-card" ]
+            [ Html.div [ class "user-info" ]
+                [ Html.b [] [ Html.text (user.firstName ++ " " ++ user.lastName) ]
+                , Html.text user.email
+                ]
+            ]
+        ]
 
 
 viewMedias : WebData (List MediaType) -> WebData (List User.User) -> Html Msg
@@ -687,6 +734,9 @@ createFirstTabWithActiveState firstTabSelection activeState tabString =
 
         RecommendationTab ->
             Html.button [ class activeState, Html.Events.onClick SearchRecommendations ] [ Html.text tabString ]
+
+        FriendsTab ->
+            Html.button [ class activeState, Html.Events.onClick GetFriends ] [ Html.text tabString ]
 
         _ ->
             Html.button [ class activeState ] [ Html.text tabString ]

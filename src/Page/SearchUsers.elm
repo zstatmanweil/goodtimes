@@ -151,7 +151,7 @@ viewUsers foundUsers =
                 Html.text "no results..."
 
             else
-                Html.ul [ class "book-list" ]
+                Html.ul []
                     (List.map viewUser users)
 
 
