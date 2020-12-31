@@ -146,24 +146,29 @@
         margin-left: 20px;
         position:relative;
         height:100%;
+    }
 
-        .user-button {
-            transform: translateY(+25%);
-            background-color: theme.color('accent', 'base');
-            color: white;
-            padding: 6px;
-            border: none;
-            cursor: pointer;
-        }
+    .user-button {
+        transform: translateY(+25%);
+        background-color: theme.color('accent', 'base');
+        color: white;
+        padding: 6px;
+        border: none;
+        cursor: pointer;
+    }
 
-        .user-status {
-            transform: translateY(+50%);
-            display: flex;
-            flex-direction: row;
-            color: theme.color('accent', 'base');
-            font-weight: bold;
-            border: none;
-            }
+
+    .user-button:hover {
+        background-color: theme.color('accent', 'dark');
+    }
+
+    .user-status {
+        transform: translateY(+50%);
+        display: flex;
+        flex-direction: row;
+        color: theme.color('accent', 'base');
+        font-weight: bold;
+        border: none;
     }
 }
 
@@ -229,6 +234,10 @@
 
 /* Change the background color of the dropdown button when the dropdown content is shown */
 .dropdown:hover .dropbtn {
+  background-color: theme.color('primary', 'light');
+}
+
+.dropdown:hover .dropbtn-existing-status {
   background-color: theme.color('primary', 'light');
 }
 
