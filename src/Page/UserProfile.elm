@@ -137,7 +137,7 @@ update msg model =
             in
             ( { model
                 | searchResults = receivedMedia
-                , filteredResults = receivedMedia
+                , filteredResults = RemoteData.map (List.filter (resultMatchesStatus model.consumptionSelectedTab)) receivedMedia
               }
             , Cmd.none
             )
