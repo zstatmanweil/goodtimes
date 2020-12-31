@@ -65,34 +65,6 @@ init userID =
 
 
 
--- cascading tabs
-
-
-type FirstTabSelection
-    = FeedTab
-    | MediaTab
-    | RecommendationTab
-    | FriendsTab
-    | NoFirstTab
-
-
-type MediaTabSelection
-    = BookTab
-    | MovieTab
-    | TVTab
-    | NoSelectedMediaTab
-    | NoMediaTab
-
-
-type ConsumptionTabSelection
-    = AllTab
-    | WantToConsumeTab
-    | ConsumingTab
-    | FinishedTab
-    | NoConsumptionTab
-
-
-
 -- UPDATE
 
 
@@ -380,10 +352,10 @@ viewConsumptionTabRow : Model -> Html Msg
 viewConsumptionTabRow model =
     if model.consumptionSelectedTab /= NoConsumptionTab then
         Html.div [ class "tab" ]
-            [ createConsumptionTab model AllTab "all"
-            , createConsumptionTab model WantToConsumeTab "want to consume"
-            , createConsumptionTab model ConsumingTab "consuming"
-            , createConsumptionTab model FinishedTab "finished"
+            [ createConsumptionTab model AllTab (consumptionTabSelectionToString model.mediaSelectedTab AllTab)
+            , createConsumptionTab model WantToConsumeTab (consumptionTabSelectionToString model.mediaSelectedTab WantToConsumeTab)
+            , createConsumptionTab model ConsumingTab (consumptionTabSelectionToString model.mediaSelectedTab ConsumingTab)
+            , createConsumptionTab model FinishedTab (consumptionTabSelectionToString model.mediaSelectedTab FinishedTab)
             ]
 
     else
@@ -715,6 +687,72 @@ viewRecommendedMediaDropdown mediaType =
 
 
 -- TABS
+-- cascading tabs
+
+
+type FirstTabSelection
+    = FeedTab
+    | MediaTab
+    | RecommendationTab
+    | FriendsTab
+    | NoFirstTab
+
+
+type MediaTabSelection
+    = BookTab
+    | MovieTab
+    | TVTab
+    | NoSelectedMediaTab
+    | NoMediaTab
+
+
+type ConsumptionTabSelection
+    = AllTab
+    | WantToConsumeTab
+    | ConsumingTab
+    | FinishedTab
+    | NoConsumptionTab
+
+
+consumptionTabSelectionToString : MediaTabSelection -> ConsumptionTabSelection -> String
+consumptionTabSelectionToString mediaTab consumptionTab =
+    case mediaTab of
+        BookTab ->
+            case consumptionTab of
+                AllTab ->
+                    "all"
+
+                WantToConsumeTab ->
+                    "want to read"
+
+                ConsumingTab ->
+                    "reading"
+
+                FinishedTab ->
+                    "read"
+
+                _ ->
+                    ""
+
+        NoMediaTab ->
+            "something went wrong"
+
+        _ ->
+            case consumptionTab of
+                AllTab ->
+                    "all"
+
+                WantToConsumeTab ->
+                    "want to watch"
+
+                ConsumingTab ->
+                    "watching"
+
+                FinishedTab ->
+                    "watched"
+
+                _ ->
+                    ""
 
 
 createFirstTab : Model -> FirstTabSelection -> String -> Html Msg
