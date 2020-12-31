@@ -20,8 +20,8 @@ def upgrade():
     op.create_table(
         'friend',
         sa.Column('id', sa.Integer, primary_key=True),
-        sa.Column('requester_id', sa.Integer, sa.ForeignKey("user.id")),
-        sa.Column('requested_id', sa.Integer, sa.ForeignKey("user.id")),
+        sa.Column('requester_id', sa.Integer, sa.ForeignKey('user.id')),
+        sa.Column('requested_id', sa.Integer, sa.ForeignKey('user.id')),
         sa.Column('status', sa.String(50)),
         sa.Column('created', sa.DateTime)
     )

@@ -7,7 +7,7 @@ import Http
 import Json.Decode as Decode
 import RemoteData exposing (RemoteData(..), WebData)
 import Skeleton
-import User exposing (User)
+import User exposing (FriendLink, FriendStatus(..), User, UserWithFriendStatus, friendLinkDecoder, friendLinkEncoder)
 
 
 
@@ -15,7 +15,7 @@ import User exposing (User)
 
 
 type alias Model =
-    { searchResults : WebData (List User)
+    { searchResults : WebData (List UserWithFriendStatus)
     , query : String
     }
 
@@ -24,7 +24,9 @@ type Msg
     = None
     | SearchUsers
     | UpdateQuery String
-    | UserResponse (Result Http.Error (List User))
+    | UserWithFriendStatusResponse (Result Http.Error (List UserWithFriendStatus))
+    | RequestFriend UserWithFriendStatus FriendStatus
+    | FriendAdded (Result Http.Error FriendLink)
 
 
 init : () -> ( Model, Cmd Msg )
@@ -43,28 +45,55 @@ init _ =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        --TODO pass in user id instead of 1
         SearchUsers ->
-            ( model, searchUsers model.query )
+            ( model, searchUsers 1 model.query )
 
         UpdateQuery newString ->
             ( { model | query = newString }, Cmd.none )
 
-        UserResponse userResponse ->
+        UserWithFriendStatusResponse userResponse ->
             let
                 foundUsers =
                     RemoteData.fromResult userResponse
             in
             ( { model | searchResults = foundUsers }, Cmd.none )
 
+        RequestFriend user status ->
+            ( model, addFriend user status )
+
+        FriendAdded result ->
+            case result of
+                Ok friendLink ->
+                    -- TODO pass in user id instead of 1
+                    ( model, searchUsers 1 model.query )
+
+                Err httpError ->
+                    -- TODO handle error!
+                    ( model, Cmd.none )
+
         None ->
             ( model, Cmd.none )
 
 
-searchUsers : String -> Cmd Msg
-searchUsers emailString =
+searchUsers : Int -> String -> Cmd Msg
+searchUsers userId emailString =
     Http.get
-        { url = "http://localhost:5000/users?email=" ++ emailString
-        , expect = Http.expectJson UserResponse (Decode.list User.decoder)
+        { url = "http://localhost:5000/users?email=" ++ emailString ++ "&user_id=" ++ String.fromInt userId
+        , expect = Http.expectJson UserWithFriendStatusResponse (Decode.list User.userWithStatusDecoder)
+        }
+
+
+
+-- TODO replace 1 with real userId
+
+
+addFriend : UserWithFriendStatus -> FriendStatus -> Cmd Msg
+addFriend user status =
+    Http.post
+        { url = "http://localhost:5000/friend"
+        , body = Http.jsonBody (friendLinkEncoder 1 user.id status)
+        , expect = Http.expectJson FriendAdded friendLinkDecoder
         }
 
 
@@ -104,7 +133,7 @@ body model =
         ]
 
 
-viewUsers : WebData (List User) -> Html Msg
+viewUsers : WebData (List UserWithFriendStatus) -> Html Msg
 viewUsers foundUsers =
     case foundUsers of
         NotAsked ->
@@ -126,7 +155,7 @@ viewUsers foundUsers =
                     (List.map viewUser users)
 
 
-viewUser : User -> Html Msg
+viewUser : UserWithFriendStatus -> Html Msg
 viewUser user =
     Html.li []
         [ Html.div [ class "user-card" ]
@@ -134,8 +163,27 @@ viewUser user =
                 [ Html.b [] [ Html.text (user.firstName ++ " " ++ user.lastName) ]
                 , Html.text user.email
                 ]
+            , viewFriendButton user
             ]
         ]
+
+
+viewFriendButton : UserWithFriendStatus -> Html Msg
+viewFriendButton user =
+    Html.div [ class "user-button-wrapper" ] <|
+        case user.status of
+            Nothing ->
+                [ Html.button
+                    [ class "user-button"
+                    , Html.Events.onClick (RequestFriend user Requested)
+                    ]
+                    [ Html.text "Add Friend >>" ]
+                ]
+
+            Just status ->
+                [ Html.div [ class "user-status" ]
+                    [ Html.text (User.friendStatusAsString status) ]
+                ]
 
 
 

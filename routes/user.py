@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from models.consumption import Consumption, ConsumptionStatus
 from models.recommendation import RecommendationStatus, Recommendation
 from models.user import User
-from db.helpers import MEDIAS, get_consumption_records, get_recommendation_records
+from db.helpers import MEDIAS, get_consumption_records, get_recommendation_records, get_users_and_friend_statuses
 
 config = ConfigFactory.parse_file('config/config')
 user = Blueprint("user", __name__)
@@ -37,14 +37,22 @@ def get_user_friends(user_id):
 
 
 @user.route("/users", methods=["GET"])
-def get_user_by_email():
+def get_user_and_status_by_email():
     args = request.args
-    user_email = args.get('email', '')
+    email_substring = args.get('email', '')
+    user_id = args.get('user_id')
 
     session = Session()
-    user_results = session.query(User).filter(User.email.contains(user_email)).all()
+    user_results = get_users_and_friend_statuses(user_id, email_substring, session)
+
+    final = []
+    for user, status in user_results:
+        u = user.to_dict()
+        u['status'] = status
+        final.append(u)
     session.close()
-    return User.schema().dumps(user_results, many=True)
+
+    return jsonify(final)
 
 
 @user.route("/user/<int:user_id>/media/<media_type>", methods=["POST"])

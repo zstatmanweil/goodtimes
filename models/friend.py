@@ -9,6 +9,8 @@ from sqlalchemy.orm import registry
 
 from models.user import User
 
+from models.user import User
+
 mapper_registry = registry()
 
 
@@ -20,8 +22,8 @@ class Friend:
         'friend',
         mapper_registry.metadata,
         sa.Column('id', sa.Integer, primary_key=True),
-        sa.Column('requester_id', sa.Integer, sa.ForeignKey("user.id")),
-        sa.Column('requested_id', sa.Integer, sa.ForeignKey("user.id")),
+        sa.Column('requester_id', sa.Integer, sa.ForeignKey(User.id)),
+        sa.Column('requested_id', sa.Integer, sa.ForeignKey(User.id)),
         sa.Column('status', sa.String(50)),
         sa.Column('created', sa.DateTime)
     )

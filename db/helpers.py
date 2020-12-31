@@ -1,6 +1,6 @@
 from typing import List, Tuple
 
-from sqlalchemy import and_, desc, func
+from sqlalchemy import and_, or_, desc, func
 from sqlalchemy.orm import session
 
 from models.books import Book
@@ -9,6 +9,7 @@ from models.recommendation import Recommendation
 from models.tv import TV
 from models.consumption import Consumption
 from models.user import User
+from models.friend import Friend
 
 MEDIAS = {
     "book": Book,
@@ -82,6 +83,26 @@ def get_recommendation_records(user_id: int, media_type: str, session: session) 
                                 Recommendation.media_type == cons_combined_subq.c.media_type,
                                 Recommendation.recommended_user_id == cons_combined_subq.c.user_id), isouter=True) \
         .order_by(desc(Recommendation.created)) \
+        .all()
+
+    return results
+
+def get_users_and_friend_statuses(user_id: int, email_substring: str, session: session) -> List[Tuple]:
+    """
+    Get all users that have an email containing the email substring along with the friendship status,
+    if there is one.
+    :param user_id:
+    :param email_substring:
+    :param session:
+    :return:
+    """
+
+    friend_subq = session.query(Friend).filter(or_(Friend.requester_id==user_id, Friend.requested_id==user_id)).subquery()
+
+    results = session.query(User, friend_subq.c.status).filter(User.email.contains(email_substring))\
+        .filter(User.id != user_id)\
+        .join(friend_subq, or_(User.id == friend_subq.c.requester_id,
+                               User.id == friend_subq.c.requested_id), isouter=True)\
         .all()
 
     return results
