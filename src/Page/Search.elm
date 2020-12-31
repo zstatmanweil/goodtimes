@@ -234,7 +234,7 @@ viewMedias : WebData (List MediaType) -> Html Msg
 viewMedias receivedMedia =
     case receivedMedia of
         NotAsked ->
-            Html.text "go ahead, search!"
+            Html.text "select a media type and search!"
 
         Loading ->
             Html.text "entering the database!"
