@@ -26,7 +26,7 @@ type Msg
     | UpdateQuery String
     | UserWithFriendStatusResponse (Result Http.Error (List UserWithFriendStatus))
     | RequestFriend UserWithFriendStatus FriendStatus
-    | FriendAdded (Result Http.Error FriendLink)
+    | FriendLinkAdded (Result Http.Error FriendLink)
 
 
 init : () -> ( Model, Cmd Msg )
@@ -60,9 +60,9 @@ update msg model =
             ( { model | searchResults = foundUsers }, Cmd.none )
 
         RequestFriend user status ->
-            ( model, addFriend user status )
+            ( model, addFriendLink user status )
 
-        FriendAdded result ->
+        FriendLinkAdded result ->
             case result of
                 Ok friendLink ->
                     -- TODO pass in user id instead of 1
@@ -88,12 +88,12 @@ searchUsers userId emailString =
 -- TODO replace 1 with real userId
 
 
-addFriend : UserWithFriendStatus -> FriendStatus -> Cmd Msg
-addFriend user status =
+addFriendLink : UserWithFriendStatus -> FriendStatus -> Cmd Msg
+addFriendLink user status =
     Http.post
         { url = "http://localhost:5000/friend"
         , body = Http.jsonBody (friendLinkEncoder 1 user.id status)
-        , expect = Http.expectJson FriendAdded friendLinkDecoder
+        , expect = Http.expectJson FriendLinkAdded friendLinkDecoder
         }
 
 
