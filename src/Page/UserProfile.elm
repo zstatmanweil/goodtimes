@@ -141,7 +141,7 @@ update msg model =
                     ( { model
                         | friendshipSelectedTab = RequestedFriendsTab
                       }
-                    , getExistingFriends (User.getUserId model.user)
+                    , getFriendRequests (User.getUserId model.user)
                     )
 
                 _ ->
@@ -286,6 +286,14 @@ getExistingFriends userID =
         }
 
 
+getFriendRequests : Int -> Cmd Msg
+getFriendRequests userID =
+    Http.get
+        { url = "http://localhost:5000/user/" ++ String.fromInt userID ++ "/requests"
+        , expect = Http.expectJson FriendResponse (Decode.list User.decoder)
+        }
+
+
 getRecommendedMedia : WebData User.User -> Cmd Msg
 getRecommendedMedia user =
     Http.get
@@ -423,7 +431,7 @@ viewFriends : WebData (List User.User) -> Html Msg
 viewFriends friends =
     case friends of
         NotAsked ->
-            Html.text "no friends"
+            Html.text "looking for friends?"
 
         Loading ->
             Html.text "entering the database!"
@@ -434,7 +442,7 @@ viewFriends friends =
 
         Success users ->
             if List.isEmpty users then
-                Html.text "no results..."
+                Html.text "no friends..."
 
             else
                 Html.ul []
