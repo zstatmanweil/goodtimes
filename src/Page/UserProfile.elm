@@ -13,7 +13,7 @@ import Recommendation exposing (RecommendedMedia)
 import RemoteData exposing (RemoteData(..), WebData)
 import Skeleton
 import TV
-import User
+import User exposing (FriendLink, FriendStatus(..), friendLinkDecoder, friendLinkEncoder)
 
 
 
@@ -44,6 +44,8 @@ type Msg
     | UserResponse (Result Http.Error User.User)
     | FriendResponse (Result Http.Error (List User.User))
     | GetFriends
+    | AddFriendLink User.User FriendStatus
+    | FriendLinkAdded (Result Http.Error FriendLink)
     | AddMediaToProfile MediaType Consumption.Status
     | MediaAddedToProfile (Result Http.Error Consumption)
     | Recommend MediaType User.User
@@ -197,6 +199,18 @@ update msg model =
                 Err resp ->
                     ( model, Cmd.none )
 
+        AddFriendLink user friendStatus ->
+            ( model, addFriendLink user friendStatus )
+
+        FriendLinkAdded result ->
+            case result of
+                Ok friendLink ->
+                    ( model, getFriendRequests (User.getUserId model.user) )
+
+                Err httpError ->
+                    -- TODO handle error!
+                    ( model, Cmd.none )
+
         AddMediaToProfile mediaType status ->
             ( model, addMediaToProfile mediaType status model.user )
 
@@ -291,6 +305,15 @@ getFriendRequests userID =
     Http.get
         { url = "http://localhost:5000/user/" ++ String.fromInt userID ++ "/requests"
         , expect = Http.expectJson FriendResponse (Decode.list User.decoder)
+        }
+
+
+addFriendLink : User.User -> FriendStatus -> Cmd Msg
+addFriendLink user status =
+    Http.post
+        { url = "http://localhost:5000/friend"
+        , body = Http.jsonBody (friendLinkEncoder user.id 1 status)
+        , expect = Http.expectJson FriendLinkAdded friendLinkDecoder
         }
 
 
@@ -421,7 +444,15 @@ viewTabContent model =
             viewMedias model.filteredResults model.friends
 
         FriendsTab ->
-            viewFriends model.friends
+            case model.friendshipSelectedTab of
+                ExistingFriendsTab ->
+                    viewFriends model.friends
+
+                RequestedFriendsTab ->
+                    viewFriendRequests model.friends
+
+                _ ->
+                    Html.text "something went wrong"
 
         _ ->
             Html.div [] [ Html.text "select a tab and start exploring!" ]
@@ -458,6 +489,52 @@ viewFriend user =
                 , Html.text user.email
                 ]
             ]
+        ]
+
+
+viewFriendRequests : WebData (List User.User) -> Html Msg
+viewFriendRequests friends =
+    case friends of
+        NotAsked ->
+            Html.text "looking for friends?"
+
+        Loading ->
+            Html.text "entering the database!"
+
+        Failure error ->
+            -- TODO show better error!
+            Html.text "something went wrong"
+
+        Success users ->
+            if List.isEmpty users then
+                Html.text "no friend requests..."
+
+            else
+                Html.ul []
+                    (List.map viewFriendRequest users)
+
+
+viewFriendRequest : User.User -> Html Msg
+viewFriendRequest user =
+    Html.li []
+        [ Html.div [ class "user-card" ]
+            [ Html.div [ class "user-info" ]
+                [ Html.b [] [ Html.text (user.firstName ++ " " ++ user.lastName) ]
+                , Html.text user.email
+                ]
+            , viewAcceptFriendButton user
+            ]
+        ]
+
+
+viewAcceptFriendButton : User.User -> Html Msg
+viewAcceptFriendButton user =
+    Html.div [ class "user-button-wrapper" ] <|
+        [ Html.button
+            [ class "user-button"
+            , Html.Events.onClick (AddFriendLink user Accepted)
+            ]
+            [ Html.text "Accept Friend >>" ]
         ]
 
 

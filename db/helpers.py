@@ -129,7 +129,7 @@ def get_user_friends(user_id: int, session: session) -> List[Tuple]:
         .group_by(Friend.requester_id, Friend.requested_id) \
         .subquery()
 
-    friend_subq = session.query(Friend).filter(and_(Friend.requested_id == user_id,
+    friend_subq = session.query(Friend).filter(and_(or_(Friend.requested_id == user_id, Friend.requester_id == user_id),
                                                     Friend.status == FriendStatus.ACCEPTED.value)) \
         .join(max_friend_link_subq, and_(Friend.requester_id == max_friend_link_subq.c.requester_id,
                                          Friend.requested_id == max_friend_link_subq.c.requested_id,
