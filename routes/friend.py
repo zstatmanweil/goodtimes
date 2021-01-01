@@ -2,10 +2,11 @@ from datetime import datetime
 
 from pyhocon import ConfigFactory
 
-from flask import current_app, jsonify, request, Blueprint
+from flask import jsonify, request, Blueprint
 import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker
 
+from db.helpers import get_user_friends, get_user_friend_requests
 from models.friend import Friend, FriendStatus
 from models.user import User
 
@@ -55,7 +56,7 @@ def add_friend_link():
 
 
 @friend.route("/user/<int:user_id>/friends", methods=["GET"])
-def get_user_friends(user_id):
+def get_friends(user_id):
     """
     Get all a user's friends.
     :param user_id:
@@ -67,4 +68,15 @@ def get_user_friends(user_id):
     return User.schema().dumps(user_results, many=True)
 
 
+@friend.route("/user/<int:user_id>/requests", methods=["GET"])
+def get_friend_requests(user_id):
+    """
+    Get all a user's friends.
+    :param user_id:
+    :return:
+    """
+    session = Session()
+    user_results = get_user_friend_requests(user_id, session)
+    session.close()
+    return User.schema().dumps(user_results, many=True)
 

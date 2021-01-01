@@ -97,11 +97,18 @@ def get_users_and_friend_statuses(user_id: int, email_substring: str, session: s
     :param session:
     :return:
     """
+    max_friend_link_subq = session.query(Friend.requester_id, Friend.requested_id, func.max(Friend.created).label("max_created")) \
+        .group_by(Friend.requester_id, Friend.requested_id) \
+        .subquery()
 
-    friend_subq = session.query(Friend).filter(or_(Friend.requester_id==user_id, Friend.requested_id==user_id)).subquery()
+    friend_subq = session.query(Friend).filter(or_(Friend.requester_id == user_id, Friend.requested_id == user_id)) \
+        .join(max_friend_link_subq, and_(Friend.requester_id == max_friend_link_subq.c.requester_id,
+                                         Friend.requested_id == max_friend_link_subq.c.requested_id,
+                                         Friend.created == max_friend_link_subq.c.max_created)) \
+        .subquery()
 
     results = session.query(User, friend_subq.c.status).filter(User.email.contains(email_substring))\
-        .filter(User.id != user_id)\
+        .filter(User.id != user_id) \
         .join(friend_subq, or_(User.id == friend_subq.c.requester_id,
                                User.id == friend_subq.c.requested_id), isouter=True)\
         .all()
@@ -109,7 +116,7 @@ def get_users_and_friend_statuses(user_id: int, email_substring: str, session: s
     return results
 
 
-def get_users_friends(user_id: int, session: session) -> List[Tuple]:
+def get_user_friends(user_id: int, session: session) -> List[Tuple]:
     """
     Get all a user's friends
     :param user_id:
@@ -120,6 +127,26 @@ def get_users_friends(user_id: int, session: session) -> List[Tuple]:
     friend_subq = session.query(Friend).filter(and_(
                                             or_(Friend.requester_id == user_id, Friend.requested_id == user_id),
                                             Friend.status == FriendStatus.ACCEPTED.value)).subquery()
+
+    results = session.query(User).filter(User.id != user_id)\
+        .join(friend_subq, or_(User.id == friend_subq.c.requester_id,
+                               User.id == friend_subq.c.requested_id))\
+        .all()
+
+    return results
+
+
+def get_user_friend_requests(user_id: int, session: session) -> List[Tuple]:
+    """
+    Get all a user's friend requests.
+    :param user_id:
+    :param session:
+    :return:
+    """
+
+    friend_subq = session.query(Friend).filter(and_(
+                                            or_(Friend.requester_id == user_id, Friend.requested_id == user_id),
+                                            Friend.status == FriendStatus.REQUESTED.value)).subquery()
 
     results = session.query(User).filter(User.id != user_id)\
         .join(friend_subq, or_(User.id == friend_subq.c.requester_id,
