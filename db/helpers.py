@@ -9,7 +9,7 @@ from models.recommendation import Recommendation
 from models.tv import TV
 from models.consumption import Consumption
 from models.user import User
-from models.friend import Friend
+from models.friend import Friend, FriendStatus
 
 MEDIAS = {
     "book": Book,
@@ -87,6 +87,7 @@ def get_recommendation_records(user_id: int, media_type: str, session: session) 
 
     return results
 
+
 def get_users_and_friend_statuses(user_id: int, email_substring: str, session: session) -> List[Tuple]:
     """
     Get all users that have an email containing the email substring along with the friendship status,
@@ -107,3 +108,22 @@ def get_users_and_friend_statuses(user_id: int, email_substring: str, session: s
 
     return results
 
+
+def get_users_friends(user_id: int, session: session) -> List[Tuple]:
+    """
+    Get all a user's friends
+    :param user_id:
+    :param session:
+    :return:
+    """
+
+    friend_subq = session.query(Friend).filter(and_(
+                                            or_(Friend.requester_id == user_id, Friend.requested_id == user_id),
+                                            Friend.status == FriendStatus.ACCEPTED.value)).subquery()
+
+    results = session.query(User).filter(User.id != user_id)\
+        .join(friend_subq, or_(User.id == friend_subq.c.requester_id,
+                               User.id == friend_subq.c.requested_id))\
+        .all()
+
+    return results

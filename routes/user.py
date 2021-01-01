@@ -27,15 +27,6 @@ def get_user(user_id):
     return user_result.to_json()
 
 
-@user.route("/user/<int:user_id>/friends", methods=["GET"])
-def get_user_friends(user_id):
-    # TODO: get user's friends rather than all users
-    session = Session()
-    user_results = session.query(User).filter(User.id != user_id).all()
-    session.close()
-    return User.schema().dumps(user_results, many=True)
-
-
 @user.route("/users", methods=["GET"])
 def get_user_and_status_by_email():
     args = request.args

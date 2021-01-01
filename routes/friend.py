@@ -7,6 +7,7 @@ import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker
 
 from models.friend import Friend, FriendStatus
+from models.user import User
 
 config = ConfigFactory.parse_file('config/config')
 friend = Blueprint("friend", __name__)
@@ -51,6 +52,19 @@ def add_friend_link():
     session.close()
 
     return friend_json, 200
+
+
+@friend.route("/user/<int:user_id>/friends", methods=["GET"])
+def get_user_friends(user_id):
+    """
+    Get all a user's friends.
+    :param user_id:
+    :return:
+    """
+    session = Session()
+    user_results = get_user_friends(user_id, session)
+    session.close()
+    return User.schema().dumps(user_results, many=True)
 
 
 
