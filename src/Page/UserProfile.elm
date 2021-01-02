@@ -1,6 +1,6 @@
 module Page.UserProfile exposing (..)
 
-import Book
+import Book exposing (Book)
 import Consumption exposing (Consumption, Status(..))
 import Html exposing (Attribute, Html)
 import Html.Attributes as Attr exposing (class, id)
@@ -8,11 +8,11 @@ import Html.Events
 import Http
 import Json.Decode as Decode
 import Media exposing (..)
-import Movie
+import Movie exposing (Movie)
 import Recommendation exposing (RecommendationType(..), RecommendedByUserMedia, RecommendedToUserMedia, byUserToRecommendationDecoder, recommendedByUserMediaDecoder, recommendedToUserMediaDecoder, toUserToRecommendationDecoder)
 import RemoteData exposing (RemoteData(..), WebData)
 import Skeleton
-import TV
+import TV exposing (TV)
 import User exposing (FriendLink, FriendStatus(..), friendLinkDecoder, friendLinkEncoder)
 
 
@@ -129,51 +129,16 @@ update msg model =
                                 , friendshipSelectedTab = NoFriendshipTab
                             }
                     in
-                    case mediaTabSelection of
-                        BookTab ->
-                            case model.recommendationSelectedTab of
-                                ToUserTab ->
-                                    ( new_model
-                                    , getRecommendedToUserMedia model.user "book"
-                                    )
+                    case model.recommendationSelectedTab of
+                        ToUserTab ->
+                            ( new_model
+                            , getRecommendedToUserMedia model.user (mediaTabSelectionToString mediaTabSelection)
+                            )
 
-                                FromUserTab ->
-                                    ( new_model
-                                    , getRecommendedByUserMedia model.user "book"
-                                    )
-
-                                _ ->
-                                    ( model, Cmd.none )
-
-                        MovieTab ->
-                            case model.recommendationSelectedTab of
-                                ToUserTab ->
-                                    ( new_model
-                                    , getRecommendedToUserMedia model.user "movie"
-                                    )
-
-                                FromUserTab ->
-                                    ( new_model
-                                    , getRecommendedByUserMedia model.user "movie"
-                                    )
-
-                                _ ->
-                                    ( model, Cmd.none )
-
-                        TVTab ->
-                            case model.recommendationSelectedTab of
-                                ToUserTab ->
-                                    ( new_model
-                                    , getRecommendedToUserMedia model.user "tv"
-                                    )
-
-                                FromUserTab ->
-                                    ( new_model
-                                    , getRecommendedByUserMedia model.user "tv"
-                                    )
-
-                                _ ->
-                                    ( model, Cmd.none )
+                        FromUserTab ->
+                            ( new_model
+                            , getRecommendedByUserMedia model.user (mediaTabSelectionToString mediaTabSelection)
+                            )
 
                         _ ->
                             ( model, Cmd.none )
@@ -459,8 +424,7 @@ body model =
         [ Html.div [ id "content-wrap" ]
             [ Html.div [ id "user-profile" ] [ Html.text ("Welcome " ++ User.getUsername model.user ++ "!") ]
             , Html.div [ class "tab" ]
-                [ createFirstTab model FeedTab "feed"
-                , createFirstTab model MediaTab "my media"
+                [ createFirstTab model MediaTab "my media"
                 , createFirstTab model RecommendationTab "recommendations"
                 , createFirstTab model FriendsTab "friends"
                 ]
@@ -659,20 +623,12 @@ viewMediaType friends mediaType =
                 [ Html.div [ class "media-card" ]
                     [ Html.div [ class "media-image" ] [ viewMediaCover book.coverUrl ]
                     , Html.div [ class "media-info" ]
-                        [ Html.b [] [ Html.text book.title ]
-                        , Html.div []
-                            [ Html.text "by "
-                            , Html.text (String.join ", " book.authorNames)
-                            ]
-                        , case book.publishYear of
-                            Just year ->
-                                Html.text <| "(" ++ String.fromInt year ++ ")"
-
-                            Nothing ->
-                                Html.text ""
+                        [ viewBookDetails book
                         , Html.div [ class "media-status" ]
                             [ viewMediaDropdown (BookType book)
-                            , Html.div [ class "media-recommend" ] [ viewFriendsToRecommendDropdown (BookType book) friends ]
+                            , Html.div
+                                [ class "media-recommend" ]
+                                [ viewFriendsToRecommendDropdown (BookType book) friends ]
                             ]
                         ]
                     ]
@@ -683,11 +639,11 @@ viewMediaType friends mediaType =
                 [ Html.div [ class "media-card" ]
                     [ Html.div [ class "media-image" ] [ viewMediaCover movie.posterUrl ]
                     , Html.div [ class "media-info" ]
-                        [ Html.b [] [ Html.text movie.title ]
-                        , Html.text <| "(" ++ movie.releaseDate ++ ")"
+                        [ viewMovieDetails movie
                         , Html.div [ class "media-status" ]
                             [ viewMediaDropdown (MovieType movie)
-                            , Html.div [ class "media-recommend" ] [ viewFriendsToRecommendDropdown (MovieType movie) friends ]
+                            , Html.div [ class "media-recommend" ]
+                                [ viewFriendsToRecommendDropdown (MovieType movie) friends ]
                             ]
                         ]
                     ]
@@ -698,21 +654,54 @@ viewMediaType friends mediaType =
                 [ Html.div [ class "media-card" ]
                     [ Html.div [ class "media-image" ] [ viewMediaCover tv.posterUrl ]
                     , Html.div [ class "media-info" ]
-                        [ Html.b [] [ Html.text tv.title ]
-                        , Html.div [] [ Html.text (String.join ", " tv.networks) ]
-                        , case tv.firstAirDate of
-                            Just date ->
-                                Html.text <| "(" ++ date ++ ")"
-
-                            Nothing ->
-                                Html.text ""
+                        [ viewTVDetails tv
                         , Html.div [ class "media-status" ]
                             [ viewMediaDropdown (TVType tv)
-                            , Html.div [ class "media-recommend" ] [ viewFriendsToRecommendDropdown (TVType tv) friends ]
+                            , Html.div [ class "media-recommend" ]
+                                [ viewFriendsToRecommendDropdown (TVType tv) friends ]
                             ]
                         ]
                     ]
                 ]
+
+
+viewBookDetails : Book -> Html Msg
+viewBookDetails book =
+    Html.div []
+        [ Html.b [] [ Html.text book.title ]
+        , Html.div []
+            [ Html.text "by "
+            , Html.text (String.join ", " book.authorNames)
+            ]
+        , case book.publishYear of
+            Just year ->
+                Html.text <| "(" ++ String.fromInt year ++ ")"
+
+            Nothing ->
+                Html.text ""
+        ]
+
+
+viewMovieDetails : Movie -> Html Msg
+viewMovieDetails movie =
+    Html.div []
+        [ Html.b [] [ Html.text movie.title ]
+        , Html.text <| "(" ++ movie.releaseDate ++ ")"
+        ]
+
+
+viewTVDetails : TV -> Html Msg
+viewTVDetails tv =
+    Html.div []
+        [ Html.b [] [ Html.text tv.title ]
+        , Html.div [] [ Html.text (String.join ", " tv.networks) ]
+        , case tv.firstAirDate of
+            Just date ->
+                Html.text <| "(" ++ date ++ ")"
+
+            Nothing ->
+                Html.text ""
+        ]
 
 
 viewMediaDropdown : MediaType -> Html Msg
@@ -820,17 +809,7 @@ viewRecommendationType recommendationType =
                             [ Html.div [ class "media-image" ] [ viewMediaCover book.coverUrl ]
                             , Html.div [ class "media-info" ]
                                 [ Html.i [] [ Html.text (recommendedMedia.recommenderUsername ++ " recommends...") ]
-                                , Html.b [] [ Html.text book.title ]
-                                , Html.div []
-                                    [ Html.text "by "
-                                    , Html.text (String.join ", " book.authorNames)
-                                    ]
-                                , case book.publishYear of
-                                    Just year ->
-                                        Html.text <| "(" ++ String.fromInt year ++ ")"
-
-                                    Nothing ->
-                                        Html.text ""
+                                , viewBookDetails book
                                 , viewRecommendedMediaDropdown (BookType book)
                                 ]
                             ]
@@ -842,8 +821,7 @@ viewRecommendationType recommendationType =
                             [ Html.div [ class "media-image" ] [ viewMediaCover movie.posterUrl ]
                             , Html.div [ class "media-info" ]
                                 [ Html.i [] [ Html.text (recommendedMedia.recommenderUsername ++ " recommends...") ]
-                                , Html.b [] [ Html.text movie.title ]
-                                , Html.text <| "(" ++ movie.releaseDate ++ ")"
+                                , viewMovieDetails movie
                                 , viewRecommendedMediaDropdown (MovieType movie)
                                 ]
                             ]
@@ -855,14 +833,7 @@ viewRecommendationType recommendationType =
                             [ Html.div [ class "media-image" ] [ viewMediaCover tv.posterUrl ]
                             , Html.div [ class "media-info" ]
                                 [ Html.i [] [ Html.text (recommendedMedia.recommenderUsername ++ " recommends...") ]
-                                , Html.b [] [ Html.text tv.title ]
-                                , Html.div [] [ Html.text (String.join ", " tv.networks) ]
-                                , case tv.firstAirDate of
-                                    Just date ->
-                                        Html.text <| "(" ++ date ++ ")"
-
-                                    Nothing ->
-                                        Html.text ""
+                                , viewTVDetails tv
                                 , viewRecommendedMediaDropdown (TVType tv)
                                 ]
                             ]
@@ -876,18 +847,8 @@ viewRecommendationType recommendationType =
                             [ Html.div [ class "media-image" ] [ viewMediaCover book.coverUrl ]
                             , Html.div [ class "media-info" ]
                                 [ Html.i []
-                                    [ Html.text ("you recommended to " ++ recommendedMedia.recommendedUsername ++ "...") ]
-                                , Html.b [] [ Html.text book.title ]
-                                , Html.div []
-                                    [ Html.text "by "
-                                    , Html.text (String.join ", " book.authorNames)
-                                    ]
-                                , case book.publishYear of
-                                    Just year ->
-                                        Html.text <| "(" ++ String.fromInt year ++ ")"
-
-                                    Nothing ->
-                                        Html.text ""
+                                    [ Html.text ("I recommended to " ++ recommendedMedia.recommendedUsername ++ "...") ]
+                                , viewBookDetails book
                                 ]
                             ]
                         ]
@@ -897,9 +858,8 @@ viewRecommendationType recommendationType =
                         [ Html.div [ class "media-card", class "media-card-long" ]
                             [ Html.div [ class "media-image" ] [ viewMediaCover movie.posterUrl ]
                             , Html.div [ class "media-info" ]
-                                [ Html.i [] [ Html.text ("you recommended to " ++ recommendedMedia.recommendedUsername ++ "...") ]
-                                , Html.b [] [ Html.text movie.title ]
-                                , Html.text <| "(" ++ movie.releaseDate ++ ")"
+                                [ Html.i [] [ Html.text ("I recommended to " ++ recommendedMedia.recommendedUsername ++ "...") ]
+                                , viewMovieDetails movie
                                 ]
                             ]
                         ]
@@ -909,15 +869,8 @@ viewRecommendationType recommendationType =
                         [ Html.div [ class "media-card", class "media-card-long" ]
                             [ Html.div [ class "media-image" ] [ viewMediaCover tv.posterUrl ]
                             , Html.div [ class "media-info" ]
-                                [ Html.i [] [ Html.text ("you recommended to " ++ recommendedMedia.recommendedUsername ++ "...") ]
-                                , Html.b [] [ Html.text tv.title ]
-                                , Html.div [] [ Html.text (String.join ", " tv.networks) ]
-                                , case tv.firstAirDate of
-                                    Just date ->
-                                        Html.text <| "(" ++ date ++ ")"
-
-                                    Nothing ->
-                                        Html.text ""
+                                [ Html.i [] [ Html.text ("I recommended to " ++ recommendedMedia.recommendedUsername ++ "...") ]
+                                , viewTVDetails tv
                                 ]
                             ]
                         ]
@@ -998,6 +951,22 @@ type FriendshipTabSelection
     = RequestedFriendsTab
     | ExistingFriendsTab
     | NoFriendshipTab
+
+
+mediaTabSelectionToString : MediaTabSelection -> String
+mediaTabSelectionToString mediaTab =
+    case mediaTab of
+        BookTab ->
+            "book"
+
+        MovieTab ->
+            "movie"
+
+        TVTab ->
+            "tv"
+
+        _ ->
+            "that is not a valid media tab"
 
 
 consumptionTabSelectionToString : MediaTabSelection -> ConsumptionTabSelection -> String
