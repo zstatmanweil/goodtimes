@@ -46,9 +46,9 @@ def get_consumption_records(user_id: int, media_type: str, session: session) -> 
     return results
 
 
-def get_recommendation_records(user_id: int, media_type: str, session: session) -> List[Tuple]:
+def get_records_recommended_to_user(user_id: int, media_type: str, session: session) -> List[Tuple]:
     """
-    Get most recent recommendations for specific media type from a user
+    Get recommendations to a user for a specific media type.
     :param user_id:
     :param media_type:
     :param session:
@@ -90,9 +90,9 @@ def get_recommendation_records(user_id: int, media_type: str, session: session) 
     return results
 
 
-def get_records_recommended_to_user(user_id: int, media_type: str, session: session) -> List[Tuple]:
+def get_records_recommended_by_user(user_id: int, media_type: str, session: session) -> List[Tuple]:
     """
-    Get most recent recommendations for specific media type to a user
+    Get recommendations to a user for a specific media type.
     :param user_id:
     :param media_type:
     :param session:
@@ -119,6 +119,7 @@ def get_records_recommended_to_user(user_id: int, media_type: str, session: sess
         .all()
 
     return results
+
 
 def get_users_and_friend_statuses(user_id: int, email_substring: str, session: session) -> List[Tuple]:
     """

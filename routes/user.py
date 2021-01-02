@@ -8,8 +8,8 @@ from sqlalchemy.orm import sessionmaker
 from models.consumption import Consumption, ConsumptionStatus
 from models.recommendation import RecommendationStatus, Recommendation
 from models.user import User
-from db.helpers import MEDIAS, get_consumption_records, get_recommendation_records, get_users_and_friend_statuses, \
-    get_records_recommended_to_user
+from db.helpers import MEDIAS, get_consumption_records, get_users_and_friend_statuses, \
+    get_records_recommended_by_user, get_records_recommended_to_user
 
 config = ConfigFactory.parse_file('config/config')
 user = Blueprint("user", __name__)
@@ -195,6 +195,7 @@ def get_media_recommended_to_user(user_id, media_type):
     """
     Endpoint for getting specific media recommended to a user and that user's consumption status.
     :param user_id:
+    :param media_type
     :return: media object + media_type + recommender_id + recommender_username, e.g.,
     {
         "media": {"author_names": [
@@ -215,7 +216,7 @@ def get_media_recommended_to_user(user_id, media_type):
     session = Session()
 
     final = []
-    record_results = get_recommendation_records(user_id, media_type, session)
+    record_results = get_records_recommended_to_user(user_id, media_type, session)
     for recommendation, media_class, user_class, status in record_results:
         m = media_class.to_dict()
         m['status'] = status
@@ -235,6 +236,7 @@ def get_media_recommended_by_user(user_id, media_type):
     """
     Endpoint for getting specific media recommended by a user.
     :param user_id:
+    :param media_type
     :return: media object + media_type + recommended_id + recommended_username, e.g.,
     {
         "media": {"author_names": [
@@ -254,7 +256,7 @@ def get_media_recommended_by_user(user_id, media_type):
     session = Session()
 
     final = []
-    record_results = get_records_recommended_to_user(user_id, media_type, session)
+    record_results = get_records_recommended_by_user(user_id, media_type, session)
     for recommendation, media_class, user_class in record_results:
         m = media_class.to_dict()
         media_result = {'media': m,

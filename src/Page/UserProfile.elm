@@ -9,7 +9,7 @@ import Http
 import Json.Decode as Decode
 import Media exposing (..)
 import Movie exposing (Movie)
-import Recommendation exposing (RecommendationType(..), RecommendedByUserMedia, RecommendedToUserMedia, byUserToRecommendationDecoder, recommendedByUserMediaDecoder, recommendedToUserMediaDecoder, toUserToRecommendationDecoder)
+import Recommendation exposing (RecommendationType(..), RecommendedByUserMedia, RecommendedToUserMedia, recByUserToRecTypeDecoder, recToUserToRecTypeDecoder, recommendedByUserMediaDecoder, recommendedToUserMediaDecoder)
 import RemoteData exposing (RemoteData(..), WebData)
 import Skeleton
 import TV exposing (TV)
@@ -356,7 +356,7 @@ getRecommendedToUserMedia : WebData User.User -> String -> Cmd Msg
 getRecommendedToUserMedia user mediaType =
     Http.get
         { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/recommendations/" ++ mediaType
-        , expect = Http.expectJson RecommendedMediaResponse (Decode.list (toUserToRecommendationDecoder recommendedToUserMediaDecoder))
+        , expect = Http.expectJson RecommendedMediaResponse (Decode.list (recToUserToRecTypeDecoder recommendedToUserMediaDecoder))
         }
 
 
@@ -364,7 +364,7 @@ getRecommendedByUserMedia : WebData User.User -> String -> Cmd Msg
 getRecommendedByUserMedia user mediaType =
     Http.get
         { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/recommended/" ++ mediaType
-        , expect = Http.expectJson RecommendedMediaResponse (Decode.list (byUserToRecommendationDecoder recommendedByUserMediaDecoder))
+        , expect = Http.expectJson RecommendedMediaResponse (Decode.list (recByUserToRecTypeDecoder recommendedByUserMediaDecoder))
         }
 
 
@@ -438,6 +438,30 @@ body model =
         ]
 
 
+viewTabContent : Model -> Html Msg
+viewTabContent model =
+    case model.firstSelectedTab of
+        RecommendationTab ->
+            viewRecommendations model.recommendedResults
+
+        MediaTab ->
+            viewMedias model.filteredMediaResults model.friends
+
+        FriendsTab ->
+            case model.friendshipSelectedTab of
+                ExistingFriendsTab ->
+                    viewFriends model.friends
+
+                RequestedFriendsTab ->
+                    viewFriendRequests model.friends
+
+                _ ->
+                    Html.text "something went wrong"
+
+        _ ->
+            Html.div [] [ Html.text "select a tab and start exploring!" ]
+
+
 viewMediaTabRow : Model -> Html Msg
 viewMediaTabRow model =
     if model.mediaSelectedTab /= NoMediaTab then
@@ -487,30 +511,6 @@ viewFriendshipTabRow model =
 
     else
         Html.div [] []
-
-
-viewTabContent : Model -> Html Msg
-viewTabContent model =
-    case model.firstSelectedTab of
-        RecommendationTab ->
-            viewRecommendations model.recommendedResults
-
-        MediaTab ->
-            viewMedias model.filteredMediaResults model.friends
-
-        FriendsTab ->
-            case model.friendshipSelectedTab of
-                ExistingFriendsTab ->
-                    viewFriends model.friends
-
-                RequestedFriendsTab ->
-                    viewFriendRequests model.friends
-
-                _ ->
-                    Html.text "something went wrong"
-
-        _ ->
-            Html.div [] [ Html.text "select a tab and start exploring!" ]
 
 
 viewFriends : WebData (List User.User) -> Html Msg
@@ -917,8 +917,7 @@ viewRecommendedMediaDropdown mediaType =
 
 
 type FirstTabSelection
-    = FeedTab
-    | MediaTab
+    = MediaTab
     | RecommendationTab
     | FriendsTab
     | NoFirstTab
