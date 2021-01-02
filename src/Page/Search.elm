@@ -207,8 +207,8 @@ body model =
                     ]
                     []
                 , Html.button
-                    [ Attr.disabled <| String.isEmpty model.query ]
-                    [ Html.text "Search!" ]
+                    [ Attr.disabled <| String.isEmpty model.query || model.selectedMediaType == NoSelection ]
+                    [ Html.text "search!" ]
                 ]
             , Html.div [ class "selector" ]
                 [ Html.label []
@@ -234,7 +234,7 @@ viewMedias : WebData (List MediaType) -> Html Msg
 viewMedias receivedMedia =
     case receivedMedia of
         NotAsked ->
-            Html.text "select a media type and search!"
+            Html.text "select a media type to search!"
 
         Loading ->
             Html.text "entering the database!"
