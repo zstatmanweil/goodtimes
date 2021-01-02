@@ -8,7 +8,8 @@ from sqlalchemy.orm import sessionmaker
 from models.consumption import Consumption, ConsumptionStatus
 from models.recommendation import RecommendationStatus, Recommendation
 from models.user import User
-from db.helpers import MEDIAS, get_consumption_records, get_recommendation_records, get_users_and_friend_statuses
+from db.helpers import MEDIAS, get_consumption_records, get_recommendation_records, get_users_and_friend_statuses, \
+    get_records_recommended_to_user
 
 config = ConfigFactory.parse_file('config/config')
 user = Blueprint("user", __name__)
@@ -136,7 +137,6 @@ def get_consumed_media_by_media_type(user_id, media_type):
     for consumption, media in record_results:
         c = consumption.to_dict()
         # Remove id, media_id, and user_id associated with consumption as not necessary
-        # TODO: this is just temporary - need to figure out what to return
         c.pop('id'), c.pop('media_id'), c.pop('user_id'), c.pop('media_type'), c.pop('created')
         c.update(media.to_dict())
         result.append(c)
@@ -191,11 +191,11 @@ def add_recommended_media(media_type):
 
 
 @user.route("/user/<int:user_id>/recommendations", methods=["GET"])
-def get_recommended_media(user_id):
+def get_media_recommended_to_user(user_id):
     """
-    Endpoint for getting all media associated with a given user.
+    Endpoint for getting all media recommended to a user and that user's consumption status.
     :param user_id:
-    :return: media object + media_type + recommender_id + recommender_username, e.g.,
+    :return: media object + media_type + recommender_id + recommender_username + status, e.g.,
     {
         "media": {"author_names": [
                     "Holly Black"
@@ -208,7 +208,8 @@ def get_recommended_media(user_id):
                     "title": "The Queen Of Nothing"},
         "media_type": "book",
         "recommender_id": 1,
-        "recommender_username": "strickinato"
+        "recommender_username": "strickinato",
+        "status": "consuming"
     },
     """
     session = Session()
@@ -225,6 +226,47 @@ def get_recommended_media(user_id):
                             "media_type": media,
                             'recommender_id': user_class.id,
                             'recommender_username': user_class.username,
+                            'created': recommendation.created}
+            final.append(media_result)
+
+    session.close()
+    return jsonify(sorted(final, key=lambda m: m.get('created'), reverse=True)), 200
+
+
+@user.route("/user/<int:user_id>/recommended", methods=["GET"])
+def get_media_recommended_by_user(user_id):
+    """
+    Endpoint for getting all media recommended by a user.
+    :param user_id:
+    :return: media object + media_type + recommended_id + recommended_username, e.g.,
+    {
+        "media": {"author_names": [
+                    "Holly Black"
+                    ],
+                    "cover_url": "http://covers.openlibrary.org/b/id/10381918-M.jpg",
+                    "id": 2,
+                    "publish_year": 2020,
+                    "source": "open library",
+                    "source_id": "0123",
+                    "title": "The Queen Of Nothing"},
+        "media_type": "book",
+        "recommended_id": 2,
+        "recommended_username": "strickinato"
+    },
+    """
+    session = Session()
+
+    final = []
+    for media in MEDIAS.keys():
+        print(media)
+        # TODO: modify to only make one call to DB
+        record_results = get_records_recommended_to_user(user_id, media, session)
+        for recommendation, media_class, user_class in record_results:
+            m = media_class.to_dict()
+            media_result = {'media': m,
+                            "media_type": media,
+                            'recommended_id': user_class.id,
+                            'recommended_username': user_class.username,
                             'created': recommendation.created}
             final.append(media_result)
 

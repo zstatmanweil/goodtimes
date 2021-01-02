@@ -29,6 +29,7 @@ type alias Model =
     , firstSelectedTab : FirstTabSelection
     , mediaSelectedTab : MediaTabSelection
     , consumptionSelectedTab : ConsumptionTabSelection
+    , recommendationSelectedTab : RecommendationTabSelection
     , friendshipSelectedTab : FriendshipTabSelection
     }
 
@@ -39,11 +40,10 @@ type Msg
     | SearchBasedOnTab MediaTabSelection
     | FilterBasedOnConsumptionTab ConsumptionTabSelection
     | SearchFriendsBasedOnTab FriendshipTabSelection
-    | SearchRecommendations
+    | SearchRecsBasedOnTab RecommendationTabSelection
     | MediaResponse (Result Http.Error (List MediaType))
     | UserResponse (Result Http.Error User.User)
     | FriendResponse (Result Http.Error (List User.User))
-    | GetFriends
     | AddFriendLink User.User FriendStatus
     | FriendLinkAdded (Result Http.Error FriendLink)
     | AddMediaToProfile MediaType Consumption.Status
@@ -63,6 +63,7 @@ init userID =
       , firstSelectedTab = NoFirstTab
       , mediaSelectedTab = NoMediaTab
       , consumptionSelectedTab = NoConsumptionTab
+      , recommendationSelectedTab = NoRecommendationTab
       , friendshipSelectedTab = NoFriendshipTab
       }
     , getUser userID
@@ -81,6 +82,7 @@ update msg model =
                 | filteredResults = NotAsked
                 , firstSelectedTab = MediaTab
                 , mediaSelectedTab = NoSelectedMediaTab
+                , recommendationSelectedTab = NoRecommendationTab
                 , friendshipSelectedTab = NoFriendshipTab
               }
             , Cmd.none
@@ -92,6 +94,7 @@ update msg model =
                     ( { model
                         | mediaSelectedTab = BookTab
                         , consumptionSelectedTab = AllTab
+                        , recommendationSelectedTab = NoRecommendationTab
                         , friendshipSelectedTab = NoFriendshipTab
                       }
                     , searchUserBooks model.user
@@ -101,6 +104,7 @@ update msg model =
                     ( { model
                         | mediaSelectedTab = MovieTab
                         , consumptionSelectedTab = AllTab
+                        , recommendationSelectedTab = NoRecommendationTab
                         , friendshipSelectedTab = NoFriendshipTab
                       }
                     , searchUserMovies model.user
@@ -110,6 +114,7 @@ update msg model =
                     ( { model
                         | mediaSelectedTab = TVTab
                         , consumptionSelectedTab = AllTab
+                        , recommendationSelectedTab = NoRecommendationTab
                         , friendshipSelectedTab = NoFriendshipTab
                       }
                     , searchUserTV model.user
@@ -134,14 +139,22 @@ update msg model =
             case friendshipTab of
                 ExistingFriendsTab ->
                     ( { model
-                        | friendshipSelectedTab = ExistingFriendsTab
+                        | firstSelectedTab = FriendsTab
+                        , mediaSelectedTab = NoMediaTab
+                        , consumptionSelectedTab = NoConsumptionTab
+                        , recommendationSelectedTab = NoRecommendationTab
+                        , friendshipSelectedTab = ExistingFriendsTab
                       }
                     , getExistingFriends (User.getUserId model.user)
                     )
 
                 RequestedFriendsTab ->
                     ( { model
-                        | friendshipSelectedTab = RequestedFriendsTab
+                        | firstSelectedTab = FriendsTab
+                        , mediaSelectedTab = NoMediaTab
+                        , consumptionSelectedTab = NoConsumptionTab
+                        , recommendationSelectedTab = NoRecommendationTab
+                        , friendshipSelectedTab = ExistingFriendsTab
                       }
                     , getFriendRequests (User.getUserId model.user)
                     )
@@ -149,14 +162,19 @@ update msg model =
                 _ ->
                     ( model, Cmd.none )
 
-        SearchRecommendations ->
+        SearchRecsBasedOnTab recommendationTab ->
+            let
+                cmd =
+                    getRecommendedMedia model.user
+            in
             ( { model
                 | firstSelectedTab = RecommendationTab
                 , mediaSelectedTab = NoMediaTab
                 , consumptionSelectedTab = NoConsumptionTab
+                , recommendationSelectedTab = recommendationTab
                 , friendshipSelectedTab = NoFriendshipTab
               }
-            , getRecommendedMedia model.user
+            , cmd
             )
 
         MediaResponse mediaResponse ->
@@ -180,16 +198,6 @@ update msg model =
                 Err resp ->
                     ( model, Cmd.none )
 
-        GetFriends ->
-            ( { model
-                | firstSelectedTab = FriendsTab
-                , mediaSelectedTab = NoMediaTab
-                , consumptionSelectedTab = NoConsumptionTab
-                , friendshipSelectedTab = ExistingFriendsTab
-              }
-            , getExistingFriends (User.getUserId model.user)
-            )
-
         FriendResponse friendResponse ->
             case friendResponse of
                 Ok friends ->
@@ -200,7 +208,7 @@ update msg model =
                     ( model, Cmd.none )
 
         AddFriendLink user friendStatus ->
-            ( model, addFriendLink user friendStatus )
+            ( model, addFriendLink user (User.getUserId model.user) friendStatus )
 
         FriendLinkAdded result ->
             case result of
@@ -308,11 +316,11 @@ getFriendRequests userID =
         }
 
 
-addFriendLink : User.User -> FriendStatus -> Cmd Msg
-addFriendLink user status =
+addFriendLink : User.User -> Int -> FriendStatus -> Cmd Msg
+addFriendLink user currentUserId status =
     Http.post
         { url = "http://localhost:5000/friend"
-        , body = Http.jsonBody (friendLinkEncoder user.id 1 status)
+        , body = Http.jsonBody (friendLinkEncoder user.id currentUserId status)
         , expect = Http.expectJson FriendLinkAdded friendLinkDecoder
         }
 
@@ -386,9 +394,10 @@ body model =
                 , createFirstTab model RecommendationTab "recommendations"
                 , createFirstTab model FriendsTab "friends"
                 ]
+            , viewFriendshipTabRow model
+            , viewRecommendationTabRow model
             , viewMediaTabRow model
             , viewConsumptionTabRow model
-            , viewFriendshipTabRow model
             , Html.div [ class "results" ]
                 [ viewTabContent model ]
             ]
@@ -416,6 +425,18 @@ viewConsumptionTabRow model =
             , createConsumptionTab model WantToConsumeTab (consumptionTabSelectionToString model.mediaSelectedTab WantToConsumeTab)
             , createConsumptionTab model ConsumingTab (consumptionTabSelectionToString model.mediaSelectedTab ConsumingTab)
             , createConsumptionTab model FinishedTab (consumptionTabSelectionToString model.mediaSelectedTab FinishedTab)
+            ]
+
+    else
+        Html.div [] []
+
+
+viewRecommendationTabRow : Model -> Html Msg
+viewRecommendationTabRow model =
+    if model.recommendationSelectedTab /= NoRecommendationTab then
+        Html.div [ class "tab" ]
+            [ createRecommendationTab model ToMe "to me"
+            , createRecommendationTab model FromMe "from me"
             ]
 
     else
@@ -840,6 +861,12 @@ type ConsumptionTabSelection
     | NoConsumptionTab
 
 
+type RecommendationTabSelection
+    = ToMe
+    | FromMe
+    | NoRecommendationTab
+
+
 type FriendshipTabSelection
     = RequestedFriendsTab
     | ExistingFriendsTab
@@ -900,13 +927,19 @@ createFirstTabWithActiveState : FirstTabSelection -> String -> String -> Html Ms
 createFirstTabWithActiveState firstTabSelection activeState tabString =
     case firstTabSelection of
         MediaTab ->
-            Html.button [ class activeState, Html.Events.onClick AddMediaTabRow ] [ Html.text tabString ]
+            Html.button
+                [ class activeState, Html.Events.onClick AddMediaTabRow ]
+                [ Html.text tabString ]
 
         RecommendationTab ->
-            Html.button [ class activeState, Html.Events.onClick SearchRecommendations ] [ Html.text tabString ]
+            Html.button
+                [ class activeState, Html.Events.onClick (SearchRecsBasedOnTab ToMe) ]
+                [ Html.text tabString ]
 
         FriendsTab ->
-            Html.button [ class activeState, Html.Events.onClick GetFriends ] [ Html.text tabString ]
+            Html.button
+                [ class activeState, Html.Events.onClick (SearchFriendsBasedOnTab ExistingFriendsTab) ]
+                [ Html.text tabString ]
 
         _ ->
             Html.button [ class activeState ] [ Html.text tabString ]
@@ -915,28 +948,53 @@ createFirstTabWithActiveState firstTabSelection activeState tabString =
 createMediaTab : Model -> MediaTabSelection -> String -> Html Msg
 createMediaTab model mediaTabSelection tabString =
     if model.mediaSelectedTab == mediaTabSelection then
-        Html.button [ class "tablinks active", Html.Events.onClick (SearchBasedOnTab mediaTabSelection) ] [ Html.text tabString ]
+        Html.button
+            [ class "tablinks active", Html.Events.onClick (SearchBasedOnTab mediaTabSelection) ]
+            [ Html.text tabString ]
 
     else
-        Html.button [ class "tablinks", Html.Events.onClick (SearchBasedOnTab mediaTabSelection) ] [ Html.text tabString ]
+        Html.button
+            [ class "tablinks", Html.Events.onClick (SearchBasedOnTab mediaTabSelection) ]
+            [ Html.text tabString ]
 
 
 createConsumptionTab : Model -> ConsumptionTabSelection -> String -> Html Msg
 createConsumptionTab model consumptionTabSelection tabString =
     if model.consumptionSelectedTab == consumptionTabSelection then
-        Html.button [ class "tablinks active", Html.Events.onClick (FilterBasedOnConsumptionTab consumptionTabSelection) ] [ Html.text tabString ]
+        Html.button
+            [ class "tablinks active", Html.Events.onClick (FilterBasedOnConsumptionTab consumptionTabSelection) ]
+            [ Html.text tabString ]
 
     else
-        Html.button [ class "tablinks", Html.Events.onClick (FilterBasedOnConsumptionTab consumptionTabSelection) ] [ Html.text tabString ]
+        Html.button
+            [ class "tablinks", Html.Events.onClick (FilterBasedOnConsumptionTab consumptionTabSelection) ]
+            [ Html.text tabString ]
+
+
+createRecommendationTab : Model -> RecommendationTabSelection -> String -> Html Msg
+createRecommendationTab model recommendationTabSelection tabString =
+    if model.recommendationSelectedTab == recommendationTabSelection then
+        Html.button
+            [ class "tablinks active", Html.Events.onClick (SearchRecsBasedOnTab recommendationTabSelection) ]
+            [ Html.text tabString ]
+
+    else
+        Html.button
+            [ class "tablinks", Html.Events.onClick (SearchRecsBasedOnTab recommendationTabSelection) ]
+            [ Html.text tabString ]
 
 
 createFriendshipTab : Model -> FriendshipTabSelection -> String -> Html Msg
 createFriendshipTab model friendshipTabSelection tabString =
     if model.friendshipSelectedTab == friendshipTabSelection then
-        Html.button [ class "tablinks active", Html.Events.onClick (SearchFriendsBasedOnTab friendshipTabSelection) ] [ Html.text tabString ]
+        Html.button
+            [ class "tablinks active", Html.Events.onClick (SearchFriendsBasedOnTab friendshipTabSelection) ]
+            [ Html.text tabString ]
 
     else
-        Html.button [ class "tablinks", Html.Events.onClick (SearchFriendsBasedOnTab friendshipTabSelection) ] [ Html.text tabString ]
+        Html.button
+            [ class "tablinks", Html.Events.onClick (SearchFriendsBasedOnTab friendshipTabSelection) ]
+            [ Html.text tabString ]
 
 
 resultMatchesStatus : ConsumptionTabSelection -> MediaType -> Bool
