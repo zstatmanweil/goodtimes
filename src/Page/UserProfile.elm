@@ -686,7 +686,7 @@ viewMovieDetails : Movie -> Html Msg
 viewMovieDetails movie =
     Html.div []
         [ Html.b [] [ Html.text movie.title ]
-        , Html.text <| "(" ++ movie.releaseDate ++ ")"
+        , Html.div [] [ Html.text <| "(" ++ movie.releaseDate ++ ")" ]
         ]
 
 
@@ -843,7 +843,7 @@ viewRecommendationType recommendationType =
             case recommendedMedia.media of
                 BookType book ->
                     Html.li []
-                        [ Html.div [ class "media-card", class "media-card-long" ]
+                        [ Html.div [ class "media-card" ]
                             [ Html.div [ class "media-image" ] [ viewMediaCover book.coverUrl ]
                             , Html.div [ class "media-info" ]
                                 [ Html.i []
@@ -855,7 +855,7 @@ viewRecommendationType recommendationType =
 
                 MovieType movie ->
                     Html.li []
-                        [ Html.div [ class "media-card", class "media-card-long" ]
+                        [ Html.div [ class "media-card" ]
                             [ Html.div [ class "media-image" ] [ viewMediaCover movie.posterUrl ]
                             , Html.div [ class "media-info" ]
                                 [ Html.i [] [ Html.text ("I recommended to " ++ recommendedMedia.recommendedUsername ++ "...") ]
@@ -866,7 +866,7 @@ viewRecommendationType recommendationType =
 
                 TVType tv ->
                     Html.li []
-                        [ Html.div [ class "media-card", class "media-card-long" ]
+                        [ Html.div [ class "media-card" ]
                             [ Html.div [ class "media-image" ] [ viewMediaCover tv.posterUrl ]
                             , Html.div [ class "media-info" ]
                                 [ Html.i [] [ Html.text ("I recommended to " ++ recommendedMedia.recommendedUsername ++ "...") ]
