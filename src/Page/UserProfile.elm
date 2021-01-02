@@ -89,34 +89,28 @@ update msg model =
             )
 
         SearchBasedOnTab tabSelection ->
-            case tabSelection of
-                BookTab ->
-                    ( { model
-                        | mediaSelectedTab = BookTab
+            let
+                new_model =
+                    { model
+                        | mediaSelectedTab = tabSelection
                         , consumptionSelectedTab = AllTab
                         , recommendationSelectedTab = NoRecommendationTab
                         , friendshipSelectedTab = NoFriendshipTab
-                      }
+                    }
+            in
+            case tabSelection of
+                BookTab ->
+                    ( new_model
                     , searchUserBooks model.user
                     )
 
                 MovieTab ->
-                    ( { model
-                        | mediaSelectedTab = MovieTab
-                        , consumptionSelectedTab = AllTab
-                        , recommendationSelectedTab = NoRecommendationTab
-                        , friendshipSelectedTab = NoFriendshipTab
-                      }
+                    ( new_model
                     , searchUserMovies model.user
                     )
 
                 TVTab ->
-                    ( { model
-                        | mediaSelectedTab = TVTab
-                        , consumptionSelectedTab = AllTab
-                        , recommendationSelectedTab = NoRecommendationTab
-                        , friendshipSelectedTab = NoFriendshipTab
-                      }
+                    ( new_model
                     , searchUserTV model.user
                     )
 
@@ -136,26 +130,24 @@ update msg model =
             )
 
         SearchFriendsBasedOnTab friendshipTab ->
-            case friendshipTab of
-                ExistingFriendsTab ->
-                    ( { model
+            let
+                new_model =
+                    { model
                         | firstSelectedTab = FriendsTab
                         , mediaSelectedTab = NoMediaTab
                         , consumptionSelectedTab = NoConsumptionTab
                         , recommendationSelectedTab = NoRecommendationTab
-                        , friendshipSelectedTab = ExistingFriendsTab
-                      }
+                        , friendshipSelectedTab = friendshipTab
+                    }
+            in
+            case friendshipTab of
+                ExistingFriendsTab ->
+                    ( new_model
                     , getExistingFriends (User.getUserId model.user)
                     )
 
                 RequestedFriendsTab ->
-                    ( { model
-                        | firstSelectedTab = FriendsTab
-                        , mediaSelectedTab = NoMediaTab
-                        , consumptionSelectedTab = NoConsumptionTab
-                        , recommendationSelectedTab = NoRecommendationTab
-                        , friendshipSelectedTab = ExistingFriendsTab
-                      }
+                    ( new_model
                     , getFriendRequests (User.getUserId model.user)
                     )
 
@@ -163,26 +155,24 @@ update msg model =
                     ( model, Cmd.none )
 
         SearchRecsBasedOnTab recommendationTab ->
-            case recommendationTab of
-                ToUserTab ->
-                    ( { model
+            let
+                new_model =
+                    { model
                         | firstSelectedTab = RecommendationTab
                         , mediaSelectedTab = NoMediaTab
                         , consumptionSelectedTab = NoConsumptionTab
-                        , recommendationSelectedTab = ToUserTab
+                        , recommendationSelectedTab = recommendationTab
                         , friendshipSelectedTab = NoFriendshipTab
-                      }
+                    }
+            in
+            case recommendationTab of
+                ToUserTab ->
+                    ( new_model
                     , getRecommendedToUserMedia model.user
                     )
 
                 FromUserTab ->
-                    ( { model
-                        | firstSelectedTab = RecommendationTab
-                        , mediaSelectedTab = NoMediaTab
-                        , consumptionSelectedTab = NoConsumptionTab
-                        , recommendationSelectedTab = FromUserTab
-                        , friendshipSelectedTab = NoFriendshipTab
-                      }
+                    ( new_model
                     , getRecommendedByUserMedia model.user
                     )
 
@@ -247,8 +237,6 @@ update msg model =
                         TVTab ->
                             ( model, searchUserTV model.user )
 
-                        --RecommendationTab ->
-                        --    ( model, getRecommendedMedia model.user )
                         _ ->
                             ( model, Cmd.none )
 
