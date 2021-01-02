@@ -37,7 +37,7 @@ type alias Model =
 type Msg
     = None
     | AddMediaTabRow
-    | SearchBasedOnTab MediaTabSelection
+    | SearchMediaBasedOnTab MediaTabSelection
     | FilterBasedOnConsumptionTab ConsumptionTabSelection
     | SearchFriendsBasedOnTab FriendshipTabSelection
     | SearchRecsBasedOnTab RecommendationTabSelection
@@ -88,7 +88,7 @@ update msg model =
             , Cmd.none
             )
 
-        SearchBasedOnTab tabSelection ->
+        SearchMediaBasedOnTab tabSelection ->
             let
                 new_model =
                     { model
@@ -826,7 +826,6 @@ viewRecommendationType recommendationType =
 
                                     Nothing ->
                                         Html.text ""
-                                , viewRecommendedMediaDropdown (BookType book)
                                 ]
                             ]
                         ]
@@ -839,7 +838,6 @@ viewRecommendationType recommendationType =
                                 [ Html.i [] [ Html.text ("you recommended to " ++ recommendedMedia.recommendedUsername ++ "...") ]
                                 , Html.b [] [ Html.text movie.title ]
                                 , Html.text <| "(" ++ movie.releaseDate ++ ")"
-                                , viewRecommendedMediaDropdown (MovieType movie)
                                 ]
                             ]
                         ]
@@ -858,7 +856,6 @@ viewRecommendationType recommendationType =
 
                                     Nothing ->
                                         Html.text ""
-                                , viewRecommendedMediaDropdown (TVType tv)
                                 ]
                             ]
                         ]
@@ -1016,12 +1013,12 @@ createMediaTab : Model -> MediaTabSelection -> String -> Html Msg
 createMediaTab model mediaTabSelection tabString =
     if model.mediaSelectedTab == mediaTabSelection then
         Html.button
-            [ class "tablinks active", Html.Events.onClick (SearchBasedOnTab mediaTabSelection) ]
+            [ class "tablinks active", Html.Events.onClick (SearchMediaBasedOnTab mediaTabSelection) ]
             [ Html.text tabString ]
 
     else
         Html.button
-            [ class "tablinks", Html.Events.onClick (SearchBasedOnTab mediaTabSelection) ]
+            [ class "tablinks", Html.Events.onClick (SearchMediaBasedOnTab mediaTabSelection) ]
             [ Html.text tabString ]
 
 
