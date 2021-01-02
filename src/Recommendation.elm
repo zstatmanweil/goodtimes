@@ -87,11 +87,6 @@ encoder mediaType recommenderUserID recommendedUserID status =
 -- Recommended Media
 
 
-type RecommendationSelection
-    = RecommendedToUserSelection
-    | RecommendedByUserSelection
-
-
 type RecommendationType
     = RecToUserType RecommendedToUserMedia
     | RecByUserType RecommendedByUserMedia

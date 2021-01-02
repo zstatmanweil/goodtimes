@@ -24,7 +24,7 @@ type alias Model =
     { user : WebData User.User
     , friends : WebData (List User.User)
     , searchResults : WebData (List MediaType)
-    , filteredResults : WebData (List MediaType)
+    , filteredMediaResults : WebData (List MediaType)
     , recommendedResults : WebData (List RecommendationType)
     , firstSelectedTab : FirstTabSelection
     , mediaSelectedTab : MediaTabSelection
@@ -37,17 +37,18 @@ type alias Model =
 type Msg
     = None
     | AddMediaTabRow
-    | SearchMediaBasedOnTab MediaTabSelection
+    | SearchBasedOnMediaTab MediaTabSelection
     | FilterBasedOnConsumptionTab ConsumptionTabSelection
-    | SearchFriendsBasedOnTab FriendshipTabSelection
-    | SearchRecsBasedOnTab RecommendationTabSelection
+    | AddMediaToProfile MediaType Consumption.Status
+    | MediaAddedToProfile (Result Http.Error Consumption)
     | MediaResponse (Result Http.Error (List MediaType))
+    | SearchFriendsBasedOnTab FriendshipTabSelection
     | UserResponse (Result Http.Error User.User)
     | FriendResponse (Result Http.Error (List User.User))
     | AddFriendLink User.User FriendStatus
     | FriendLinkAdded (Result Http.Error FriendLink)
-    | AddMediaToProfile MediaType Consumption.Status
-    | MediaAddedToProfile (Result Http.Error Consumption)
+    | AddRecommendationTabRow
+    | AddRecommendationMediaTabRow RecommendationTabSelection
     | Recommend MediaType User.User
     | RecommendationResponse (Result Http.Error Recommendation.Recommendation)
     | RecommendedMediaResponse (Result Http.Error (List RecommendationType))
@@ -58,7 +59,7 @@ init userID =
     ( { user = NotAsked
       , friends = NotAsked
       , searchResults = NotAsked
-      , filteredResults = NotAsked
+      , filteredMediaResults = NotAsked
       , recommendedResults = NotAsked
       , firstSelectedTab = NoFirstTab
       , mediaSelectedTab = NoMediaTab
@@ -79,40 +80,103 @@ update msg model =
     case msg of
         AddMediaTabRow ->
             ( { model
-                | filteredResults = NotAsked
+                | filteredMediaResults = NotAsked
                 , firstSelectedTab = MediaTab
                 , mediaSelectedTab = NoSelectedMediaTab
-                , recommendationSelectedTab = NoRecommendationTab
                 , friendshipSelectedTab = NoFriendshipTab
+                , recommendationSelectedTab = NoRecommendationTab
               }
             , Cmd.none
             )
 
-        SearchMediaBasedOnTab tabSelection ->
-            let
-                new_model =
-                    { model
-                        | mediaSelectedTab = tabSelection
-                        , consumptionSelectedTab = AllTab
-                        , recommendationSelectedTab = NoRecommendationTab
-                        , friendshipSelectedTab = NoFriendshipTab
-                    }
-            in
-            case tabSelection of
-                BookTab ->
-                    ( new_model
-                    , searchUserBooks model.user
-                    )
+        SearchBasedOnMediaTab mediaTabSelection ->
+            case model.firstSelectedTab of
+                MediaTab ->
+                    let
+                        new_model =
+                            { model
+                                | mediaSelectedTab = mediaTabSelection
+                                , consumptionSelectedTab = AllTab
+                                , recommendationSelectedTab = NoRecommendationTab
+                                , friendshipSelectedTab = NoFriendshipTab
+                            }
+                    in
+                    case mediaTabSelection of
+                        BookTab ->
+                            ( new_model
+                            , searchUserBooks model.user
+                            )
 
-                MovieTab ->
-                    ( new_model
-                    , searchUserMovies model.user
-                    )
+                        MovieTab ->
+                            ( new_model
+                            , searchUserMovies model.user
+                            )
 
-                TVTab ->
-                    ( new_model
-                    , searchUserTV model.user
-                    )
+                        TVTab ->
+                            ( new_model
+                            , searchUserTV model.user
+                            )
+
+                        _ ->
+                            ( model, Cmd.none )
+
+                RecommendationTab ->
+                    let
+                        new_model =
+                            { model
+                                | mediaSelectedTab = mediaTabSelection
+                                , consumptionSelectedTab = NoConsumptionTab
+                                , friendshipSelectedTab = NoFriendshipTab
+                            }
+                    in
+                    case mediaTabSelection of
+                        BookTab ->
+                            case model.recommendationSelectedTab of
+                                ToUserTab ->
+                                    ( new_model
+                                    , getRecommendedToUserMedia model.user "book"
+                                    )
+
+                                FromUserTab ->
+                                    ( new_model
+                                    , getRecommendedByUserMedia model.user "book"
+                                    )
+
+                                _ ->
+                                    ( model, Cmd.none )
+
+                        MovieTab ->
+                            case model.recommendationSelectedTab of
+                                ToUserTab ->
+                                    ( new_model
+                                    , getRecommendedToUserMedia model.user "movie"
+                                    )
+
+                                FromUserTab ->
+                                    ( new_model
+                                    , getRecommendedByUserMedia model.user "movie"
+                                    )
+
+                                _ ->
+                                    ( model, Cmd.none )
+
+                        TVTab ->
+                            case model.recommendationSelectedTab of
+                                ToUserTab ->
+                                    ( new_model
+                                    , getRecommendedToUserMedia model.user "tv"
+                                    )
+
+                                FromUserTab ->
+                                    ( new_model
+                                    , getRecommendedByUserMedia model.user "tv"
+                                    )
+
+                                _ ->
+                                    ( model, Cmd.none )
+
+                        _ ->
+                            ( model, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
@@ -123,8 +187,43 @@ update msg model =
                     RemoteData.map (List.filter (resultMatchesStatus consumptionTab)) model.searchResults
             in
             ( { model
-                | filteredResults = filteredMedia
+                | filteredMediaResults = filteredMedia
                 , consumptionSelectedTab = consumptionTab
+              }
+            , Cmd.none
+            )
+
+        AddMediaToProfile mediaType status ->
+            ( model, addMediaToProfile mediaType status model.user )
+
+        MediaAddedToProfile result ->
+            case result of
+                Ok consumption ->
+                    case model.mediaSelectedTab of
+                        BookTab ->
+                            ( model, searchUserBooks model.user )
+
+                        MovieTab ->
+                            ( model, searchUserMovies model.user )
+
+                        TVTab ->
+                            ( model, searchUserTV model.user )
+
+                        _ ->
+                            ( model, Cmd.none )
+
+                Err httpError ->
+                    -- TODO handle error!
+                    ( model, Cmd.none )
+
+        MediaResponse mediaResponse ->
+            let
+                receivedMedia =
+                    RemoteData.fromResult mediaResponse
+            in
+            ( { model
+                | searchResults = receivedMedia
+                , filteredMediaResults = RemoteData.map (List.filter (resultMatchesStatus model.consumptionSelectedTab)) receivedMedia
               }
             , Cmd.none
             )
@@ -153,43 +252,6 @@ update msg model =
 
                 _ ->
                     ( model, Cmd.none )
-
-        SearchRecsBasedOnTab recommendationTab ->
-            let
-                new_model =
-                    { model
-                        | firstSelectedTab = RecommendationTab
-                        , mediaSelectedTab = NoMediaTab
-                        , consumptionSelectedTab = NoConsumptionTab
-                        , recommendationSelectedTab = recommendationTab
-                        , friendshipSelectedTab = NoFriendshipTab
-                    }
-            in
-            case recommendationTab of
-                ToUserTab ->
-                    ( new_model
-                    , getRecommendedToUserMedia model.user
-                    )
-
-                FromUserTab ->
-                    ( new_model
-                    , getRecommendedByUserMedia model.user
-                    )
-
-                _ ->
-                    ( model, Cmd.none )
-
-        MediaResponse mediaResponse ->
-            let
-                receivedMedia =
-                    RemoteData.fromResult mediaResponse
-            in
-            ( { model
-                | searchResults = receivedMedia
-                , filteredResults = RemoteData.map (List.filter (resultMatchesStatus model.consumptionSelectedTab)) receivedMedia
-              }
-            , Cmd.none
-            )
 
         UserResponse userResponse ->
             case userResponse of
@@ -221,28 +283,28 @@ update msg model =
                     -- TODO handle error!
                     ( model, Cmd.none )
 
-        AddMediaToProfile mediaType status ->
-            ( model, addMediaToProfile mediaType status model.user )
+        AddRecommendationTabRow ->
+            ( { model
+                | filteredMediaResults = NotAsked
+                , recommendedResults = NotAsked
+                , firstSelectedTab = RecommendationTab
+                , mediaSelectedTab = NoMediaTab
+                , recommendationSelectedTab = NoSelectedRecommendationTab
+                , consumptionSelectedTab = NoConsumptionTab
+                , friendshipSelectedTab = NoFriendshipTab
+              }
+            , Cmd.none
+            )
 
-        MediaAddedToProfile result ->
-            case result of
-                Ok consumption ->
-                    case model.mediaSelectedTab of
-                        BookTab ->
-                            ( model, searchUserBooks model.user )
-
-                        MovieTab ->
-                            ( model, searchUserMovies model.user )
-
-                        TVTab ->
-                            ( model, searchUserTV model.user )
-
-                        _ ->
-                            ( model, Cmd.none )
-
-                Err httpError ->
-                    -- TODO handle error!
-                    ( model, Cmd.none )
+        AddRecommendationMediaTabRow recTab ->
+            ( { model
+                | recommendedResults = NotAsked
+                , mediaSelectedTab = NoSelectedMediaTab
+                , friendshipSelectedTab = NoFriendshipTab
+                , recommendationSelectedTab = recTab
+              }
+            , Cmd.none
+            )
 
         Recommend mediaType friend ->
             ( model, recommendMedia (User.getUserId model.user) friend.id mediaType Recommendation.Pending )
@@ -325,18 +387,18 @@ addFriendLink user currentUserId status =
         }
 
 
-getRecommendedToUserMedia : WebData User.User -> Cmd Msg
-getRecommendedToUserMedia user =
+getRecommendedToUserMedia : WebData User.User -> String -> Cmd Msg
+getRecommendedToUserMedia user mediaType =
     Http.get
-        { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/recommendations"
+        { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/recommendations/" ++ mediaType
         , expect = Http.expectJson RecommendedMediaResponse (Decode.list (toUserToRecommendationDecoder recommendedToUserMediaDecoder))
         }
 
 
-getRecommendedByUserMedia : WebData User.User -> Cmd Msg
-getRecommendedByUserMedia user =
+getRecommendedByUserMedia : WebData User.User -> String -> Cmd Msg
+getRecommendedByUserMedia user mediaType =
     Http.get
-        { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/recommended"
+        { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/recommended/" ++ mediaType
         , expect = Http.expectJson RecommendedMediaResponse (Decode.list (byUserToRecommendationDecoder recommendedByUserMediaDecoder))
         }
 
@@ -470,7 +532,7 @@ viewTabContent model =
             viewRecommendations model.recommendedResults
 
         MediaTab ->
-            viewMedias model.filteredResults model.friends
+            viewMedias model.filteredMediaResults model.friends
 
         FriendsTab ->
             case model.friendshipSelectedTab of
@@ -928,6 +990,7 @@ type ConsumptionTabSelection
 type RecommendationTabSelection
     = ToUserTab
     | FromUserTab
+    | NoSelectedRecommendationTab
     | NoRecommendationTab
 
 
@@ -997,7 +1060,7 @@ createFirstTabWithActiveState firstTabSelection activeState tabString =
 
         RecommendationTab ->
             Html.button
-                [ class activeState, Html.Events.onClick (SearchRecsBasedOnTab ToUserTab) ]
+                [ class activeState, Html.Events.onClick AddRecommendationTabRow ]
                 [ Html.text tabString ]
 
         FriendsTab ->
@@ -1013,12 +1076,12 @@ createMediaTab : Model -> MediaTabSelection -> String -> Html Msg
 createMediaTab model mediaTabSelection tabString =
     if model.mediaSelectedTab == mediaTabSelection then
         Html.button
-            [ class "tablinks active", Html.Events.onClick (SearchMediaBasedOnTab mediaTabSelection) ]
+            [ class "tablinks active", Html.Events.onClick (SearchBasedOnMediaTab mediaTabSelection) ]
             [ Html.text tabString ]
 
     else
         Html.button
-            [ class "tablinks", Html.Events.onClick (SearchMediaBasedOnTab mediaTabSelection) ]
+            [ class "tablinks", Html.Events.onClick (SearchBasedOnMediaTab mediaTabSelection) ]
             [ Html.text tabString ]
 
 
@@ -1039,12 +1102,12 @@ createRecommendationTab : Model -> RecommendationTabSelection -> String -> Html 
 createRecommendationTab model recommendationTabSelection tabString =
     if model.recommendationSelectedTab == recommendationTabSelection then
         Html.button
-            [ class "tablinks active", Html.Events.onClick (SearchRecsBasedOnTab recommendationTabSelection) ]
+            [ class "tablinks active", Html.Events.onClick (AddRecommendationMediaTabRow recommendationTabSelection) ]
             [ Html.text tabString ]
 
     else
         Html.button
-            [ class "tablinks", Html.Events.onClick (SearchRecsBasedOnTab recommendationTabSelection) ]
+            [ class "tablinks", Html.Events.onClick (AddRecommendationMediaTabRow recommendationTabSelection) ]
             [ Html.text tabString ]
 
 

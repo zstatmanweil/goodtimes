@@ -145,7 +145,7 @@ def get_consumed_media_by_media_type(user_id, media_type):
     return jsonify(result), 200
 
 
-@user.route("/media/<media_type>/recommendation", methods=["POST"])
+@user.route("/media/<media_type>/recommendation/", methods=["POST"])
 def add_recommended_media(media_type):
     """
     Endpoint for adding a recommendation for a given media type. Post body:
@@ -190,10 +190,10 @@ def add_recommended_media(media_type):
     return rec_json, 200
 
 
-@user.route("/user/<int:user_id>/recommendations", methods=["GET"])
-def get_media_recommended_to_user(user_id):
+@user.route("/user/<int:user_id>/recommendations/<media_type>", methods=["GET"])
+def get_media_recommended_to_user(user_id, media_type):
     """
-    Endpoint for getting all media recommended to a user and that user's consumption status.
+    Endpoint for getting specific media recommended to a user and that user's consumption status.
     :param user_id:
     :return: media object + media_type + recommender_id + recommender_username, e.g.,
     {
@@ -215,26 +215,25 @@ def get_media_recommended_to_user(user_id):
     session = Session()
 
     final = []
-    for media in MEDIAS.keys():
-        record_results = get_recommendation_records(user_id, media, session)
-        for recommendation, media_class, user_class, status in record_results:
-            m = media_class.to_dict()
-            m['status'] = status
-            media_result = {'media': m,
-                            "media_type": media,
-                            'recommender_id': user_class.id,
-                            'recommender_username': user_class.username,
-                            'created': recommendation.created}
-            final.append(media_result)
+    record_results = get_recommendation_records(user_id, media_type, session)
+    for recommendation, media_class, user_class, status in record_results:
+        m = media_class.to_dict()
+        m['status'] = status
+        media_result = {'media': m,
+                        "media_type": media_type,
+                        'recommender_id': user_class.id,
+                        'recommender_username': user_class.username,
+                        'created': recommendation.created}
+        final.append(media_result)
 
     session.close()
     return jsonify(sorted(final, key=lambda m: m.get('created'), reverse=True)), 200
 
 
-@user.route("/user/<int:user_id>/recommended", methods=["GET"])
-def get_media_recommended_by_user(user_id):
+@user.route("/user/<int:user_id>/recommended/<media_type>", methods=["GET"])
+def get_media_recommended_by_user(user_id, media_type):
     """
-    Endpoint for getting all media recommended by a user.
+    Endpoint for getting specific media recommended by a user.
     :param user_id:
     :return: media object + media_type + recommended_id + recommended_username, e.g.,
     {
@@ -255,16 +254,15 @@ def get_media_recommended_by_user(user_id):
     session = Session()
 
     final = []
-    for media in MEDIAS.keys():
-        record_results = get_records_recommended_to_user(user_id, media, session)
-        for recommendation, media_class, user_class in record_results:
-            m = media_class.to_dict()
-            media_result = {'media': m,
-                            "media_type": media,
-                            'recommended_id': user_class.id,
-                            'recommended_username': user_class.username,
-                            'created': recommendation.created}
-            final.append(media_result)
+    record_results = get_records_recommended_to_user(user_id, media_type, session)
+    for recommendation, media_class, user_class in record_results:
+        m = media_class.to_dict()
+        media_result = {'media': m,
+                        "media_type": media_type,
+                        'recommended_id': user_class.id,
+                        'recommended_username': user_class.username,
+                        'created': recommendation.created}
+        final.append(media_result)
 
     session.close()
     return jsonify(sorted(final, key=lambda m: m.get('created'), reverse=True)), 200
