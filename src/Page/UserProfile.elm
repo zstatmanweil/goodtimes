@@ -9,7 +9,7 @@ import Http
 import Json.Decode as Decode
 import Media exposing (..)
 import Movie
-import Recommendation exposing (RecommendedMedia)
+import Recommendation exposing (RecommendationType(..), RecommendedByUserMedia, RecommendedToUserMedia, byUserToRecommendationDecoder, recommendedByUserMediaDecoder, recommendedToUserMediaDecoder, toUserToRecommendationDecoder)
 import RemoteData exposing (RemoteData(..), WebData)
 import Skeleton
 import TV
@@ -25,7 +25,7 @@ type alias Model =
     , friends : WebData (List User.User)
     , searchResults : WebData (List MediaType)
     , filteredResults : WebData (List MediaType)
-    , recommendedResults : WebData (List RecommendedMedia)
+    , recommendedResults : WebData (List RecommendationType)
     , firstSelectedTab : FirstTabSelection
     , mediaSelectedTab : MediaTabSelection
     , consumptionSelectedTab : ConsumptionTabSelection
@@ -50,7 +50,7 @@ type Msg
     | MediaAddedToProfile (Result Http.Error Consumption)
     | Recommend MediaType User.User
     | RecommendationResponse (Result Http.Error Recommendation.Recommendation)
-    | RecommendedMediaResponse (Result Http.Error (List RecommendedMedia))
+    | RecommendedMediaResponse (Result Http.Error (List RecommendationType))
 
 
 init : Int -> ( Model, Cmd Msg )
@@ -163,19 +163,31 @@ update msg model =
                     ( model, Cmd.none )
 
         SearchRecsBasedOnTab recommendationTab ->
-            let
-                cmd =
-                    getRecommendedMedia model.user
-            in
-            ( { model
-                | firstSelectedTab = RecommendationTab
-                , mediaSelectedTab = NoMediaTab
-                , consumptionSelectedTab = NoConsumptionTab
-                , recommendationSelectedTab = recommendationTab
-                , friendshipSelectedTab = NoFriendshipTab
-              }
-            , cmd
-            )
+            case recommendationTab of
+                ToUserTab ->
+                    ( { model
+                        | firstSelectedTab = RecommendationTab
+                        , mediaSelectedTab = NoMediaTab
+                        , consumptionSelectedTab = NoConsumptionTab
+                        , recommendationSelectedTab = ToUserTab
+                        , friendshipSelectedTab = NoFriendshipTab
+                      }
+                    , getRecommendedToUserMedia model.user
+                    )
+
+                FromUserTab ->
+                    ( { model
+                        | firstSelectedTab = RecommendationTab
+                        , mediaSelectedTab = NoMediaTab
+                        , consumptionSelectedTab = NoConsumptionTab
+                        , recommendationSelectedTab = FromUserTab
+                        , friendshipSelectedTab = NoFriendshipTab
+                      }
+                    , getRecommendedByUserMedia model.user
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
 
         MediaResponse mediaResponse ->
             let
@@ -325,11 +337,19 @@ addFriendLink user currentUserId status =
         }
 
 
-getRecommendedMedia : WebData User.User -> Cmd Msg
-getRecommendedMedia user =
+getRecommendedToUserMedia : WebData User.User -> Cmd Msg
+getRecommendedToUserMedia user =
     Http.get
         { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/recommendations"
-        , expect = Http.expectJson RecommendedMediaResponse (Decode.list Recommendation.mediaDecoder)
+        , expect = Http.expectJson RecommendedMediaResponse (Decode.list (toUserToRecommendationDecoder recommendedToUserMediaDecoder))
+        }
+
+
+getRecommendedByUserMedia : WebData User.User -> Cmd Msg
+getRecommendedByUserMedia user =
+    Http.get
+        { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/recommended"
+        , expect = Http.expectJson RecommendedMediaResponse (Decode.list (byUserToRecommendationDecoder recommendedByUserMediaDecoder))
         }
 
 
@@ -435,8 +455,8 @@ viewRecommendationTabRow : Model -> Html Msg
 viewRecommendationTabRow model =
     if model.recommendationSelectedTab /= NoRecommendationTab then
         Html.div [ class "tab" ]
-            [ createRecommendationTab model ToMe "to me"
-            , createRecommendationTab model FromMe "from me"
+            [ createRecommendationTab model ToUserTab "to me"
+            , createRecommendationTab model FromUserTab "from me"
             ]
 
     else
@@ -712,7 +732,7 @@ viewMediaCover maybeCoverUrl =
             Html.div [ class "no-media" ] []
 
 
-viewRecommendations : WebData (List RecommendedMedia) -> Html Msg
+viewRecommendations : WebData (List RecommendationType) -> Html Msg
 viewRecommendations recommendedMedia =
     case recommendedMedia of
         NotAsked ->
@@ -725,76 +745,135 @@ viewRecommendations recommendedMedia =
             -- TODO show better error!
             Html.text "something went wrong"
 
-        Success media ->
-            if List.isEmpty media then
+        Success rec ->
+            if List.isEmpty rec then
                 Html.text "no recommendations..."
 
             else
                 Html.ul [ class "book-list" ]
-                    (List.map viewRecommendedMedia media)
+                    (List.map viewRecommendedMedia rec)
 
 
-viewRecommendedMedia : RecommendedMedia -> Html Msg
-viewRecommendedMedia recommendedMedia =
-    viewRecommendedMediaType recommendedMedia
+viewRecommendedMedia : RecommendationType -> Html Msg
+viewRecommendedMedia recommendationType =
+    viewRecommendationType recommendationType
 
 
-viewRecommendedMediaType : RecommendedMedia -> Html Msg
-viewRecommendedMediaType recommendedMedia =
-    case recommendedMedia.media of
-        BookType book ->
-            Html.li []
-                [ Html.div [ class "media-card", class "media-card-long" ]
-                    [ Html.div [ class "media-image" ] [ viewMediaCover book.coverUrl ]
-                    , Html.div [ class "media-info" ]
-                        [ Html.i [] [ Html.text (recommendedMedia.recommenderUsername ++ " recommends...") ]
-                        , Html.b [] [ Html.text book.title ]
-                        , Html.div []
-                            [ Html.text "by "
-                            , Html.text (String.join ", " book.authorNames)
+viewRecommendationType : RecommendationType -> Html Msg
+viewRecommendationType recommendationType =
+    case recommendationType of
+        RecToUserType recommendedMedia ->
+            case recommendedMedia.media of
+                BookType book ->
+                    Html.li []
+                        [ Html.div [ class "media-card", class "media-card-long" ]
+                            [ Html.div [ class "media-image" ] [ viewMediaCover book.coverUrl ]
+                            , Html.div [ class "media-info" ]
+                                [ Html.i [] [ Html.text (recommendedMedia.recommenderUsername ++ " recommends...") ]
+                                , Html.b [] [ Html.text book.title ]
+                                , Html.div []
+                                    [ Html.text "by "
+                                    , Html.text (String.join ", " book.authorNames)
+                                    ]
+                                , case book.publishYear of
+                                    Just year ->
+                                        Html.text <| "(" ++ String.fromInt year ++ ")"
+
+                                    Nothing ->
+                                        Html.text ""
+                                , viewRecommendedMediaDropdown (BookType book)
+                                ]
                             ]
-                        , case book.publishYear of
-                            Just year ->
-                                Html.text <| "(" ++ String.fromInt year ++ ")"
-
-                            Nothing ->
-                                Html.text ""
-                        , viewRecommendedMediaDropdown (BookType book)
                         ]
-                    ]
-                ]
 
-        MovieType movie ->
-            Html.li []
-                [ Html.div [ class "media-card", class "media-card-long" ]
-                    [ Html.div [ class "media-image" ] [ viewMediaCover movie.posterUrl ]
-                    , Html.div [ class "media-info" ]
-                        [ Html.i [] [ Html.text (recommendedMedia.recommenderUsername ++ " recommends...") ]
-                        , Html.b [] [ Html.text movie.title ]
-                        , Html.text <| "(" ++ movie.releaseDate ++ ")"
-                        , viewRecommendedMediaDropdown (MovieType movie)
+                MovieType movie ->
+                    Html.li []
+                        [ Html.div [ class "media-card", class "media-card-long" ]
+                            [ Html.div [ class "media-image" ] [ viewMediaCover movie.posterUrl ]
+                            , Html.div [ class "media-info" ]
+                                [ Html.i [] [ Html.text (recommendedMedia.recommenderUsername ++ " recommends...") ]
+                                , Html.b [] [ Html.text movie.title ]
+                                , Html.text <| "(" ++ movie.releaseDate ++ ")"
+                                , viewRecommendedMediaDropdown (MovieType movie)
+                                ]
+                            ]
                         ]
-                    ]
-                ]
 
-        TVType tv ->
-            Html.li []
-                [ Html.div [ class "media-card", class "media-card-long" ]
-                    [ Html.div [ class "media-image" ] [ viewMediaCover tv.posterUrl ]
-                    , Html.div [ class "media-info" ]
-                        [ Html.i [] [ Html.text (recommendedMedia.recommenderUsername ++ " recommends...") ]
-                        , Html.b [] [ Html.text tv.title ]
-                        , Html.div [] [ Html.text (String.join ", " tv.networks) ]
-                        , case tv.firstAirDate of
-                            Just date ->
-                                Html.text <| "(" ++ date ++ ")"
+                TVType tv ->
+                    Html.li []
+                        [ Html.div [ class "media-card", class "media-card-long" ]
+                            [ Html.div [ class "media-image" ] [ viewMediaCover tv.posterUrl ]
+                            , Html.div [ class "media-info" ]
+                                [ Html.i [] [ Html.text (recommendedMedia.recommenderUsername ++ " recommends...") ]
+                                , Html.b [] [ Html.text tv.title ]
+                                , Html.div [] [ Html.text (String.join ", " tv.networks) ]
+                                , case tv.firstAirDate of
+                                    Just date ->
+                                        Html.text <| "(" ++ date ++ ")"
 
-                            Nothing ->
-                                Html.text ""
-                        , viewRecommendedMediaDropdown (TVType tv)
+                                    Nothing ->
+                                        Html.text ""
+                                , viewRecommendedMediaDropdown (TVType tv)
+                                ]
+                            ]
                         ]
-                    ]
-                ]
+
+        RecByUserType recommendedMedia ->
+            case recommendedMedia.media of
+                BookType book ->
+                    Html.li []
+                        [ Html.div [ class "media-card", class "media-card-long" ]
+                            [ Html.div [ class "media-image" ] [ viewMediaCover book.coverUrl ]
+                            , Html.div [ class "media-info" ]
+                                [ Html.i []
+                                    [ Html.text ("you recommended to " ++ recommendedMedia.recommendedUsername ++ "...") ]
+                                , Html.b [] [ Html.text book.title ]
+                                , Html.div []
+                                    [ Html.text "by "
+                                    , Html.text (String.join ", " book.authorNames)
+                                    ]
+                                , case book.publishYear of
+                                    Just year ->
+                                        Html.text <| "(" ++ String.fromInt year ++ ")"
+
+                                    Nothing ->
+                                        Html.text ""
+                                , viewRecommendedMediaDropdown (BookType book)
+                                ]
+                            ]
+                        ]
+
+                MovieType movie ->
+                    Html.li []
+                        [ Html.div [ class "media-card", class "media-card-long" ]
+                            [ Html.div [ class "media-image" ] [ viewMediaCover movie.posterUrl ]
+                            , Html.div [ class "media-info" ]
+                                [ Html.i [] [ Html.text ("you recommended to " ++ recommendedMedia.recommendedUsername ++ "...") ]
+                                , Html.b [] [ Html.text movie.title ]
+                                , Html.text <| "(" ++ movie.releaseDate ++ ")"
+                                , viewRecommendedMediaDropdown (MovieType movie)
+                                ]
+                            ]
+                        ]
+
+                TVType tv ->
+                    Html.li []
+                        [ Html.div [ class "media-card", class "media-card-long" ]
+                            [ Html.div [ class "media-image" ] [ viewMediaCover tv.posterUrl ]
+                            , Html.div [ class "media-info" ]
+                                [ Html.i [] [ Html.text ("you recommended to " ++ recommendedMedia.recommendedUsername ++ "...") ]
+                                , Html.b [] [ Html.text tv.title ]
+                                , Html.div [] [ Html.text (String.join ", " tv.networks) ]
+                                , case tv.firstAirDate of
+                                    Just date ->
+                                        Html.text <| "(" ++ date ++ ")"
+
+                                    Nothing ->
+                                        Html.text ""
+                                , viewRecommendedMediaDropdown (TVType tv)
+                                ]
+                            ]
+                        ]
 
 
 viewRecommendedMediaDropdown : MediaType -> Html Msg
@@ -862,8 +941,8 @@ type ConsumptionTabSelection
 
 
 type RecommendationTabSelection
-    = ToMe
-    | FromMe
+    = ToUserTab
+    | FromUserTab
     | NoRecommendationTab
 
 
@@ -933,7 +1012,7 @@ createFirstTabWithActiveState firstTabSelection activeState tabString =
 
         RecommendationTab ->
             Html.button
-                [ class activeState, Html.Events.onClick (SearchRecsBasedOnTab ToMe) ]
+                [ class activeState, Html.Events.onClick (SearchRecsBasedOnTab ToUserTab) ]
                 [ Html.text tabString ]
 
         FriendsTab ->

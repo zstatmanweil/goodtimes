@@ -87,7 +87,17 @@ encoder mediaType recommenderUserID recommendedUserID status =
 -- Recommended Media
 
 
-type alias RecommendedMedia =
+type RecommendationSelection
+    = RecommendedToUserSelection
+    | RecommendedByUserSelection
+
+
+type RecommendationType
+    = RecToUserType RecommendedToUserMedia
+    | RecByUserType RecommendedByUserMedia
+
+
+type alias RecommendedToUserMedia =
     { media : MediaType
     , recommenderId : Int
     , recommenderUsername : String
@@ -95,13 +105,40 @@ type alias RecommendedMedia =
     }
 
 
-mediaDecoder : Decoder RecommendedMedia
-mediaDecoder =
-    Decode.map4 RecommendedMedia
+recommendedToUserMediaDecoder : Decoder RecommendedToUserMedia
+recommendedToUserMediaDecoder =
+    Decode.map4 RecommendedToUserMedia
         (Decode.field "media" Media.unknownMediaDecoder)
         (Decode.field "recommender_id" Decode.int)
         (Decode.field "recommender_username" Decode.string)
         (Decode.field "created" Decode.string)
+
+
+toUserToRecommendationDecoder : Decoder RecommendedToUserMedia -> Decoder RecommendationType
+toUserToRecommendationDecoder recToUser =
+    Decode.map RecToUserType recToUser
+
+
+type alias RecommendedByUserMedia =
+    { media : MediaType
+    , recommendedId : Int
+    , recommendedUsername : String
+    , created : String -- TODO: how do we deal with datatime??
+    }
+
+
+recommendedByUserMediaDecoder : Decoder RecommendedByUserMedia
+recommendedByUserMediaDecoder =
+    Decode.map4 RecommendedByUserMedia
+        (Decode.field "media" Media.unknownMediaDecoder)
+        (Decode.field "recommended_id" Decode.int)
+        (Decode.field "recommended_username" Decode.string)
+        (Decode.field "created" Decode.string)
+
+
+byUserToRecommendationDecoder : Decoder RecommendedByUserMedia -> Decoder RecommendationType
+byUserToRecommendationDecoder recByUser =
+    Decode.map RecByUserType recByUser
 
 
 

@@ -195,7 +195,7 @@ def get_media_recommended_to_user(user_id):
     """
     Endpoint for getting all media recommended to a user and that user's consumption status.
     :param user_id:
-    :return: media object + media_type + recommender_id + recommender_username + status, e.g.,
+    :return: media object + media_type + recommender_id + recommender_username, e.g.,
     {
         "media": {"author_names": [
                     "Holly Black"
@@ -205,19 +205,17 @@ def get_media_recommended_to_user(user_id):
                     "publish_year": 2020,
                     "source": "open library",
                     "source_id": "0123",
-                    "title": "The Queen Of Nothing"},
+                    "title": "The Queen Of Nothing",
+                    "status": "consuming"},
         "media_type": "book",
         "recommender_id": 1,
-        "recommender_username": "strickinato",
-        "status": "consuming"
+        "recommender_username": "strickinato"
     },
     """
     session = Session()
 
     final = []
     for media in MEDIAS.keys():
-        print(media)
-        # TODO: modify to only make one call to DB
         record_results = get_recommendation_records(user_id, media, session)
         for recommendation, media_class, user_class, status in record_results:
             m = media_class.to_dict()
@@ -258,8 +256,6 @@ def get_media_recommended_by_user(user_id):
 
     final = []
     for media in MEDIAS.keys():
-        print(media)
-        # TODO: modify to only make one call to DB
         record_results = get_records_recommended_to_user(user_id, media, session)
         for recommendation, media_class, user_class in record_results:
             m = media_class.to_dict()
