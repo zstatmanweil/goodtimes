@@ -104,17 +104,17 @@ update msg model =
                     case mediaTabSelection of
                         BookTab ->
                             ( new_model
-                            , searchUserBooks model.profile_user
+                            , searchUserBooks model.logged_in_user
                             )
 
                         MovieTab ->
                             ( new_model
-                            , searchUserMovies model.profile_user
+                            , searchUserMovies model.logged_in_user
                             )
 
                         TVTab ->
                             ( new_model
-                            , searchUserTV model.profile_user
+                            , searchUserTV model.logged_in_user
                             )
 
                         _ ->
@@ -132,12 +132,12 @@ update msg model =
                     case model.recommendationSelectedTab of
                         ToUserTab ->
                             ( new_model
-                            , getRecommendedToUserMedia model.profile_user (mediaTabSelectionToString mediaTabSelection)
+                            , getRecommendedToUserMedia model.logged_in_user (mediaTabSelectionToString mediaTabSelection)
                             )
 
                         FromUserTab ->
                             ( new_model
-                            , getRecommendedByUserMedia model.profile_user (mediaTabSelectionToString mediaTabSelection)
+                            , getRecommendedByUserMedia model.logged_in_user (mediaTabSelectionToString mediaTabSelection)
                             )
 
                         _ ->
@@ -159,20 +159,20 @@ update msg model =
             )
 
         AddMediaToProfile mediaType status ->
-            ( model, addMediaToProfile mediaType status model.profile_user )
+            ( model, addMediaToProfile mediaType status model.logged_in_user )
 
         MediaAddedToProfile result ->
             case result of
                 Ok consumption ->
                     case model.mediaSelectedTab of
                         BookTab ->
-                            ( model, searchUserBooks model.profile_user )
+                            ( model, searchUserBooks model.logged_in_user )
 
                         MovieTab ->
-                            ( model, searchUserMovies model.profile_user )
+                            ( model, searchUserMovies model.logged_in_user )
 
                         TVTab ->
-                            ( model, searchUserTV model.profile_user )
+                            ( model, searchUserTV model.logged_in_user )
 
                         _ ->
                             ( model, Cmd.none )
@@ -207,12 +207,12 @@ update msg model =
             case friendshipTab of
                 ExistingFriendsTab ->
                     ( new_model
-                    , getExistingFriends (User.getUserId model.profile_user)
+                    , getExistingFriends (User.getUserId model.logged_in_user)
                     )
 
                 RequestedFriendsTab ->
                     ( new_model
-                    , getFriendRequests (User.getUserId model.profile_user)
+                    , getFriendRequests (User.getUserId model.logged_in_user)
                     )
 
                 _ ->
@@ -237,12 +237,12 @@ update msg model =
                     ( model, Cmd.none )
 
         AddFriendLink user friendStatus ->
-            ( model, addFriendLink user (User.getUserId model.profile_user) friendStatus )
+            ( model, addFriendLink user (User.getUserId model.logged_in_user) friendStatus )
 
         FriendLinkAdded result ->
             case result of
                 Ok friendLink ->
-                    ( model, getFriendRequests (User.getUserId model.profile_user) )
+                    ( model, getFriendRequests (User.getUserId model.logged_in_user) )
 
                 Err httpError ->
                     -- TODO handle error!
@@ -272,7 +272,7 @@ update msg model =
             )
 
         Recommend mediaType friend ->
-            ( model, recommendMedia (User.getUserId model.profile_user) friend.id mediaType Recommendation.Pending )
+            ( model, recommendMedia (User.getUserId model.logged_in_user) friend.id mediaType Recommendation.Pending )
 
         RecommendationResponse rec ->
             -- TODO: what do do with this response?
@@ -422,7 +422,7 @@ body : Model -> Html Msg
 body model =
     Html.main_ [ class "content" ]
         [ Html.div [ id "content-wrap" ]
-            [ Html.div [ id "user-profile" ] [ Html.text ("Welcome " ++ User.getUsername model.profile_user ++ "!") ]
+            [ Html.div [ id "user-profile" ] [ Html.text ("Welcome " ++ User.getUsername model.logged_in_user ++ "!") ]
             , Html.div [ class "tab" ]
                 [ createFirstTab model MediaTab "my media"
                 , createFirstTab model RecommendationTab "recommendations"
