@@ -4,6 +4,7 @@ from datetime import datetime
 from flask import current_app, jsonify, request, Blueprint
 import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker
+from werkzeug.exceptions import abort
 
 from models.consumption import Consumption, ConsumptionStatus
 from models.recommendation import RecommendationStatus, Recommendation
@@ -24,7 +25,7 @@ def get_user(user_id):
     user_result = session.query(User).filter_by(id=user_id).first()
     session.close()
     if not user_result:
-        return f"user (id {user_id}) does not exist", 404
+        abort(404, description=f"user (id {user_id}) does not exist")
     return user_result.to_json()
 
 
@@ -71,13 +72,14 @@ def add_media_to_profile(user_id, media_type):
     media_class = MEDIAS.get(media_type)
 
     if not status or status not in [v.value for v in ConsumptionStatus]:
-        return "Request body needs a status of 'want to consume', 'consuming', 'finished', or 'abandoned'", 400
+        abort(400,
+              description="Request body needs a status of 'want to consume', 'consuming', 'finished', or 'abandoned'")
     request_body.pop('status')
 
     try:
         media_item = media_class.from_dict(request_body)
     except KeyError:
-        return jsonify("Object is missing required fields."), 400
+        abort(400, description="object is missing required fields")
 
     # check if media item is in database
     db_resp = session.query(media_class).filter_by(source_id=media_item.source_id).first()
@@ -166,7 +168,7 @@ def add_recommended_media(media_type):
     status = request_body.get('status')
 
     if not status or status not in [v.value for v in RecommendationStatus]:
-        return "Request body needs a status of 'pending' or 'ignored'", 400
+        return"Request body needs a status of 'pending' or 'ignored'", 400
 
     # Add media type and created
     request_body['media_type'] = media_type
@@ -180,7 +182,7 @@ def add_recommended_media(media_type):
     try:
         rec = Recommendation.from_dict(request_body)
     except KeyError:
-        return jsonify("Object missing required fields."), 400
+        return abort(400, description="Object missing required fields")
 
     # add recommendation to DB
     session.add(rec)
@@ -298,13 +300,13 @@ def get_overlapping_media():
     status = args.get('status')
 
     if not (primary_user_id and other_user_id and media_type and status):
-        return "Parameters require primary_user_id, other_user_id, media_type, and status", 400
+        abort(400, "Parameters require primary_user_id, other_user_id, media_type, and status")
 
     if media_type not in MEDIAS.keys():
-        return "media_type must be 'book', 'movie', or tv", 400
+        abort(400, "Media_type must be 'book', 'movie', or tv")
 
     if status not in [v.value for v in ConsumptionStatus]:
-        return "status must be 'want to consume', 'consuming', 'finished', or 'abandoned'", 400
+        abort(400, description="Status must be 'want to consume', 'consuming', 'finished', or 'abandoned'")
 
     session = Session()
     media_class = MEDIAS.get(media_type)

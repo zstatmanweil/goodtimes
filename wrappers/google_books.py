@@ -1,21 +1,32 @@
 from typing import List, Dict
 
 import requests
+from requests.adapters import HTTPAdapter, Retry
 
 from models.books import Book
 from secrets import GOOGLE_BOOKS_API_KEY
 
+# this are the HTTP status codes that we are going to retry
+# 429 - too many requests (rate limited)
+# 502 - bad gateway
+# 503 - service unavailable
+RETRY_CODES = [429, 502, 503]
 
 class GoogleBooks:
     def __init__(self):
         self.base_uri = 'https://www.googleapis.com/books/v1/volumes'
         self.api_key = GOOGLE_BOOKS_API_KEY
+        self.session = requests.Session()
+        self.session.mount(self.base_uri, HTTPAdapter(max_retries=Retry(total=5,
+                                                                        read=5,
+                                                                        connect=5,
+                                                                        redirect=5, backoff_factor=0.1)))
 
     def get_books_by_title(self, title: str) -> List[Book]:
         payload = {'q': f'intitle:{title}',
                    'key': self.api_key}
 
-        response = requests.get(self.base_uri, params=payload)
+        response = self.session.get(self.base_uri, params=payload)
 
         response.raise_for_status()
         response_body = response.json()
@@ -28,7 +39,7 @@ class GoogleBooks:
         payload = {'q': query,
                    'key': self.api_key}
 
-        response = requests.get(self.base_uri, params=payload)
+        response = self.session.get(self.base_uri, params=payload)
 
         response.raise_for_status()
         response_body = response.json()

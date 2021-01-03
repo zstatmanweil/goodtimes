@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import List, Dict
 
 import requests
+from requests.adapters import HTTPAdapter, Retry
 
 from models.movies import Movie
 from models.tv import TV
@@ -13,6 +14,11 @@ class TMDB:
         self.search_base_uri = 'https://api.themoviedb.org/3'
         self.poster_cover_uri = 'http://image.tmdb.org/t/p/w185'
         self.api_key = TMDB_TOKEN
+        self.session = requests.Session()
+        self.session.mount(self.search_base_uri, HTTPAdapter(max_retries=Retry(total=5,
+                                                                               read=5,
+                                                                               connect=5,
+                                                                               redirect=5, backoff_factor=0.1)))
 
     def get_movies_by_title(self, title: str) -> List[Movie]:
         payload = {'query': title,
@@ -20,7 +26,7 @@ class TMDB:
                    'language': 'en-US',
                    'include_adult': False}
 
-        response = requests.get(f'{self.search_base_uri}/search/movie', params=payload)
+        response = self.session.get(f'{self.search_base_uri}/search/movie', params=payload)
 
         response.raise_for_status()
         response_body = response.json()
@@ -46,7 +52,7 @@ class TMDB:
                    'language': 'en-US',
                    'include_adult': False}
 
-        response = requests.get(f'{self.search_base_uri}/search/tv', params=payload)
+        response = self.session.get(f'{self.search_base_uri}/search/tv', params=payload)
 
         response.raise_for_status()
         response_body = response.json()
@@ -73,7 +79,7 @@ class TMDB:
         payload = {'api_key': self.api_key,
                    'language': 'en-US'}
 
-        response = requests.get(f'{self.search_base_uri}/tv/{tmdb_id}', params=payload)
+        response = self.session.get(f'{self.search_base_uri}/tv/{tmdb_id}', params=payload)
         response.raise_for_status()
         response_body = response.json()
 

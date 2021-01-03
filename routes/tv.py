@@ -1,6 +1,6 @@
 from datetime import date
 
-from flask import jsonify, request, Blueprint
+from flask import request, Blueprint
 
 from models.tv import TV
 from wrappers.tmdb import TMDB
