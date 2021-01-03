@@ -28,7 +28,7 @@ statusAsString status =
             "totally watched it!"
 
         Abandoned ->
-            "Stopped it midway"
+            "stopped it midway"
 
 
 maybeStatusAsString : Maybe Consumption.Status -> String

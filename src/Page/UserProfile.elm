@@ -710,26 +710,27 @@ viewMediaDropdown mediaType =
         case mediaType of
             BookType book ->
                 [ Html.button [ class "dropbtn-existing-status " ] [ Html.text (Book.maybeStatusAsString book.status) ]
-                , viewDropdownContent (BookType book) "to read" "reading" "read"
+                , viewDropdownContent (BookType book) "to read" "reading" "read" "abandon"
                 ]
 
             MovieType movie ->
                 [ Html.button [ class "dropbtn-existing-status " ] [ Html.text (Movie.maybeStatusAsString movie.status) ]
-                , viewDropdownContent (MovieType movie) "to watch" "watching" "watched"
+                , viewDropdownContent (MovieType movie) "to watch" "watching" "watched" "abandon"
                 ]
 
             TVType tv ->
                 [ Html.button [ class "dropbtn-existing-status " ] [ Html.text (TV.maybeStatusAsString tv.status) ]
-                , viewDropdownContent (TVType tv) "to watch" "watching" "watched"
+                , viewDropdownContent (TVType tv) "to watch" "watching" "watched" "abandon"
                 ]
 
 
-viewDropdownContent : MediaType -> String -> String -> String -> Html Msg
-viewDropdownContent mediaType wantToConsume consuming finished =
+viewDropdownContent : MediaType -> String -> String -> String -> String -> Html Msg
+viewDropdownContent mediaType wantToConsume consuming finished abandoned =
     Html.div [ class "dropdown-content" ]
         [ Html.p [ Html.Events.onClick (AddMediaToProfile mediaType WantToConsume) ] [ Html.text wantToConsume ]
         , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Consuming) ] [ Html.text consuming ]
         , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Finished) ] [ Html.text finished ]
+        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Abandoned) ] [ Html.text abandoned ]
         ]
 
 
@@ -884,7 +885,7 @@ viewRecommendedMediaDropdown mediaType =
                 case book.status of
                     Nothing ->
                         [ Html.button [ class "dropbtn" ] [ Html.text "Add Book >>" ]
-                        , viewDropdownContent (BookType book) "to read" "reading" "read"
+                        , viewDropdownContent (BookType book) "to read" "reading" "read" "abandon"
                         ]
 
                     Just status ->
@@ -894,7 +895,7 @@ viewRecommendedMediaDropdown mediaType =
                 case movie.status of
                     Nothing ->
                         [ Html.button [ class "dropbtn" ] [ Html.text "Add Movie >>" ]
-                        , viewDropdownContent (MovieType movie) "to watch" "watching" "watched"
+                        , viewDropdownContent (MovieType movie) "to watch" "watching" "watched" "abandon"
                         ]
 
                     Just status ->
@@ -904,7 +905,7 @@ viewRecommendedMediaDropdown mediaType =
                 case tv.status of
                     Nothing ->
                         [ Html.button [ class "dropbtn" ] [ Html.text "Add TV Show >>" ]
-                        , viewDropdownContent (TVType tv) "to watch" "watching" "watched"
+                        , viewDropdownContent (TVType tv) "to watch" "watching" "watched" "abandon"
                         ]
 
                     Just status ->

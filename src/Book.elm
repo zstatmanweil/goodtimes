@@ -23,13 +23,13 @@ statusAsString status =
             "want to read"
 
         Consuming ->
-            "reading it now!"
+            "reading it now"
 
         Finished ->
-            "i'm great! i read it!"
+            "read it!"
 
         Abandoned ->
-            "better luck next time"
+            "stopped reading"
 
 
 maybeStatusAsString : Maybe Consumption.Status -> String
