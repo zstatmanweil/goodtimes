@@ -9,7 +9,7 @@ from models.consumption import Consumption, ConsumptionStatus
 from models.recommendation import RecommendationStatus, Recommendation
 from models.user import User
 from db.helpers import MEDIAS, get_consumption_records, get_users_and_friend_statuses, \
-    get_records_recommended_by_user, get_records_recommended_to_user
+    get_records_recommended_by_user, get_records_recommended_to_user, get_overlapping_records
 
 config = ConfigFactory.parse_file('config/config')
 user = Blueprint("user", __name__)
@@ -268,3 +268,46 @@ def get_media_recommended_by_user(user_id, media_type):
 
     session.close()
     return jsonify(sorted(final, key=lambda m: m.get('created'), reverse=True)), 200
+
+
+@user.route("/overlaps", methods=["GET"])
+def get_overlapping_media():
+    """
+    Endpoint for getting overlapping media. Args:
+    "primary_user_id": int,
+    "other_user_id": int,
+    "media_type": string,
+    "status": string
+
+    :return: media object, e,g,,
+     {
+        "author_names": [
+            "Holly Black"
+            ],
+        "cover_url": "http://covers.openlibrary.org/b/id/10381918-M.jpg",
+        "id": 2,
+        "publish_year": 2020,
+        "source": "open library",
+        "source_id": "0123",
+        "title": "The Queen Of Nothing"}
+    """
+    args = request.args
+    primary_user_id = args.get("primary_user_id")
+    other_user_id = args.get("other_user_id")
+    media_type = args.get('media_type')
+    status = args.get('status')
+
+    if not (primary_user_id and other_user_id and media_type and status):
+        return "Parameters require primary_user_id, other_user_id, media_type, and status", 400
+
+    if media_type not in MEDIAS.keys():
+        return "media_type must be 'book', 'movie', or tv", 400
+
+    if status not in [v.value for v in ConsumptionStatus]:
+        return "status must be 'want to consume', 'consuming', 'finished', or 'abandoned'", 400
+
+    session = Session()
+    media_class = MEDIAS.get(media_type)
+    record_results = get_overlapping_records(primary_user_id, other_user_id, media_type, status, session)
+    session.close()
+    return media_class.schema().dumps(record_results, many=True), 200

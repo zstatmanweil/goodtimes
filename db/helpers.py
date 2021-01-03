@@ -203,3 +203,40 @@ def get_user_friend_requests(user_id: int, session: session) -> List[Tuple]:
         .all()
 
     return results
+
+
+def get_overlapping_records(primary_user_id: int, other_user_id: int, media_type: str, status: str, session: session) -> List:
+    """
+    Get media records of a given status that two users have in common.
+    :param primary_user_id: The logged in user.
+    :param other_user_id: The user the logged in user is veewing.
+    :param media_type: book, movie or tv
+    :param status: want to consume, consuming, finished, abandoned
+    :param session:
+    :return: media class object
+    """
+    media_class = MEDIAS.get(media_type)
+    # Get most recent record for each item in consumption table associated with either one of the users.
+    consumption_subq = session.query(Consumption.user_id, Consumption.media_id, Consumption.media_type,
+                         func.max(Consumption.created).label("max_created")) \
+        .filter(or_(Consumption.user_id == primary_user_id, Consumption.user_id == other_user_id)) \
+        .filter(Consumption.media_type == media_type) \
+        .group_by(Consumption.user_id, Consumption.media_id, Consumption.media_type) \
+        .subquery()
+
+    # Filter consumption records above by the ones that match the selected status.
+    consumption_w_status_subq = session.query(Consumption) \
+        .join(consumption_subq, and_(Consumption.media_id == consumption_subq.c.media_id,
+                         Consumption.media_type == consumption_subq.c.media_type,
+                         Consumption.created == consumption_subq.c.max_created)) \
+        .filter(Consumption.status == status) \
+        .subquery()
+
+    # Identify all media associated with consumption records above.
+    results = session.query(media_class) \
+        .join(consumption_w_status_subq, and_(media_class.id == consumption_w_status_subq.c.media_id))\
+        .group_by(media_class)\
+        .having(func.count(consumption_w_status_subq.c.user_id) > 1)\
+        .all()
+
+    return results
