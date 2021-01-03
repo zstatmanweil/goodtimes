@@ -21,7 +21,7 @@ import User exposing (FriendLink, FriendStatus(..), friendLinkDecoder, friendLin
 
 
 type alias Model =
-    { profile_user : WebData User.User
+    { logged_in_user : WebData User.User
     , friends : WebData (List User.User)
     , searchResults : WebData (List MediaType)
     , filteredMediaResults : WebData (List MediaType)
@@ -56,7 +56,7 @@ type Msg
 
 init : Int -> ( Model, Cmd Msg )
 init userID =
-    ( { profile_user = NotAsked
+    ( { logged_in_user = NotAsked
       , friends = NotAsked
       , searchResults = NotAsked
       , filteredMediaResults = NotAsked
