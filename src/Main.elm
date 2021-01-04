@@ -3,6 +3,7 @@ module Main exposing (..)
 import Browser exposing (..)
 import Browser.Navigation as Nav
 import Html exposing (Html)
+import Page.Feed as Feed
 import Page.Search as Search
 import Page.SearchUsers as SearchUsers
 import Page.UserProfile as UserProfile
@@ -37,6 +38,7 @@ type alias Model =
 
 type Page
     = NotFound
+    | Feed Feed.Model
     | Search Search.Model
     | SearchUsers SearchUsers.Model
     | UserProfile UserProfile.Model
@@ -69,6 +71,9 @@ view model =
                 , kids = [ Html.div [] [ Html.text "This page does not exist" ] ]
                 }
 
+        Feed feed ->
+            Skeleton.view FeedMsg (Feed.view feed)
+
         Search search ->
             Skeleton.view SearchMsg (Search.view search)
 
@@ -87,6 +92,7 @@ type Msg
     = None
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
+    | FeedMsg Feed.Msg
     | SearchMsg Search.Msg
     | SearchUsersMsg SearchUsers.Msg
     | UserProfileMsg UserProfile.Msg
@@ -105,6 +111,14 @@ update msg model =
 
         UrlChanged url ->
             stepUrl url { model | url = url }
+
+        FeedMsg msge ->
+            case model.page of
+                Feed feed ->
+                    stepFeed model (Feed.update msge feed)
+
+                _ ->
+                    ( model, Cmd.none )
 
         SearchMsg msge ->
             case model.page of
@@ -135,6 +149,13 @@ update msg model =
             ( model, Cmd.none )
 
 
+stepFeed : Model -> ( Feed.Model, Cmd Feed.Msg ) -> ( Model, Cmd Msg )
+stepFeed model ( feed, cmds ) =
+    ( { model | page = Feed feed }
+    , Cmd.map FeedMsg cmds
+    )
+
+
 stepSearch : Model -> ( Search.Model, Cmd Search.Msg ) -> ( Model, Cmd Msg )
 stepSearch model ( search, cmds ) =
     ( { model | page = Search search }
@@ -163,6 +184,15 @@ stepUrl url model =
     case Parser.parse Routes.routeParser url of
         Just route ->
             case route of
+                Routes.Feed ->
+                    let
+                        ( feedModel, feedCommand ) =
+                            Feed.init ()
+                    in
+                    ( { model | page = Feed feedModel }
+                    , Cmd.map FeedMsg feedCommand
+                    )
+
                 Routes.User userID ->
                     let
                         ( userProfileModel, userProfileCommand ) =

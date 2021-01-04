@@ -157,17 +157,7 @@ def get_user_friends(user_id: int, session: session) -> List[Tuple]:
     :return:
     """
 
-    max_friend_link_subq = session.query(Friend.requester_id, Friend.requested_id,
-                                         func.max(Friend.created).label("max_created")) \
-        .group_by(Friend.requester_id, Friend.requested_id) \
-        .subquery()
-
-    friend_subq = session.query(Friend).filter(and_(or_(Friend.requested_id == user_id, Friend.requester_id == user_id),
-                                                    Friend.status == FriendStatus.ACCEPTED.value)) \
-        .join(max_friend_link_subq, and_(Friend.requester_id == max_friend_link_subq.c.requester_id,
-                                         Friend.requested_id == max_friend_link_subq.c.requested_id,
-                                         Friend.created == max_friend_link_subq.c.max_created)) \
-        .subquery()
+    friend_subq = create_user_friends_subquery(user_id, session)
 
     results = session.query(User).filter(User.id != user_id) \
         .join(friend_subq, or_(User.id == friend_subq.c.requester_id,
@@ -240,3 +230,39 @@ def get_overlapping_records(primary_user_id: int, other_user_id: int, media_type
         .all()
 
     return results
+
+
+def get_friend_event_records(user_id, session):
+
+    friend_subq = create_user_friends_subquery(user_id, session)
+
+    final_results = []
+    for media_type, media_class in MEDIAS.items():
+        media_results = session.query(media_class, Consumption, User) \
+            .join(Consumption, media_class.id == Consumption.media_id) \
+            .join(User, Consumption.user_id == User.id) \
+            .join(friend_subq, or_(User.id == friend_subq.c.requester_id,
+                                   User.id == friend_subq.c.requested_id)) \
+            .filter(Consumption.media_type == media_type) \
+            .all()
+
+        final_results.append(media_results)
+
+    return final_results
+
+
+def create_user_friends_subquery(user_id, session):
+
+    max_friend_link_subq = session.query(Friend.requester_id, Friend.requested_id,
+                                         func.max(Friend.created).label("max_created")) \
+        .group_by(Friend.requester_id, Friend.requested_id) \
+        .subquery()
+
+    friend_subq = session.query(Friend).filter(and_(or_(Friend.requested_id == user_id, Friend.requester_id == user_id),
+                                                    Friend.status == FriendStatus.ACCEPTED.value)) \
+        .join(max_friend_link_subq, and_(Friend.requester_id == max_friend_link_subq.c.requester_id,
+                                         Friend.requested_id == max_friend_link_subq.c.requested_id,
+                                         Friend.created == max_friend_link_subq.c.max_created)) \
+        .subquery()
+
+    return friend_subq

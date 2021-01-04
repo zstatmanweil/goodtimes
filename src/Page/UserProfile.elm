@@ -221,7 +221,7 @@ update msg model =
         UserResponse userResponse ->
             case userResponse of
                 Ok user ->
-                    ( { model | profile_user = Success user }, getExistingFriends user.id )
+                    ( { model | logged_in_user = Success user }, getExistingFriends user.id )
 
                 -- TODO: handle error
                 Err resp ->

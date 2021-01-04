@@ -10,7 +10,8 @@ from models.consumption import Consumption, ConsumptionStatus
 from models.recommendation import RecommendationStatus, Recommendation
 from models.user import User
 from db.helpers import MEDIAS, get_consumption_records, get_users_and_friend_statuses, \
-    get_records_recommended_by_user, get_records_recommended_to_user, get_overlapping_records
+    get_records_recommended_by_user, get_records_recommended_to_user, get_overlapping_records, get_friend_event_records
+from routes.helpers import get_time_diff_hrs
 
 config = ConfigFactory.parse_file('config/config')
 user = Blueprint("user", __name__)
@@ -313,3 +314,52 @@ def get_overlapping_media():
     record_results = get_overlapping_records(primary_user_id, other_user_id, media_type, status, session)
     session.close()
     return media_class.schema().dumps(record_results, many=True), 200
+
+
+@user.route("/user/<int:user_id>/friend/events", methods=["GET"])
+def get_friend_events(user_id):
+    """
+    Endpoint for getting all events associated with a userr's friends.
+    :param user_id:
+    :return: media object + status, e.g.,
+    {
+        "media" : { "author_names": [
+                        "Holly Black"
+                    ],
+                    "cover_url": "http://covers.openlibrary.org/b/id/10381918-M.jpg",
+                    "id": 2,
+                    "publish_year": 2020,
+                    "source": "open library",
+                    "source_id": "0123",
+                    "status": "finished",
+                    "title": "The Queen Of Nothing" }
+        "media_type": "book",
+        "user_id" : 1,
+        "username" : strickinato,
+        "status" : "consuming"
+        "created" : datetime
+    },
+    """
+    session = Session()
+    record_results = get_friend_event_records(user_id, session)
+
+    final_results = []
+    for media_set in record_results:
+        for media_class, consumption_class, user_class in media_set:
+            m = media_class.to_dict()
+            media_result = {'media': m,
+                            "media_type": consumption_class.media_type,
+                            'user_id': user_class.id,
+                            'username': user_class.username,
+                            'status': consumption_class.status,
+                            'created': consumption_class.created,
+                            'time_since': get_time_diff_hrs(consumption_class.created)}
+
+            final_results.append(media_result)
+
+    session.close()
+    return jsonify(sorted(final_results, key=lambda m: m.get('time_since'))), 200
+
+
+
+

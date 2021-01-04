@@ -4,7 +4,8 @@ import Url.Parser exposing ((</>), Parser, int, map, oneOf, s)
 
 
 type Route
-    = User Int
+    = Feed
+    | User Int
     | Search
     | SearchUsers
 
@@ -12,7 +13,8 @@ type Route
 routeParser : Parser (Route -> a) a
 routeParser =
     oneOf
-        [ map User (s "user" </> int)
+        [ map Feed (s "feed")
+        , map User (s "user" </> int)
         , map Search (s "search")
         , map SearchUsers (s "search" </> s "users")
         ]
