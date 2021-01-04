@@ -97,14 +97,14 @@ body model =
         [ Html.div [ id "content-wrap" ]
             [ Html.div [ id "user-profile" ] [ Html.text ("Welcome " ++ User.getUsername model.logged_in_user ++ "!") ]
             , Html.div [ class "results" ]
-                [ viewEvents model.eventResults ]
+                [ viewEvents model ]
             ]
         ]
 
 
-viewEvents : WebData (List Event) -> Html Msg
-viewEvents events =
-    case events of
+viewEvents : Model -> Html Msg
+viewEvents model =
+    case model.eventResults of
         NotAsked ->
             Html.text "see your friend's events"
 
@@ -115,17 +115,17 @@ viewEvents events =
             -- TODO show better error!
             Html.text "something went wrong"
 
-        Success event ->
-            if List.isEmpty event then
+        Success events ->
+            if List.isEmpty events then
                 Html.text "you have no good times events, start making friends and adding books, tv and movie!"
 
             else
                 Html.ul [ class "book-list" ]
-                    (List.map viewEvent event)
+                    (List.map (viewEvent (User.getUserId model.logged_in_user)) events)
 
 
-viewEvent : Event -> Html Msg
-viewEvent event =
+viewEvent : Int -> Event -> Html Msg
+viewEvent logged_in_user_id event =
     case event.media of
         BookType book ->
             Html.li []
@@ -137,9 +137,7 @@ viewEvent event =
                                 "("
                                     ++ hrsToString event.timeSince
                                     ++ ") "
-                                    ++ event.username
-                                    ++ " "
-                                    ++ getMediaStatusAsString event.media event.status
+                                    ++ getMediaStatusAsString logged_in_user_id event
                             ]
                         , viewBookDetails book
                         ]
@@ -156,9 +154,7 @@ viewEvent event =
                                 "("
                                     ++ hrsToString event.timeSince
                                     ++ ") "
-                                    ++ event.username
-                                    ++ " "
-                                    ++ getMediaStatusAsString event.media event.status
+                                    ++ getMediaStatusAsString logged_in_user_id event
                             ]
                         , viewMovieDetails movie
                         ]
@@ -175,9 +171,7 @@ viewEvent event =
                                 "("
                                     ++ hrsToString event.timeSince
                                     ++ ") "
-                                    ++ event.username
-                                    ++ " "
-                                    ++ getMediaStatusAsString event.media event.status
+                                    ++ getMediaStatusAsString logged_in_user_id event
                             ]
                         , viewTVDetails tv
                         ]
@@ -236,36 +230,68 @@ viewMediaCover maybeCoverUrl =
             Html.div [ class "no-media" ] []
 
 
-getMediaStatusAsString : MediaType -> Consumption.Status -> String
-getMediaStatusAsString mediaType status =
-    case mediaType of
+getMediaStatusAsString : Int -> Event -> String
+getMediaStatusAsString logged_in_user_id event =
+    case event.media of
         BookType _ ->
-            case status of
+            case event.status of
                 WantToConsume ->
-                    "wants to read"
+                    if event.userId == logged_in_user_id then
+                        "you want to read"
+
+                    else
+                        event.username ++ " wants to read"
 
                 Consuming ->
-                    "is reading"
+                    if event.userId == logged_in_user_id then
+                        "you are reading"
+
+                    else
+                        event.username ++ " is reading"
 
                 Finished ->
-                    "read"
+                    if event.userId == logged_in_user_id then
+                        "you read"
+
+                    else
+                        event.username ++ " read"
 
                 Abandoned ->
-                    "abandoned"
+                    if event.userId == logged_in_user_id then
+                        "you abandoned"
+
+                    else
+                        event.username ++ " abandoned"
 
         _ ->
-            case status of
+            case event.status of
                 WantToConsume ->
-                    "wants to watch"
+                    if event.userId == logged_in_user_id then
+                        "you want to want"
+
+                    else
+                        event.username ++ " wants to watch"
 
                 Consuming ->
-                    "is watching"
+                    if event.userId == logged_in_user_id then
+                        "you are watching"
+
+                    else
+                        event.username ++ " is watching"
 
                 Finished ->
-                    "watched"
+                    if event.userId == logged_in_user_id then
+                        "you watched"
+
+                    else
+                        event.username ++ " watched"
 
                 Abandoned ->
-                    "abandoned"
+                    if event.userId == logged_in_user_id then
+                        "you abandoned"
+
+                    else
+                        event.username ++ " abandoned"
 
 
 hrsToString : Int -> String
