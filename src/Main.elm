@@ -33,6 +33,7 @@ type alias Model =
     { url : Url.Url
     , key : Nav.Key
     , page : Page
+    , isOpenMenu : Bool
     }
 
 
@@ -54,6 +55,7 @@ init _ url key =
         { url = url
         , key = key
         , page = NotFound
+        , isOpenMenu = False
         }
 
 
@@ -65,23 +67,25 @@ view : Model -> Browser.Document Msg
 view model =
     case model.page of
         NotFound ->
-            Skeleton.view never
+            Skeleton.view model.isOpenMenu
+                ToggleViewMenu
+                never
                 { title = "Not Found"
                 , attrs = []
                 , kids = [ Html.div [] [ Html.text "This page does not exist" ] ]
                 }
 
         Feed feed ->
-            Skeleton.view FeedMsg (Feed.view feed)
+            Skeleton.view model.isOpenMenu ToggleViewMenu FeedMsg (Feed.view feed)
 
         Search search ->
-            Skeleton.view SearchMsg (Search.view search)
+            Skeleton.view model.isOpenMenu ToggleViewMenu SearchMsg (Search.view search)
 
         SearchUsers search ->
-            Skeleton.view SearchUsersMsg (SearchUsers.view search)
+            Skeleton.view model.isOpenMenu ToggleViewMenu SearchUsersMsg (SearchUsers.view search)
 
         UserProfile user ->
-            Skeleton.view UserProfileMsg (UserProfile.view user)
+            Skeleton.view model.isOpenMenu ToggleViewMenu UserProfileMsg (UserProfile.view user)
 
 
 
@@ -96,6 +100,7 @@ type Msg
     | SearchMsg Search.Msg
     | SearchUsersMsg SearchUsers.Msg
     | UserProfileMsg UserProfile.Msg
+    | ToggleViewMenu
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -144,6 +149,9 @@ update msg model =
 
                 _ ->
                     ( model, Cmd.none )
+
+        ToggleViewMenu ->
+            ( { model | isOpenMenu = not model.isOpenMenu }, Cmd.none )
 
         None ->
             ( model, Cmd.none )

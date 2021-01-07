@@ -301,3 +301,19 @@
   .sidenav {padding-top: 15px;}
   .sidenav a {font-size: 18px;}
 }
+
+.hamburger {
+  position: absolute;
+  right: 0;
+  margin-top: 5px;
+  padding-right: 57px;
+  cursor: pointer;
+
+}
+.bar {
+  width: 35px;
+  height: 5px;
+  background-color: white;
+  margin: 8px 0;
+  transition: 0.4s;
+}

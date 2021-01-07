@@ -3,6 +3,7 @@ module Skeleton exposing (..)
 import Browser exposing (Document)
 import Html exposing (Attribute, Html)
 import Html.Attributes as Attr exposing (class, id)
+import Html.Events
 
 
 
@@ -21,13 +22,13 @@ type alias Details msg =
 -- VIEW
 
 
-view : (a -> msg) -> Details a -> Document msg
-view toMsg details =
+view : Bool -> msg -> (a -> msg) -> Details a -> Document msg
+view menuOpen toggleViewMenu toMsg details =
     { title = details.title
     , body =
         [ Html.div [ class "container", id "page-container" ]
-            [ header
-            , sidebar
+            [ header toggleViewMenu
+            , sidebar menuOpen
             , Html.map toMsg <|
                 Html.div (class "center" :: details.attrs) details.kids
             , Html.footer [ id "footer" ] [ footer ]
@@ -36,22 +37,28 @@ view toMsg details =
     }
 
 
-header : Html msg
-header =
+header : msg -> Html msg
+header toggleViewMenu =
     Html.header [ class "header" ]
-        [ Html.h1 [] [ Html.a [ Attr.href "/feed" ] [ Html.text "good times" ] ]
+        [ Html.div [ class "hamburger", Html.Events.onClick toggleViewMenu ] [ Html.div [ class "bar" ] [], Html.div [ class "bar" ] [], Html.div [ class "bar" ] [] ]
+        , Html.h1 [] [ Html.a [ Attr.href "/feed" ] [ Html.text "good times" ] ]
         , Html.p [] [ Html.text "a book, movie & tv finder - for having a good time" ]
         ]
 
 
-sidebar : Html msg
-sidebar =
-    Html.div [ class "sidenav" ]
-        [ Html.a [ Attr.href "/user/1" ] [ Html.text "My Profile" ]
-        , Html.a [ Attr.href "/search" ] [ Html.text "Search Media" ]
-        , Html.a [ Attr.href "/search/users" ] [ Html.text "Find Friends" ]
-        , Html.a [ Attr.href "/feed" ] [ Html.text "Event Feed" ]
-        ]
+sidebar : Bool -> Html msg
+sidebar menuOpen =
+    case menuOpen of
+        True ->
+            Html.div [ class "sidenav" ]
+                [ Html.a [ Attr.href "/user/1" ] [ Html.text "My Profile" ]
+                , Html.a [ Attr.href "/search" ] [ Html.text "Search Media" ]
+                , Html.a [ Attr.href "/search/users" ] [ Html.text "Find Friends" ]
+                , Html.a [ Attr.href "/feed" ] [ Html.text "Event Feed" ]
+                ]
+
+        False ->
+            Html.text ""
 
 
 footer : Html msg
