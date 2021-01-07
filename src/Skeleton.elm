@@ -27,6 +27,7 @@ view toMsg details =
     , body =
         [ Html.div [ class "container", id "page-container" ]
             [ header
+            , sidebar
             , Html.map toMsg <|
                 Html.div (class "center" :: details.attrs) details.kids
             , Html.footer [ id "footer" ] [ footer ]
@@ -38,14 +39,18 @@ view toMsg details =
 header : Html msg
 header =
     Html.header [ class "header" ]
-        [ Html.h1 [] [ Html.text "good times" ]
-        , Html.ul []
-            [ Html.li [] [ Html.a [ Attr.href "/search" ] [ Html.text "Search Media" ] ]
-            , Html.li [] [ Html.a [ Attr.href "/search/users" ] [ Html.text "Find Friends" ] ]
-            , Html.li [] [ Html.a [ Attr.href "/user/1" ] [ Html.text "My Profile" ] ]
-            ]
-        , Html.br [] []
+        [ Html.h1 [] [ Html.a [ Attr.href "/feed" ] [ Html.text "good times" ] ]
         , Html.p [] [ Html.text "a book, movie & tv finder - for having a good time" ]
+        ]
+
+
+sidebar : Html msg
+sidebar =
+    Html.div [ class "sidenav" ]
+        [ Html.a [ Attr.href "/user/1" ] [ Html.text "My Profile" ]
+        , Html.a [ Attr.href "/search" ] [ Html.text "Search Media" ]
+        , Html.a [ Attr.href "/search/users" ] [ Html.text "Find Friends" ]
+        , Html.a [ Attr.href "/feed" ] [ Html.text "Event Feed" ]
         ]
 
 
