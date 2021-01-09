@@ -204,6 +204,7 @@ update msg model =
                         , consumptionSelectedTab = NoConsumptionTab
                         , recommendationSelectedTab = NoRecommendationTab
                         , friendshipSelectedTab = friendshipTab
+                        , friends = Loading
                     }
             in
             case friendshipTab of
@@ -227,9 +228,8 @@ update msg model =
                         ( { model | profile_user = Success user }, getExistingFriends user.id )
 
                     else
-                    -- TODO: command here should be something like get if profile user is friends with logged in user,
-                    -- of if friendship has been requested
-
+                        -- TODO: command here should be something like get if profile user is friends with logged in user,
+                        -- of if friendship has been requested
                         ( { model | profile_user = Success user }, Cmd.none )
 
                 -- TODO: handle error
@@ -531,10 +531,10 @@ viewFriends : WebData (List User.User) -> Html Msg
 viewFriends friends =
     case friends of
         NotAsked ->
-            Html.text "looking for friends?"
+            Html.text "you want friends"
 
         Loading ->
-            Html.text "entering the database!"
+            Html.text "looking for friends!"
 
         Failure error ->
             -- TODO show better error!
