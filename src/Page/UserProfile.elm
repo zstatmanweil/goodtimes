@@ -22,6 +22,7 @@ import User exposing (FriendLink, FriendStatus(..), friendLinkDecoder, friendLin
 
 type alias Model =
     { logged_in_user : WebData User.User
+    , profile_user : WebData User.User
     , friends : WebData (List User.User)
     , searchResults : WebData (List MediaType)
     , filteredMediaResults : WebData (List MediaType)
@@ -56,7 +57,8 @@ type Msg
 
 init : Int -> ( Model, Cmd Msg )
 init userID =
-    ( { logged_in_user = NotAsked
+    ( { logged_in_user = Success (User.User 1 "zstat" "zoe" "statman-weil" "zstatmanweil@gmail.com")
+      , profile_user = NotAsked
       , friends = NotAsked
       , searchResults = NotAsked
       , filteredMediaResults = NotAsked
@@ -221,7 +223,14 @@ update msg model =
         UserResponse userResponse ->
             case userResponse of
                 Ok user ->
-                    ( { model | logged_in_user = Success user }, getExistingFriends user.id )
+                    if model.logged_in_user == model.profile_user then
+                        ( { model | profile_user = Success user }, getExistingFriends user.id )
+
+                    else
+                    -- TODO: command here should be something like get if profile user is friends with logged in user,
+                    -- of if friendship has been requested
+
+                        ( { model | profile_user = Success user }, Cmd.none )
 
                 -- TODO: handle error
                 Err resp ->
@@ -420,22 +429,27 @@ view model =
 
 body : Model -> Html Msg
 body model =
-    Html.main_ [ class "content" ]
-        [ Html.div [ id "content-wrap" ]
-            [ Html.div [ id "user-profile" ] [ Html.text ("Welcome " ++ User.getUsername model.logged_in_user ++ "!") ]
-            , Html.div [ class "tab" ]
-                [ createFirstTab model MediaTab "my media"
-                , createFirstTab model RecommendationTab "recommendations"
-                , createFirstTab model FriendsTab "friends"
+    if model.logged_in_user == model.profile_user then
+        Html.main_ [ class "content" ]
+            [ Html.div [ id "content-wrap" ]
+                [ Html.div [ id "user-profile" ] [ Html.text ("Welcome " ++ User.getUsername model.logged_in_user ++ "!") ]
+                , Html.div [ class "tab" ]
+                    [ createFirstTab model MediaTab "my media"
+                    , createFirstTab model RecommendationTab "recommendations"
+                    , createFirstTab model FriendsTab "friends"
+                    ]
+                , viewFriendshipTabRow model
+                , viewRecommendationTabRow model
+                , viewMediaTabRow model
+                , viewConsumptionTabRow model
+                , Html.div [ class "results" ]
+                    [ viewTabContent model ]
                 ]
-            , viewFriendshipTabRow model
-            , viewRecommendationTabRow model
-            , viewMediaTabRow model
-            , viewConsumptionTabRow model
-            , Html.div [ class "results" ]
-                [ viewTabContent model ]
             ]
-        ]
+
+    else
+        Html.main_ [ class "content" ]
+            [ Html.div [ id "content-wrap" ] [ Html.text "here is another user!" ] ]
 
 
 viewTabContent : Model -> Html Msg
