@@ -21,8 +21,18 @@
     "elm-hot": "^1.1.5",
     "node-elm-compiler": "^5.0.5",
     "parcel-bundler": "^1.12.4",
+    "parcel-plugin-static-files-copy": "^2.5.0",
     "postcss-modules": "^3.2.2",
     "sass": "^1.29.0"
   },
-  "keywords": []
+  "keywords": [],
+  "dependencies": {},
+  "staticFiles": {
+      "staticPath": [
+        {
+          "staticPath": "static",
+          "staticOutDir": "."
+        }
+      ]
+    }
 }

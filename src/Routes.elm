@@ -1,6 +1,6 @@
 module Routes exposing (..)
 
-import Url.Parser exposing ((</>), Parser, int, map, oneOf, s)
+import Url.Parser exposing ((</>), (<?>), Parser, fragment, int, map, oneOf, s)
 
 
 type Route
@@ -8,12 +8,16 @@ type Route
     | User Int
     | Search
     | SearchUsers
+    | Login
+    | Authorized (Maybe String)
 
 
 routeParser : Parser (Route -> a) a
 routeParser =
     oneOf
         [ map Feed (s "feed")
+        , map Login (s "login")
+        , map Authorized (s "authorized" </> fragment identity)
         , map User (s "user" </> int)
         , map Search (s "search")
         , map SearchUsers (s "search" </> s "users")

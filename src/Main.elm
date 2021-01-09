@@ -1,8 +1,12 @@
 module Main exposing (..)
 
+import Auth0
 import Browser exposing (..)
 import Browser.Navigation as Nav
+import Dict
 import Html exposing (Html)
+import Html.Attributes as Attr
+import Maybe.Extra
 import Page.Feed as Feed
 import Page.Search as Search
 import Page.SearchUsers as SearchUsers
@@ -13,7 +17,7 @@ import Url
 import Url.Parser as Parser
 
 
-main : Program () Model Msg
+main : Program Flags Model Msg
 main =
     Browser.application
         { init = init
@@ -29,17 +33,31 @@ main =
 -- MODEL
 
 
+type alias Flags =
+    Bool
+
+
 type alias Model =
     { url : Url.Url
     , key : Nav.Key
     , page : Page
     , isOpenMenu : Bool
+    , userToken : Maybe String
     }
 
 
 type Page
     = NotFound
-    | Feed Feed.Model
+    | Login
+    | LoggedIn UserInfo LoggedInPage
+
+
+type alias UserInfo =
+    { username : String }
+
+
+type LoggedInPage
+    = Feed Feed.Model
     | Search Search.Model
     | SearchUsers SearchUsers.Model
     | UserProfile UserProfile.Model
@@ -49,18 +67,29 @@ type Page
 -- INIT
 
 
-init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
-init _ url key =
+init : Flags -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
+init isAuthenticated url key =
     stepUrl url
         { url = url
         , key = key
-        , page = NotFound
+        , page = Login
         , isOpenMenu = False
+        , userToken = Nothing
         }
 
 
 
 -- VIEW
+
+
+auth0LoginUrl : String
+auth0LoginUrl =
+    Auth0.auth0AuthorizeURL
+        (Auth0.Auth0Config "https://goodtimes-staging.us.auth0.com" "68MpVR1fV03q6to9Al7JbNAYLTi2lRGT")
+        "token"
+        "http://localhost:1234/authorized"
+        [ "openid", "name", "email" ]
+        (Just "google-oauth2")
 
 
 view : Model -> Browser.Document Msg
@@ -75,17 +104,28 @@ view model =
                 , kids = [ Html.div [] [ Html.text "This page does not exist" ] ]
                 }
 
-        Feed feed ->
-            Skeleton.view model.isOpenMenu ToggleViewMenu FeedMsg (Feed.view feed)
+        Login ->
+            { title = "Welcome to goodtimes"
+            , body =
+                [ Html.h2 [] [ Html.text "good times" ]
+                , Html.text "You need to log in"
+                , Html.a [ Attr.href auth0LoginUrl ] [ Html.text "login" ]
+                ]
+            }
 
-        Search search ->
-            Skeleton.view model.isOpenMenu ToggleViewMenu SearchMsg (Search.view search)
+        LoggedIn userInfo loggedInPage ->
+            case loggedInPage of
+                Feed feed ->
+                    Skeleton.view model.isOpenMenu ToggleViewMenu FeedMsg (Feed.view feed)
 
-        SearchUsers search ->
-            Skeleton.view model.isOpenMenu ToggleViewMenu SearchUsersMsg (SearchUsers.view search)
+                Search search ->
+                    Skeleton.view model.isOpenMenu ToggleViewMenu SearchMsg (Search.view search)
 
-        UserProfile user ->
-            Skeleton.view model.isOpenMenu ToggleViewMenu UserProfileMsg (UserProfile.view user)
+                SearchUsers search ->
+                    Skeleton.view model.isOpenMenu ToggleViewMenu SearchUsersMsg (SearchUsers.view search)
+
+                UserProfile user ->
+                    Skeleton.view model.isOpenMenu ToggleViewMenu UserProfileMsg (UserProfile.view user)
 
 
 
@@ -119,7 +159,7 @@ update msg model =
 
         FeedMsg msge ->
             case model.page of
-                Feed feed ->
+                LoggedIn userInfo (Feed feed) ->
                     stepFeed model (Feed.update msge feed)
 
                 _ ->
@@ -127,7 +167,7 @@ update msg model =
 
         SearchMsg msge ->
             case model.page of
-                Search search ->
+                LoggedIn userInfo (Search search) ->
                     -- if you receive a search message on the search page, update the Search page. If you recieve another message, ignore
                     stepSearch model (Search.update msge search)
 
@@ -136,7 +176,7 @@ update msg model =
 
         SearchUsersMsg msge ->
             case model.page of
-                SearchUsers search ->
+                LoggedIn userInfo (SearchUsers search) ->
                     stepSearchUsers model (SearchUsers.update msge search)
 
                 _ ->
@@ -144,7 +184,7 @@ update msg model =
 
         UserProfileMsg msge ->
             case model.page of
-                UserProfile user ->
+                LoggedIn userInfo (UserProfile user) ->
                     stepUser model (UserProfile.update msge user)
 
                 _ ->
@@ -159,71 +199,139 @@ update msg model =
 
 stepFeed : Model -> ( Feed.Model, Cmd Feed.Msg ) -> ( Model, Cmd Msg )
 stepFeed model ( feed, cmds ) =
-    ( { model | page = Feed feed }
+    ( { model | page = LoggedIn dummyUser (Feed feed) }
     , Cmd.map FeedMsg cmds
     )
 
 
 stepSearch : Model -> ( Search.Model, Cmd Search.Msg ) -> ( Model, Cmd Msg )
 stepSearch model ( search, cmds ) =
-    ( { model | page = Search search }
+    ( { model | page = LoggedIn dummyUser (Search search) }
     , Cmd.map SearchMsg cmds
     )
 
 
+dummyUser =
+    { username = "z" }
+
+
 stepSearchUsers : Model -> ( SearchUsers.Model, Cmd SearchUsers.Msg ) -> ( Model, Cmd Msg )
 stepSearchUsers model ( search, cmds ) =
-    ( { model | page = SearchUsers search }
+    ( { model | page = LoggedIn dummyUser (SearchUsers search) }
     , Cmd.map SearchUsersMsg cmds
     )
 
 
 stepUser : Model -> ( UserProfile.Model, Cmd UserProfile.Msg ) -> ( Model, Cmd Msg )
 stepUser model ( user, cmds ) =
-    ( { model | page = UserProfile user }
+    ( { model | page = LoggedIn dummyUser (UserProfile user) }
     , Cmd.map UserProfileMsg cmds
     )
+
+
+parseToken : String -> Maybe String
+parseToken string =
+    string
+        |> String.split "&"
+        |> List.map (String.split "=")
+        |> List.map intoTuple
+        |> Maybe.Extra.values
+        |> Dict.fromList
+        |> Dict.get "access_token"
+
+
+intoTuple : List a -> Maybe ( a, a )
+intoTuple list =
+    case list of
+        [ a, b ] ->
+            Just ( a, b )
+
+        _ ->
+            Nothing
+
+
+
+-- access_token=sg3mNLMkW7INs0nPaA2hDQl3-uiXGf1e&scope=openid%20email&expires_in=7200&token_type=Bearer
+-- string
+--     |> String.split "="
 
 
 {-| URL to Page
 -}
 stepUrl : Url.Url -> Model -> ( Model, Cmd Msg )
 stepUrl url model =
-    case Parser.parse Routes.routeParser url of
-        Just route ->
-            case route of
-                Routes.Feed ->
-                    let
-                        ( feedModel, feedCommand ) =
-                            Feed.init ()
-                    in
-                    ( { model | page = Feed feedModel }
-                    , Cmd.map FeedMsg feedCommand
-                    )
+    case model.userToken of
+        Just token ->
+            case Parser.parse Routes.routeParser url of
+                Just route ->
+                    case route of
+                        Routes.Authorized maybeToken ->
+                            let
+                                parsedToken =
+                                    maybeToken
+                                        |> Maybe.andThen parseToken
+                            in
+                            ( { model | userToken = parsedToken }, Nav.pushUrl model.key "feed" )
 
-                Routes.User userID ->
-                    let
-                        ( userProfileModel, userProfileCommand ) =
-                            UserProfile.init userID
-                    in
-                    ( { model | page = UserProfile userProfileModel }
-                    , Cmd.map UserProfileMsg userProfileCommand
-                    )
+                        Routes.Feed ->
+                            let
+                                ( feedModel, feedCommand ) =
+                                    Feed.init ()
+                            in
+                            ( { model | page = LoggedIn dummyUser (Feed feedModel) }
+                            , Cmd.map FeedMsg feedCommand
+                            )
 
-                Routes.Search ->
-                    ( { model | page = Search (Tuple.first (Search.init ())) }
-                    , Cmd.none
-                    )
+                        Routes.User userID ->
+                            let
+                                ( userProfileModel, userProfileCommand ) =
+                                    UserProfile.init userID
+                            in
+                            ( { model | page = LoggedIn dummyUser (UserProfile userProfileModel) }
+                            , Cmd.map UserProfileMsg userProfileCommand
+                            )
 
-                Routes.SearchUsers ->
-                    ( { model | page = SearchUsers (Tuple.first (SearchUsers.init ())) }
+                        Routes.Search ->
+                            ( { model | page = LoggedIn dummyUser (Search (Tuple.first (Search.init ()))) }
+                            , Cmd.none
+                            )
+
+                        Routes.SearchUsers ->
+                            ( { model | page = LoggedIn dummyUser (SearchUsers (Tuple.first (SearchUsers.init ()))) }
+                            , Cmd.none
+                            )
+
+                        Routes.Login ->
+                            ( { model | page = Login }
+                            , Cmd.none
+                            )
+
+                Nothing ->
+                    ( { model | page = NotFound }
                     , Cmd.none
                     )
 
         Nothing ->
-            ( { model | page = NotFound }
-            , Cmd.none
-            )
+            case Parser.parse Routes.routeParser (Debug.log "receivedURL" url) of
+                Just route ->
+                    case route of
+                        Routes.Authorized maybeToken ->
+                            let
+                                parsedToken =
+                                    maybeToken
+                                        |> Maybe.andThen parseToken
+                            in
+                            ( { model | userToken = parsedToken }, Nav.pushUrl model.key "feed" )
+
+                        _ ->
+                            ( { model | page = Login }
+                            , Cmd.none
+                            )
+
+                _ ->
+                    ( { model | page = Login }
+                    , Cmd.none
+                    )
 
 
 
