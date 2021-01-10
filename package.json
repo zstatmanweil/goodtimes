@@ -28,11 +28,11 @@
   "keywords": [],
   "dependencies": {},
   "staticFiles": {
-      "staticPath": [
-        {
-          "staticPath": "static",
-          "staticOutDir": "."
-        }
-      ]
-    }
+    "staticPath": [
+      {
+        "staticPath": "static",
+        "staticOutDir": "."
+      }
+    ]
+  }
 }

@@ -194,7 +194,7 @@ update msg model =
             case result of
                 Ok profile ->
                     ( { model | auth = HasUnverifiedUser token profile }
-                    , Nav.pushUrl model.key "feed"
+                    , Nav.pushUrl model.key "authorized"
                     )
 
                 Err err ->
@@ -347,7 +347,7 @@ stepUrl url model =
                 newAuth =
                     Authenticated token (User.verifyUser unverifiedUser 1)
             in
-            ( { model | auth = newAuth }, Cmd.none )
+            ( { model | auth = newAuth }, Nav.pushUrl model.key "feed" )
 
         Authenticated token userInfo ->
             case Parser.parse Routes.routeParser url of

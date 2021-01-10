@@ -224,7 +224,7 @@ update msg model =
         UserResponse userResponse ->
             case userResponse of
                 Ok user ->
-                    if model.logged_in_user == model.profile_user then
+                    if User.getUserId model.logged_in_user == user.id then
                         ( { model | profile_user = Success user }, getExistingFriends user.id )
 
                     else
@@ -762,11 +762,19 @@ viewFriendsToRecommendDropdown mediaType userFriends =
             Html.text "something went wrong"
 
         Success friends ->
-            Html.div [ class "dropdown" ] <|
-                [ Html.button [ class "dropbtn" ] [ Html.text "Recommend >>" ]
-                , Html.div [ class "dropdown-content" ]
-                    (List.map (viewFriendUsername mediaType) (List.sortBy .username friends))
-                ]
+            if List.isEmpty friends then
+                Html.div [ class "dropdown" ] <|
+                    [ Html.button [ class "dropbtn" ] [ Html.text "Recommend >>" ]
+                    , Html.div [ class "dropdown-content" ]
+                        [ Html.p [ Attr.href "/search/users" ] [ Html.text "find friends to recommend!" ] ]
+                    ]
+
+            else
+                Html.div [ class "dropdown" ] <|
+                    [ Html.button [ class "dropbtn" ] [ Html.text "Recommend >>" ]
+                    , Html.div [ class "dropdown-content" ]
+                        (List.map (viewFriendUsername mediaType) (List.sortBy .username friends))
+                    ]
 
 
 viewFriendUsername : MediaType -> User.User -> Html Msg
