@@ -14,6 +14,38 @@ type alias User =
     }
 
 
+type alias UnverifiedUser =
+    { auth0Sub : String
+    , name : String
+    , email : String
+    }
+
+
+type alias UserInfo =
+    { goodTimesId : Int
+    , auth0Sub : String
+    , name : String
+    , email : String
+    }
+
+
+decodeFromAuth0 : Decoder UnverifiedUser
+decodeFromAuth0 =
+    Decode.map3 UnverifiedUser
+        (Decode.field "sub" Decode.string)
+        (Decode.field "name" Decode.string)
+        (Decode.field "email" Decode.string)
+
+
+verifyUser : UnverifiedUser -> Int -> UserInfo
+verifyUser unverifiedUser goodTimesId =
+    { goodTimesId = goodTimesId
+    , auth0Sub = unverifiedUser.auth0Sub
+    , name = unverifiedUser.name
+    , email = unverifiedUser.email
+    }
+
+
 decoder : Decoder User
 decoder =
     Decode.map5 User

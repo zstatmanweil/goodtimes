@@ -6,6 +6,9 @@ import Browser.Navigation as Nav
 import Dict
 import Html exposing (Html)
 import Html.Attributes as Attr
+import Http
+import Json.Decode as Decode
+import Json.Encode as Encode
 import Maybe.Extra
 import Page.Feed as Feed
 import Page.Search as Search
@@ -15,6 +18,7 @@ import Routes exposing (..)
 import Skeleton
 import Url
 import Url.Parser as Parser
+import User exposing (UnverifiedUser, UserInfo)
 
 
 main : Program Flags Model Msg
@@ -42,18 +46,22 @@ type alias Model =
     , key : Nav.Key
     , page : Page
     , isOpenMenu : Bool
-    , userToken : Maybe String
+    , auth : AuthStatus
     }
+
+
+type AuthStatus
+    = NotAuthed
+    | AuthError String
+    | HasToken String
+    | HasUnverifiedUser String UnverifiedUser
+    | Authenticated String UserInfo
 
 
 type Page
     = NotFound
     | Login
     | LoggedIn UserInfo LoggedInPage
-
-
-type alias UserInfo =
-    { username : String }
 
 
 type LoggedInPage
@@ -74,7 +82,7 @@ init isAuthenticated url key =
         , key = key
         , page = Login
         , isOpenMenu = False
-        , userToken = Nothing
+        , auth = NotAuthed
         }
 
 
@@ -82,13 +90,33 @@ init isAuthenticated url key =
 -- VIEW
 
 
+auth0GetUser token =
+    Http.request
+        { method = "POST"
+        , headers = []
+        , url = auth0Endpoint ++ "/userinfo"
+        , body =
+            Http.jsonBody <|
+                Encode.object [ ( "access_token", Encode.string token ) ]
+        , expect =
+            Http.expectJson (GotAuth0Profile token) User.decodeFromAuth0
+        , timeout = Nothing
+        , tracker = Nothing
+        }
+
+
+auth0Endpoint : String
+auth0Endpoint =
+    "https://goodtimes-staging.us.auth0.com"
+
+
 auth0LoginUrl : String
 auth0LoginUrl =
     Auth0.auth0AuthorizeURL
-        (Auth0.Auth0Config "https://goodtimes-staging.us.auth0.com" "68MpVR1fV03q6to9Al7JbNAYLTi2lRGT")
+        (Auth0.Auth0Config auth0Endpoint "68MpVR1fV03q6to9Al7JbNAYLTi2lRGT")
         "token"
         "http://localhost:1234/authorized"
-        [ "openid", "name", "email" ]
+        [ "openid", "name", "email", "profile" ]
         (Just "google-oauth2")
 
 
@@ -114,6 +142,10 @@ view model =
             }
 
         LoggedIn userInfo loggedInPage ->
+            let
+                _ =
+                    Debug.log "User" userInfo
+            in
             case loggedInPage of
                 Feed feed ->
                     Skeleton.view model.isOpenMenu ToggleViewMenu FeedMsg (Feed.view feed)
@@ -134,6 +166,7 @@ view model =
 
 type Msg
     = None
+    | GotAuth0Profile String (Result Http.Error UnverifiedUser)
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | FeedMsg Feed.Msg
@@ -157,10 +190,24 @@ update msg model =
         UrlChanged url ->
             stepUrl url { model | url = url }
 
+        GotAuth0Profile token result ->
+            case result of
+                Ok profile ->
+                    ( { model | auth = HasUnverifiedUser token profile }
+                    , Nav.pushUrl model.key "feed"
+                    )
+
+                Err err ->
+                    let
+                        _ =
+                            Debug.log "error" err
+                    in
+                    ( model, Cmd.none )
+
         FeedMsg msge ->
             case model.page of
                 LoggedIn userInfo (Feed feed) ->
-                    stepFeed model (Feed.update msge feed)
+                    stepFeed model userInfo (Feed.update msge feed)
 
                 _ ->
                     ( model, Cmd.none )
@@ -169,7 +216,7 @@ update msg model =
             case model.page of
                 LoggedIn userInfo (Search search) ->
                     -- if you receive a search message on the search page, update the Search page. If you recieve another message, ignore
-                    stepSearch model (Search.update msge search)
+                    stepSearch model userInfo (Search.update msge search)
 
                 _ ->
                     ( model, Cmd.none )
@@ -177,7 +224,7 @@ update msg model =
         SearchUsersMsg msge ->
             case model.page of
                 LoggedIn userInfo (SearchUsers search) ->
-                    stepSearchUsers model (SearchUsers.update msge search)
+                    stepSearchUsers model userInfo (SearchUsers.update msge search)
 
                 _ ->
                     ( model, Cmd.none )
@@ -185,7 +232,7 @@ update msg model =
         UserProfileMsg msge ->
             case model.page of
                 LoggedIn userInfo (UserProfile user) ->
-                    stepUser model (UserProfile.update msge user)
+                    stepUser model userInfo (UserProfile.update msge user)
 
                 _ ->
                     ( model, Cmd.none )
@@ -197,34 +244,30 @@ update msg model =
             ( model, Cmd.none )
 
 
-stepFeed : Model -> ( Feed.Model, Cmd Feed.Msg ) -> ( Model, Cmd Msg )
-stepFeed model ( feed, cmds ) =
-    ( { model | page = LoggedIn dummyUser (Feed feed) }
+stepFeed : Model -> UserInfo -> ( Feed.Model, Cmd Feed.Msg ) -> ( Model, Cmd Msg )
+stepFeed model userInfo ( feed, cmds ) =
+    ( { model | page = LoggedIn userInfo (Feed feed) }
     , Cmd.map FeedMsg cmds
     )
 
 
-stepSearch : Model -> ( Search.Model, Cmd Search.Msg ) -> ( Model, Cmd Msg )
-stepSearch model ( search, cmds ) =
-    ( { model | page = LoggedIn dummyUser (Search search) }
+stepSearch : Model -> UserInfo -> ( Search.Model, Cmd Search.Msg ) -> ( Model, Cmd Msg )
+stepSearch model userInfo ( search, cmds ) =
+    ( { model | page = LoggedIn userInfo (Search search) }
     , Cmd.map SearchMsg cmds
     )
 
 
-dummyUser =
-    { username = "z" }
-
-
-stepSearchUsers : Model -> ( SearchUsers.Model, Cmd SearchUsers.Msg ) -> ( Model, Cmd Msg )
-stepSearchUsers model ( search, cmds ) =
-    ( { model | page = LoggedIn dummyUser (SearchUsers search) }
+stepSearchUsers : Model -> UserInfo -> ( SearchUsers.Model, Cmd SearchUsers.Msg ) -> ( Model, Cmd Msg )
+stepSearchUsers model userInfo ( search, cmds ) =
+    ( { model | page = LoggedIn userInfo (SearchUsers search) }
     , Cmd.map SearchUsersMsg cmds
     )
 
 
-stepUser : Model -> ( UserProfile.Model, Cmd UserProfile.Msg ) -> ( Model, Cmd Msg )
-stepUser model ( user, cmds ) =
-    ( { model | page = LoggedIn dummyUser (UserProfile user) }
+stepUser : Model -> UserInfo -> ( UserProfile.Model, Cmd UserProfile.Msg ) -> ( Model, Cmd Msg )
+stepUser model userInfo ( user, cmds ) =
+    ( { model | page = LoggedIn userInfo (UserProfile user) }
     , Cmd.map UserProfileMsg cmds
     )
 
@@ -260,25 +303,65 @@ intoTuple list =
 -}
 stepUrl : Url.Url -> Model -> ( Model, Cmd Msg )
 stepUrl url model =
-    case model.userToken of
-        Just token ->
-            case Parser.parse Routes.routeParser url of
+    case model.auth of
+        NotAuthed ->
+            case Parser.parse Routes.routeParser (Debug.log "receivedURL" url) of
                 Just route ->
                     case route of
                         Routes.Authorized maybeToken ->
                             let
-                                parsedToken =
+                                maybeTokenToAuth maybeParsedToken =
+                                    case maybeParsedToken of
+                                        Just token ->
+                                            HasToken token
+
+                                        Nothing ->
+                                            AuthError "AccessToken didn't parse correctly"
+
+                                newAuth =
                                     maybeToken
                                         |> Maybe.andThen parseToken
+                                        |> maybeTokenToAuth
                             in
-                            ( { model | userToken = parsedToken }, Nav.pushUrl model.key "feed" )
+                            ( { model | auth = newAuth }, Nav.pushUrl model.key "feed" )
+
+                        _ ->
+                            ( { model | page = Login }
+                            , Cmd.none
+                            )
+
+                _ ->
+                    ( { model | page = Login }
+                    , Cmd.none
+                    )
+
+        AuthError str ->
+            ( model, Cmd.none )
+
+        HasToken token ->
+            ( model, auth0GetUser token )
+
+        HasUnverifiedUser token unverifiedUser ->
+            let
+                -- TODO actually verify!!
+                newAuth =
+                    Authenticated token (User.verifyUser unverifiedUser 1)
+            in
+            ( { model | auth = newAuth }, Cmd.none )
+
+        Authenticated token userInfo ->
+            case Parser.parse Routes.routeParser url of
+                Just route ->
+                    case route of
+                        Routes.Authorized maybeToken ->
+                            ( model, Nav.pushUrl model.key "feed" )
 
                         Routes.Feed ->
                             let
                                 ( feedModel, feedCommand ) =
                                     Feed.init ()
                             in
-                            ( { model | page = LoggedIn dummyUser (Feed feedModel) }
+                            ( { model | page = LoggedIn userInfo (Feed feedModel) }
                             , Cmd.map FeedMsg feedCommand
                             )
 
@@ -287,17 +370,17 @@ stepUrl url model =
                                 ( userProfileModel, userProfileCommand ) =
                                     UserProfile.init userID
                             in
-                            ( { model | page = LoggedIn dummyUser (UserProfile userProfileModel) }
+                            ( { model | page = LoggedIn userInfo (UserProfile userProfileModel) }
                             , Cmd.map UserProfileMsg userProfileCommand
                             )
 
                         Routes.Search ->
-                            ( { model | page = LoggedIn dummyUser (Search (Tuple.first (Search.init ()))) }
+                            ( { model | page = LoggedIn userInfo (Search (Tuple.first (Search.init ()))) }
                             , Cmd.none
                             )
 
                         Routes.SearchUsers ->
-                            ( { model | page = LoggedIn dummyUser (SearchUsers (Tuple.first (SearchUsers.init ()))) }
+                            ( { model | page = LoggedIn userInfo (SearchUsers (Tuple.first (SearchUsers.init ()))) }
                             , Cmd.none
                             )
 
@@ -308,28 +391,6 @@ stepUrl url model =
 
                 Nothing ->
                     ( { model | page = NotFound }
-                    , Cmd.none
-                    )
-
-        Nothing ->
-            case Parser.parse Routes.routeParser (Debug.log "receivedURL" url) of
-                Just route ->
-                    case route of
-                        Routes.Authorized maybeToken ->
-                            let
-                                parsedToken =
-                                    maybeToken
-                                        |> Maybe.andThen parseToken
-                            in
-                            ( { model | userToken = parsedToken }, Nav.pushUrl model.key "feed" )
-
-                        _ ->
-                            ( { model | page = Login }
-                            , Cmd.none
-                            )
-
-                _ ->
-                    ( { model | page = Login }
                     , Cmd.none
                     )
 
