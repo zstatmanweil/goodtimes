@@ -345,7 +345,7 @@ stepUrl url model =
             let
                 -- TODO actually verify!!
                 newAuth =
-                    Authenticated token (User.verifyUser unverifiedUser 1)
+                    Authenticated token (User.unverifiedToVerifyUser unverifiedUser 1)
             in
             ( { model | auth = newAuth }, Nav.pushUrl model.key "feed" )
 

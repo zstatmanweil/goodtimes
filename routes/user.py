@@ -199,7 +199,7 @@ def get_media_recommended_to_user(user_id, media_type):
     Endpoint for getting specific media recommended to a user and that user's consumption status.
     :param user_id:
     :param media_type
-    :return: media object + media_type + recommender_id + recommender_username, e.g.,
+    :return: media object + media_type + recommender_id + recommender_full_name, e.g.,
     {
         "media": {"author_names": [
                     "Holly Black"
@@ -213,7 +213,7 @@ def get_media_recommended_to_user(user_id, media_type):
                     "status": "consuming"},
         "media_type": "book",
         "recommender_id": 1,
-        "recommender_username": "strickinato"
+        "recommender_full_name": "Aaron Strick"
     },
     """
     session = Session()
@@ -226,7 +226,7 @@ def get_media_recommended_to_user(user_id, media_type):
         media_result = {'media': m,
                         "media_type": media_type,
                         'recommender_id': user_class.id,
-                        'recommender_username': user_class.username,
+                        'recommender_full_name': user_class.full_name,
                         'created': recommendation.created}
         final.append(media_result)
 
@@ -240,7 +240,7 @@ def get_media_recommended_by_user(user_id, media_type):
     Endpoint for getting specific media recommended by a user.
     :param user_id:
     :param media_type
-    :return: media object + media_type + recommended_id + recommended_username, e.g.,
+    :return: media object + media_type + recommended_id + recommended_full_name, e.g.,
     {
         "media": {"author_names": [
                     "Holly Black"
@@ -253,7 +253,7 @@ def get_media_recommended_by_user(user_id, media_type):
                     "title": "The Queen Of Nothing"},
         "media_type": "book",
         "recommended_id": 2,
-        "recommended_username": "strickinato"
+        "recommended_full_name": "full_name"
     },
     """
     session = Session()
@@ -265,7 +265,7 @@ def get_media_recommended_by_user(user_id, media_type):
         media_result = {'media': m,
                         "media_type": media_type,
                         'recommended_id': user_class.id,
-                        'recommended_username': user_class.username,
+                        'recommended_full_name': user_class.full_name,
                         'created': recommendation.created}
         final.append(media_result)
 
@@ -335,7 +335,7 @@ def get_friend_events(user_id):
                     "title": "The Queen Of Nothing" }
         "media_type": "book",
         "user_id" : 1,
-        "username" : strickinato,
+        "full_name" : Aaron Strick,
         "status" : "consuming"
         "created" : datetime
     },
@@ -350,7 +350,7 @@ def get_friend_events(user_id):
             media_result = {'media': m,
                             "media_type": consumption_class.media_type,
                             'user_id': user_class.id,
-                            'username': user_class.username,
+                            'full_name': user_class.full_name,
                             'status': consumption_class.status,
                             'created': consumption_class.created,
                             'time_since': get_time_diff_hrs(consumption_class.created)}

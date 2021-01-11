@@ -5,59 +5,64 @@ import Json.Encode as Encode exposing (Value)
 import RemoteData exposing (..)
 
 
-type alias User =
-    { id : Int
-    , username : String
-    , firstName : String
-    , lastName : String
-    , email : String
-    }
-
-
 type alias UnverifiedUser =
     { auth0Sub : String
-    , name : String
+    , firstName : String
+    , lastName : String
+    , fullName : String
     , email : String
+    , picture : String
     }
 
 
 type alias UserInfo =
     { goodTimesId : Int
     , auth0Sub : String
-    , name : String
+    , firstName : String
+    , lastName : String
+    , fullName : String
     , email : String
+    , picture : String
     }
 
 
 decodeFromAuth0 : Decoder UnverifiedUser
 decodeFromAuth0 =
-    Decode.map3 UnverifiedUser
+    Decode.map6 UnverifiedUser
         (Decode.field "sub" Decode.string)
+        (Decode.field "given_name" Decode.string)
+        (Decode.field "family_name" Decode.string)
         (Decode.field "name" Decode.string)
+        (Decode.field "picture" Decode.string)
         (Decode.field "email" Decode.string)
 
 
-verifyUser : UnverifiedUser -> Int -> UserInfo
-verifyUser unverifiedUser goodTimesId =
+userInfoDecoder : Decoder UserInfo
+userInfoDecoder =
+    Decode.map7 UserInfo
+        (Decode.field "id" Decode.int)
+        (Decode.field "sub" Decode.string)
+        (Decode.field "given_name" Decode.string)
+        (Decode.field "family_name" Decode.string)
+        (Decode.field "name" Decode.string)
+        (Decode.field "picture" Decode.string)
+        (Decode.field "email" Decode.string)
+
+
+unverifiedToUserInfo : UnverifiedUser -> Int -> UserInfo
+unverifiedToUserInfo unverifiedUser goodTimesId =
     { goodTimesId = goodTimesId
     , auth0Sub = unverifiedUser.auth0Sub
-    , name = unverifiedUser.name
+    , firstName = unverifiedUser.firstName
+    , lastName = unverifiedUser.lastName
+    , fullName = unverifiedUser.fullName
+    , picture = unverifiedUser.picture
     , email = unverifiedUser.email
     }
 
 
-decoder : Decoder User
-decoder =
-    Decode.map5 User
-        (Decode.field "id" Decode.int)
-        (Decode.field "username" Decode.string)
-        (Decode.field "first_name" Decode.string)
-        (Decode.field "last_name" Decode.string)
-        (Decode.field "email" Decode.string)
-
-
-getUsername : WebData User -> String
-getUsername user =
+getUserFullName : WebData UserInfo -> String
+getUserFullName user =
     case user of
         NotAsked ->
             "no user"
@@ -70,10 +75,10 @@ getUsername user =
             "something went wrong"
 
         Success u ->
-            u.username
+            u.fullName
 
 
-getUserId : WebData User -> Int
+getUserId : WebData UserInfo -> Int
 getUserId user =
     case user of
         NotAsked ->
@@ -87,7 +92,7 @@ getUserId user =
             0
 
         Success u ->
-            u.id
+            u.goodTimesId
 
 
 

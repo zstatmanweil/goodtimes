@@ -13,7 +13,7 @@ import Recommendation exposing (RecommendationType(..), RecommendedByUserMedia, 
 import RemoteData exposing (RemoteData(..), WebData)
 import Skeleton
 import TV exposing (TV)
-import User exposing (FriendLink, FriendStatus(..), friendLinkDecoder, friendLinkEncoder)
+import User exposing (FriendLink, FriendStatus(..), UserInfo, friendLinkDecoder, friendLinkEncoder, getUserFullName, userInfoDecoder)
 
 
 
@@ -21,9 +21,9 @@ import User exposing (FriendLink, FriendStatus(..), friendLinkDecoder, friendLin
 
 
 type alias Model =
-    { logged_in_user : WebData User.User
-    , profile_user : WebData User.User
-    , friends : WebData (List User.User)
+    { logged_in_user : WebData UserInfo
+    , profile_user : WebData UserInfo
+    , friends : WebData (List UserInfo)
     , searchResults : WebData (List MediaType)
     , filteredMediaResults : WebData (List MediaType)
     , recommendedResults : WebData (List RecommendationType)
@@ -44,20 +44,20 @@ type Msg
     | MediaAddedToProfile (Result Http.Error Consumption)
     | MediaResponse (Result Http.Error (List MediaType))
     | SearchFriendsBasedOnTab FriendshipTabSelection
-    | UserResponse (Result Http.Error User.User)
-    | FriendResponse (Result Http.Error (List User.User))
-    | AddFriendLink User.User FriendStatus
+    | UserResponse (Result Http.Error UserInfo)
+    | FriendResponse (Result Http.Error (List UserInfo))
+    | AddFriendLink UserInfo FriendStatus
     | FriendLinkAdded (Result Http.Error FriendLink)
     | AddRecommendationTabRow
     | AddRecommendationMediaTabRow RecommendationTabSelection
-    | Recommend MediaType User.User
+    | Recommend MediaType UserInfo
     | RecommendationResponse (Result Http.Error Recommendation.Recommendation)
     | RecommendedMediaResponse (Result Http.Error (List RecommendationType))
 
 
 init : Int -> ( Model, Cmd Msg )
 init userID =
-    ( { logged_in_user = Success (User.User 1 "zstat" "zoe" "statman-weil" "zstatmanweil@gmail.com")
+    ( { logged_in_user = Success (UserInfo 1 "123" "zoe" "statman-weil" "zoe statman-weil " "zstatmanweil@gmail.com" "mypicture")
       , profile_user = NotAsked
       , friends = NotAsked
       , searchResults = NotAsked
@@ -224,8 +224,8 @@ update msg model =
         UserResponse userResponse ->
             case userResponse of
                 Ok user ->
-                    if User.getUserId model.logged_in_user == user.id then
-                        ( { model | profile_user = Success user }, getExistingFriends user.id )
+                    if User.getUserId model.logged_in_user == user.goodTimesId then
+                        ( { model | profile_user = Success user }, getExistingFriends user.goodTimesId )
 
                     else
                         -- TODO: command here should be something like get if profile user is friends with logged in user,
@@ -281,7 +281,7 @@ update msg model =
             )
 
         Recommend mediaType friend ->
-            ( model, recommendMedia (User.getUserId model.logged_in_user) friend.id mediaType Recommendation.Pending )
+            ( model, recommendMedia (User.getUserId model.logged_in_user) friend.goodTimesId mediaType Recommendation.Pending )
 
         RecommendationResponse rec ->
             -- TODO: what do do with this response?
@@ -304,7 +304,7 @@ update msg model =
             ( model, Cmd.none )
 
 
-searchUserBooks : WebData User.User -> Cmd Msg
+searchUserBooks : WebData UserInfo -> Cmd Msg
 searchUserBooks user =
     Http.get
         { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/media/book"
@@ -312,7 +312,7 @@ searchUserBooks user =
         }
 
 
-searchUserMovies : WebData User.User -> Cmd Msg
+searchUserMovies : WebData UserInfo -> Cmd Msg
 searchUserMovies user =
     Http.get
         { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/media/movie"
@@ -320,7 +320,7 @@ searchUserMovies user =
         }
 
 
-searchUserTV : WebData User.User -> Cmd Msg
+searchUserTV : WebData UserInfo -> Cmd Msg
 searchUserTV user =
     Http.get
         { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/media/tv"
@@ -332,7 +332,7 @@ getUser : Int -> Cmd Msg
 getUser userID =
     Http.get
         { url = "http://localhost:5000/user/" ++ String.fromInt userID
-        , expect = Http.expectJson UserResponse User.decoder
+        , expect = Http.expectJson UserResponse userInfoDecoder
         }
 
 
@@ -340,7 +340,7 @@ getExistingFriends : Int -> Cmd Msg
 getExistingFriends userID =
     Http.get
         { url = "http://localhost:5000/user/" ++ String.fromInt userID ++ "/friends"
-        , expect = Http.expectJson FriendResponse (Decode.list User.decoder)
+        , expect = Http.expectJson FriendResponse (Decode.list userInfoDecoder)
         }
 
 
@@ -348,20 +348,20 @@ getFriendRequests : Int -> Cmd Msg
 getFriendRequests userID =
     Http.get
         { url = "http://localhost:5000/user/" ++ String.fromInt userID ++ "/requests"
-        , expect = Http.expectJson FriendResponse (Decode.list User.decoder)
+        , expect = Http.expectJson FriendResponse (Decode.list userInfoDecoder)
         }
 
 
-addFriendLink : User.User -> Int -> FriendStatus -> Cmd Msg
+addFriendLink : UserInfo -> Int -> FriendStatus -> Cmd Msg
 addFriendLink user currentUserId status =
     Http.post
         { url = "http://localhost:5000/friend"
-        , body = Http.jsonBody (friendLinkEncoder user.id currentUserId status)
+        , body = Http.jsonBody (friendLinkEncoder user.goodTimesId currentUserId status)
         , expect = Http.expectJson FriendLinkAdded friendLinkDecoder
         }
 
 
-getRecommendedToUserMedia : WebData User.User -> String -> Cmd Msg
+getRecommendedToUserMedia : WebData UserInfo -> String -> Cmd Msg
 getRecommendedToUserMedia user mediaType =
     Http.get
         { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/recommendations/" ++ mediaType
@@ -369,7 +369,7 @@ getRecommendedToUserMedia user mediaType =
         }
 
 
-getRecommendedByUserMedia : WebData User.User -> String -> Cmd Msg
+getRecommendedByUserMedia : WebData UserInfo -> String -> Cmd Msg
 getRecommendedByUserMedia user mediaType =
     Http.get
         { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/recommended/" ++ mediaType
@@ -386,7 +386,7 @@ recommendMedia recommenderUserID recommendedUserID mediaType recommendation =
         }
 
 
-addMediaToProfile : MediaType -> Consumption.Status -> WebData User.User -> Cmd Msg
+addMediaToProfile : MediaType -> Consumption.Status -> WebData UserInfo -> Cmd Msg
 addMediaToProfile mediaType status user =
     case mediaType of
         BookType book ->
@@ -432,7 +432,7 @@ body model =
     if model.logged_in_user == model.profile_user then
         Html.main_ [ class "content" ]
             [ Html.div [ id "content-wrap" ]
-                [ Html.div [ id "user-profile" ] [ Html.text ("Welcome " ++ User.getUsername model.logged_in_user ++ "!") ]
+                [ Html.div [ id "user-profile" ] [ Html.text ("Welcome " ++ getUserFullName model.logged_in_user ++ "!") ]
                 , Html.div [ class "tab" ]
                     [ createFirstTab model MediaTab "my media"
                     , createFirstTab model RecommendationTab "recommendations"
@@ -527,7 +527,7 @@ viewFriendshipTabRow model =
         Html.div [] []
 
 
-viewFriends : WebData (List User.User) -> Html Msg
+viewFriends : WebData (List UserInfo) -> Html Msg
 viewFriends friends =
     case friends of
         NotAsked ->
@@ -549,7 +549,7 @@ viewFriends friends =
                     (List.map viewFriend users)
 
 
-viewFriend : User.User -> Html Msg
+viewFriend : UserInfo -> Html Msg
 viewFriend user =
     Html.li []
         [ Html.div [ class "user-card" ]
@@ -561,7 +561,7 @@ viewFriend user =
         ]
 
 
-viewFriendRequests : WebData (List User.User) -> Html Msg
+viewFriendRequests : WebData (List UserInfo) -> Html Msg
 viewFriendRequests friends =
     case friends of
         NotAsked ->
@@ -583,7 +583,7 @@ viewFriendRequests friends =
                     (List.map viewFriendRequest users)
 
 
-viewFriendRequest : User.User -> Html Msg
+viewFriendRequest : UserInfo -> Html Msg
 viewFriendRequest user =
     Html.li []
         [ Html.div [ class "user-card" ]
@@ -596,7 +596,7 @@ viewFriendRequest user =
         ]
 
 
-viewAcceptFriendButton : User.User -> Html Msg
+viewAcceptFriendButton : UserInfo -> Html Msg
 viewAcceptFriendButton user =
     Html.div [ class "user-button-wrapper" ] <|
         [ Html.button
@@ -607,7 +607,7 @@ viewAcceptFriendButton user =
         ]
 
 
-viewMedias : WebData (List MediaType) -> WebData (List User.User) -> Html Msg
+viewMedias : WebData (List MediaType) -> WebData (List UserInfo) -> Html Msg
 viewMedias receivedMedia friends =
     case receivedMedia of
         NotAsked ->
@@ -629,7 +629,7 @@ viewMedias receivedMedia friends =
                     (List.map (viewMediaType friends) (List.sortBy Media.getTitle media))
 
 
-viewMediaType : WebData (List User.User) -> MediaType -> Html Msg
+viewMediaType : WebData (List UserInfo) -> MediaType -> Html Msg
 viewMediaType friends mediaType =
     case mediaType of
         BookType book ->
@@ -748,7 +748,7 @@ viewDropdownContent mediaType wantToConsume consuming finished abandoned =
         ]
 
 
-viewFriendsToRecommendDropdown : MediaType -> WebData (List User.User) -> Html Msg
+viewFriendsToRecommendDropdown : MediaType -> WebData (List UserInfo) -> Html Msg
 viewFriendsToRecommendDropdown mediaType userFriends =
     case userFriends of
         NotAsked ->
@@ -773,13 +773,13 @@ viewFriendsToRecommendDropdown mediaType userFriends =
                 Html.div [ class "dropdown" ] <|
                     [ Html.button [ class "dropbtn" ] [ Html.text "Recommend >>" ]
                     , Html.div [ class "dropdown-content" ]
-                        (List.map (viewFriendUsername mediaType) (List.sortBy .username friends))
+                        (List.map (viewFriendUsername mediaType) (List.sortBy .fullName friends))
                     ]
 
 
-viewFriendUsername : MediaType -> User.User -> Html Msg
+viewFriendUsername : MediaType -> UserInfo -> Html Msg
 viewFriendUsername mediaType friend =
-    Html.p [ Html.Events.onClick (Recommend mediaType friend) ] [ Html.text friend.username ]
+    Html.p [ Html.Events.onClick (Recommend mediaType friend) ] [ Html.text friend.fullName ]
 
 
 viewMediaCover : Maybe String -> Html Msg

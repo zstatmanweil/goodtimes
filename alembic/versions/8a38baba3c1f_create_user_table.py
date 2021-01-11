@@ -20,10 +20,11 @@ def upgrade():
     op.create_table(
         'user',
         sa.Column('id', sa.Integer, primary_key=True, index=True),
-        sa.Column('username', sa.String(100)),
-        sa.Column('email', sa.String(100)),
         sa.Column('first_name', sa.String(100)),
         sa.Column('last_name', sa.String(100)),
+        sa.Column('full_name', sa.String (150)),
+        sa.Column('email', sa.String(100)),
+        sa.Column('picture', sa.String(150)),
         sa.Column('created', sa.DateTime)
     )
 
