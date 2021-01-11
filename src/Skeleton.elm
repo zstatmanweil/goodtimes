@@ -51,10 +51,10 @@ sidebar menuOpen =
     case menuOpen of
         True ->
             Html.div [ class "sidenav" ]
-                [ Html.a [ Attr.href "/user/1" ] [ Html.text "My Profile" ]
-                , Html.a [ Attr.href "/search" ] [ Html.text "Search Media" ]
-                , Html.a [ Attr.href "/search/users" ] [ Html.text "Find Friends" ]
-                , Html.a [ Attr.href "/feed" ] [ Html.text "Event Feed" ]
+                [ Html.a [ Attr.href "/user/1" ] [ Html.text "my profile" ]
+                , Html.a [ Attr.href "/search" ] [ Html.text "search media" ]
+                , Html.a [ Attr.href "/search/users" ] [ Html.text "find friends" ]
+                , Html.a [ Attr.href "/feed" ] [ Html.text "event feed" ]
                 ]
 
         False ->

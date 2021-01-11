@@ -26,6 +26,12 @@ type alias UserInfo =
     }
 
 
+type alias LoggedInUser =
+    { token : String
+    , userInfo : UserInfo
+    }
+
+
 decodeFromAuth0 : Decoder UnverifiedUser
 decodeFromAuth0 =
     Decode.map6 UnverifiedUser

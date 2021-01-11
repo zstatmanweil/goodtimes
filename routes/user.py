@@ -42,14 +42,16 @@ def verify_user():
 
     # check if user is in database
     db_resp = session.query(User).filter_by(auth0_sub=user.auth0_sub).first()
-
+    print("DB_RESP", db_resp)
     # if not in database, add user
     if not db_resp:
         current_app.logger.info(
             f"User not in database, adding user with sub {user.auth0_sub} to database")
         session.add(user)
-        session.flush()
+        session.commit()
         db_resp = session.query(User).filter_by(auth0_sub=user.auth0_sub).first()
+
+    session.close()
 
     return db_resp.to_json()
 

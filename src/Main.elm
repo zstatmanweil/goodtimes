@@ -18,7 +18,7 @@ import Routes exposing (..)
 import Skeleton
 import Url
 import Url.Parser as Parser
-import User exposing (UnverifiedUser, UserInfo, unverifiedToUserInfo, unverifiedUserEncoder, userInfoDecoder)
+import User exposing (LoggedInUser, UnverifiedUser, UserInfo, unverifiedToUserInfo, unverifiedUserEncoder, userInfoDecoder)
 
 
 main : Program Flags Model Msg
@@ -55,13 +55,13 @@ type AuthStatus
     | AuthError String
     | HasToken String
     | HasUnverifiedUser String UnverifiedUser
-    | Authenticated String UserInfo
+    | Authenticated LoggedInUser
 
 
 type Page
     = NotFound
     | Login
-    | LoggedIn UserInfo LoggedInPage
+    | LoggedIn LoggedInUser LoggedInPage
 
 
 type LoggedInPage
@@ -146,7 +146,7 @@ view model =
             , body =
                 [ Html.h2 [] [ Html.text "good times" ]
                 , Html.text "You need to log in"
-                , Html.a [ Attr.href auth0LoginUrl ] [ Html.text "login" ]
+                , Html.div [] [ Html.a [ Attr.href auth0LoginUrl ] [ Html.text "login" ] ]
                 ]
             }
 
@@ -217,7 +217,7 @@ update msg model =
         VerifiedUser token result ->
             case result of
                 Ok profile ->
-                    ( { model | auth = Authenticated token profile }
+                    ( { model | auth = Authenticated (LoggedInUser token profile) }
                     , Nav.pushUrl model.key "feed"
                     )
 
@@ -268,30 +268,30 @@ update msg model =
             ( model, Cmd.none )
 
 
-stepFeed : Model -> UserInfo -> ( Feed.Model, Cmd Feed.Msg ) -> ( Model, Cmd Msg )
-stepFeed model userInfo ( feed, cmds ) =
-    ( { model | page = LoggedIn userInfo (Feed feed) }
+stepFeed : Model -> LoggedInUser -> ( Feed.Model, Cmd Feed.Msg ) -> ( Model, Cmd Msg )
+stepFeed model loggedInUser ( feed, cmds ) =
+    ( { model | page = LoggedIn loggedInUser (Feed feed) }
     , Cmd.map FeedMsg cmds
     )
 
 
-stepSearch : Model -> UserInfo -> ( Search.Model, Cmd Search.Msg ) -> ( Model, Cmd Msg )
-stepSearch model userInfo ( search, cmds ) =
-    ( { model | page = LoggedIn userInfo (Search search) }
+stepSearch : Model -> LoggedInUser -> ( Search.Model, Cmd Search.Msg ) -> ( Model, Cmd Msg )
+stepSearch model loggedInUser ( search, cmds ) =
+    ( { model | page = LoggedIn loggedInUser (Search search) }
     , Cmd.map SearchMsg cmds
     )
 
 
-stepSearchUsers : Model -> UserInfo -> ( SearchUsers.Model, Cmd SearchUsers.Msg ) -> ( Model, Cmd Msg )
-stepSearchUsers model userInfo ( search, cmds ) =
-    ( { model | page = LoggedIn userInfo (SearchUsers search) }
+stepSearchUsers : Model -> LoggedInUser -> ( SearchUsers.Model, Cmd SearchUsers.Msg ) -> ( Model, Cmd Msg )
+stepSearchUsers model loggedInUser ( search, cmds ) =
+    ( { model | page = LoggedIn loggedInUser (SearchUsers search) }
     , Cmd.map SearchUsersMsg cmds
     )
 
 
-stepUser : Model -> UserInfo -> ( UserProfile.Model, Cmd UserProfile.Msg ) -> ( Model, Cmd Msg )
-stepUser model userInfo ( user, cmds ) =
-    ( { model | page = LoggedIn userInfo (UserProfile user) }
+stepUser : Model -> LoggedInUser -> ( UserProfile.Model, Cmd UserProfile.Msg ) -> ( Model, Cmd Msg )
+stepUser model loggedInUser ( user, cmds ) =
+    ( { model | page = LoggedIn loggedInUser (UserProfile user) }
     , Cmd.map UserProfileMsg cmds
     )
 
@@ -369,15 +369,15 @@ stepUrl url model =
             let
                 -- TODO actually verify!!
                 newAuth =
-                    Authenticated token (unverifiedToUserInfo unverifiedUser 1)
+                    Authenticated (LoggedInUser token (unverifiedToUserInfo unverifiedUser 1))
             in
             ( { model | auth = newAuth }, Nav.pushUrl model.key "feed" )
 
-        Authenticated token userInfo ->
+        Authenticated loggedInUser ->
             case Parser.parse Routes.routeParser url of
                 Just route ->
                     case route of
-                        Routes.Authorized maybeToken ->
+                        Routes.Authorized _ ->
                             ( model, Nav.pushUrl model.key "feed" )
 
                         Routes.Feed ->
@@ -385,7 +385,7 @@ stepUrl url model =
                                 ( feedModel, feedCommand ) =
                                     Feed.init ()
                             in
-                            ( { model | page = LoggedIn userInfo (Feed feedModel) }
+                            ( { model | page = LoggedIn loggedInUser (Feed feedModel) }
                             , Cmd.map FeedMsg feedCommand
                             )
 
@@ -394,17 +394,17 @@ stepUrl url model =
                                 ( userProfileModel, userProfileCommand ) =
                                     UserProfile.init userID
                             in
-                            ( { model | page = LoggedIn userInfo (UserProfile userProfileModel) }
+                            ( { model | page = LoggedIn loggedInUser (UserProfile userProfileModel) }
                             , Cmd.map UserProfileMsg userProfileCommand
                             )
 
                         Routes.Search ->
-                            ( { model | page = LoggedIn userInfo (Search (Tuple.first (Search.init ()))) }
+                            ( { model | page = LoggedIn loggedInUser (Search (Tuple.first (Search.init ()))) }
                             , Cmd.none
                             )
 
                         Routes.SearchUsers ->
-                            ( { model | page = LoggedIn userInfo (SearchUsers (Tuple.first (SearchUsers.init ()))) }
+                            ( { model | page = LoggedIn loggedInUser (SearchUsers (Tuple.first (SearchUsers.init ()))) }
                             , Cmd.none
                             )
 

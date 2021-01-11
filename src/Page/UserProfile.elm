@@ -13,7 +13,7 @@ import Recommendation exposing (RecommendationType(..), RecommendedByUserMedia, 
 import RemoteData exposing (RemoteData(..), WebData)
 import Skeleton
 import TV exposing (TV)
-import User exposing (FriendLink, FriendStatus(..), UserInfo, friendLinkDecoder, friendLinkEncoder, getUserFullName, userInfoDecoder)
+import User exposing (FriendLink, FriendStatus(..), UserInfo, friendLinkDecoder, friendLinkEncoder, getUserFullName, getUserId, userInfoDecoder)
 
 
 
@@ -429,10 +429,10 @@ view model =
 
 body : Model -> Html Msg
 body model =
-    if model.logged_in_user == model.profile_user then
+    if getUserId model.logged_in_user == getUserId model.profile_user then
         Html.main_ [ class "content" ]
             [ Html.div [ id "content-wrap" ]
-                [ Html.div [ id "user-profile" ] [ Html.text ("Welcome " ++ getUserFullName model.logged_in_user ++ "!") ]
+                [ Html.div [ id "user-profile" ] [ Html.text ("welcome " ++ getUserFullName model.logged_in_user ++ "!") ]
                 , Html.div [ class "tab" ]
                     [ createFirstTab model MediaTab "my media"
                     , createFirstTab model RecommendationTab "recommendations"
@@ -764,14 +764,14 @@ viewFriendsToRecommendDropdown mediaType userFriends =
         Success friends ->
             if List.isEmpty friends then
                 Html.div [ class "dropdown" ] <|
-                    [ Html.button [ class "dropbtn" ] [ Html.text "Recommend >>" ]
+                    [ Html.button [ class "dropbtn" ] [ Html.text "recommend >>" ]
                     , Html.div [ class "dropdown-content" ]
-                        [ Html.p [ Attr.href "/search/users" ] [ Html.text "find friends to recommend!" ] ]
+                        [ Html.a [ Attr.href "/search/users" ] [ Html.text "find friends to recommend!" ] ]
                     ]
 
             else
                 Html.div [ class "dropdown" ] <|
-                    [ Html.button [ class "dropbtn" ] [ Html.text "Recommend >>" ]
+                    [ Html.button [ class "dropbtn" ] [ Html.text "recommend >>" ]
                     , Html.div [ class "dropdown-content" ]
                         (List.map (viewFriendFullName mediaType) (List.sortBy .fullName friends))
                     ]
