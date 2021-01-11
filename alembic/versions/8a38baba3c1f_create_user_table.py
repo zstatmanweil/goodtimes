@@ -20,6 +20,7 @@ def upgrade():
     op.create_table(
         'user',
         sa.Column('id', sa.Integer, primary_key=True, index=True),
+        sa.Column('auth0_sub', sa.String(100)),
         sa.Column('first_name', sa.String(100)),
         sa.Column('last_name', sa.String(100)),
         sa.Column('full_name', sa.String (150)),

@@ -95,7 +95,7 @@ type RecommendationType
 type alias RecommendedToUserMedia =
     { media : MediaType
     , recommenderId : Int
-    , recommenderUsername : String
+    , recommenderFullName : String
     , created : String -- TODO: how do we deal with datatime??
     }
 
@@ -103,7 +103,7 @@ type alias RecommendedToUserMedia =
 type alias RecommendedByUserMedia =
     { media : MediaType
     , recommendedId : Int
-    , recommendedUsername : String
+    , recommendedFullName : String
     , created : String -- TODO: how do we deal with datatime??
     }
 
@@ -113,7 +113,7 @@ recommendedToUserMediaDecoder =
     Decode.map4 RecommendedToUserMedia
         (Decode.field "media" Media.unknownMediaDecoder)
         (Decode.field "recommender_id" Decode.int)
-        (Decode.field "recommender_username" Decode.string)
+        (Decode.field "recommender_full_name" Decode.string)
         (Decode.field "created" Decode.string)
 
 
@@ -127,7 +127,7 @@ recommendedByUserMediaDecoder =
     Decode.map4 RecommendedByUserMedia
         (Decode.field "media" Media.unknownMediaDecoder)
         (Decode.field "recommended_id" Decode.int)
-        (Decode.field "recommended_username" Decode.string)
+        (Decode.field "recommended_full_name" Decode.string)
         (Decode.field "created" Decode.string)
 
 

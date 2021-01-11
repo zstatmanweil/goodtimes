@@ -20,6 +20,41 @@ engine = sa.create_engine(config.postgres_db, echo=True)
 Session = sessionmaker(bind=engine)
 
 
+@user.route("/user", methods=["POST"])
+def verify_user():
+    """ post body
+    {
+    auth0_sub : str
+    first_name: str
+    last_name: str
+    full_name: str
+    email: str
+    picture: str
+    }
+    """
+    request_body = request.get_json()
+
+    session = Session()
+    try:
+        user = User.from_dict(request_body)
+    except KeyError:
+        abort(400, description="object is missing required fields")
+
+    # check if user is in database
+    db_resp = session.query(User).filter_by(auth0_sub=user.auth0_sub).first()
+
+    # if not in database, add user
+    if not db_resp:
+        current_app.logger.info(
+            f"User not in database, adding user with sub {user.auth0_sub} to database")
+        session.add(user)
+        session.flush()
+        db_resp = session.query(User).filter_by(auth0_sub=user.auth0_sub).first()
+
+    return db_resp.to_json()
+
+
+
 @user.route("/user/<int:user_id>", methods=["GET"])
 def get_user(user_id):
     session = Session()

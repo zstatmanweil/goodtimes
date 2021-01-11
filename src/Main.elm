@@ -18,7 +18,7 @@ import Routes exposing (..)
 import Skeleton
 import Url
 import Url.Parser as Parser
-import User exposing (UnverifiedUser, UserInfo, unverifiedToUserInfo)
+import User exposing (UnverifiedUser, UserInfo, unverifiedToUserInfo, unverifiedUserEncoder, userInfoDecoder)
 
 
 main : Program Flags Model Msg
@@ -105,6 +105,15 @@ auth0GetUser token =
         }
 
 
+verifyUser : String -> UnverifiedUser -> Cmd Msg
+verifyUser token unVerifiedUser =
+    Http.post
+        { url = "http://localhost:5000/user"
+        , body = Http.jsonBody (unverifiedUserEncoder unVerifiedUser)
+        , expect = Http.expectJson (VerifiedUser token) userInfoDecoder
+        }
+
+
 auth0Endpoint : String
 auth0Endpoint =
     "https://goodtimes-staging.us.auth0.com"
@@ -167,6 +176,7 @@ view model =
 type Msg
     = None
     | GotAuth0Profile String (Result Http.Error UnverifiedUser)
+    | VerifiedUser String (Result Http.Error UserInfo)
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | FeedMsg Feed.Msg
@@ -194,7 +204,21 @@ update msg model =
             case result of
                 Ok profile ->
                     ( { model | auth = HasUnverifiedUser token profile }
-                    , Nav.pushUrl model.key "authorized"
+                    , verifyUser token profile
+                    )
+
+                Err err ->
+                    let
+                        _ =
+                            Debug.log "error" err
+                    in
+                    ( model, Cmd.none )
+
+        VerifiedUser token result ->
+            case result of
+                Ok profile ->
+                    ( { model | auth = Authenticated token profile }
+                    , Nav.pushUrl model.key "feed"
                     )
 
                 Err err ->

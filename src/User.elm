@@ -33,20 +33,20 @@ decodeFromAuth0 =
         (Decode.field "given_name" Decode.string)
         (Decode.field "family_name" Decode.string)
         (Decode.field "name" Decode.string)
-        (Decode.field "picture" Decode.string)
         (Decode.field "email" Decode.string)
+        (Decode.field "picture" Decode.string)
 
 
 userInfoDecoder : Decoder UserInfo
 userInfoDecoder =
     Decode.map7 UserInfo
         (Decode.field "id" Decode.int)
-        (Decode.field "sub" Decode.string)
-        (Decode.field "given_name" Decode.string)
-        (Decode.field "family_name" Decode.string)
-        (Decode.field "name" Decode.string)
-        (Decode.field "picture" Decode.string)
+        (Decode.field "auth0_sub" Decode.string)
+        (Decode.field "first_name" Decode.string)
+        (Decode.field "last_name" Decode.string)
+        (Decode.field "full_name" Decode.string)
         (Decode.field "email" Decode.string)
+        (Decode.field "picture" Decode.string)
 
 
 unverifiedToUserInfo : UnverifiedUser -> Int -> UserInfo
@@ -56,9 +56,21 @@ unverifiedToUserInfo unverifiedUser goodTimesId =
     , firstName = unverifiedUser.firstName
     , lastName = unverifiedUser.lastName
     , fullName = unverifiedUser.fullName
-    , picture = unverifiedUser.picture
     , email = unverifiedUser.email
+    , picture = unverifiedUser.picture
     }
+
+
+unverifiedUserEncoder : UnverifiedUser -> Encode.Value
+unverifiedUserEncoder unverifiedUser =
+    Encode.object
+        [ ( "auth0_sub", Encode.string unverifiedUser.auth0Sub )
+        , ( "first_name", Encode.string unverifiedUser.firstName )
+        , ( "last_name", Encode.string unverifiedUser.lastName )
+        , ( "full_name", Encode.string unverifiedUser.fullName )
+        , ( "email", Encode.string unverifiedUser.email )
+        , ( "picture", Encode.string unverifiedUser.picture )
+        ]
 
 
 getUserFullName : WebData UserInfo -> String
@@ -193,7 +205,7 @@ friendStatusAsString status =
 
 type alias UserWithFriendStatus =
     { id : Int
-    , username : String
+    , fullName : String
     , firstName : String
     , lastName : String
     , email : String
@@ -205,7 +217,7 @@ userWithStatusDecoder : Decoder UserWithFriendStatus
 userWithStatusDecoder =
     Decode.map6 UserWithFriendStatus
         (Decode.field "id" Decode.int)
-        (Decode.field "username" Decode.string)
+        (Decode.field "full_name" Decode.string)
         (Decode.field "first_name" Decode.string)
         (Decode.field "last_name" Decode.string)
         (Decode.field "email" Decode.string)

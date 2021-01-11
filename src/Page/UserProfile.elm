@@ -773,12 +773,12 @@ viewFriendsToRecommendDropdown mediaType userFriends =
                 Html.div [ class "dropdown" ] <|
                     [ Html.button [ class "dropbtn" ] [ Html.text "Recommend >>" ]
                     , Html.div [ class "dropdown-content" ]
-                        (List.map (viewFriendUsername mediaType) (List.sortBy .fullName friends))
+                        (List.map (viewFriendFullName mediaType) (List.sortBy .fullName friends))
                     ]
 
 
-viewFriendUsername : MediaType -> UserInfo -> Html Msg
-viewFriendUsername mediaType friend =
+viewFriendFullName : MediaType -> UserInfo -> Html Msg
+viewFriendFullName mediaType friend =
     Html.p [ Html.Events.onClick (Recommend mediaType friend) ] [ Html.text friend.fullName ]
 
 
@@ -831,7 +831,7 @@ viewRecommendationType recommendationType =
                         [ Html.div [ class "media-card", class "media-card-long" ]
                             [ Html.div [ class "media-image" ] [ viewMediaCover book.coverUrl ]
                             , Html.div [ class "media-info" ]
-                                [ Html.i [] [ Html.text (recommendedMedia.recommenderUsername ++ " recommends...") ]
+                                [ Html.i [] [ Html.text (recommendedMedia.recommenderFullName ++ " recommends...") ]
                                 , viewBookDetails book
                                 , viewRecommendedMediaDropdown (BookType book)
                                 ]
@@ -843,7 +843,7 @@ viewRecommendationType recommendationType =
                         [ Html.div [ class "media-card", class "media-card-long" ]
                             [ Html.div [ class "media-image" ] [ viewMediaCover movie.posterUrl ]
                             , Html.div [ class "media-info" ]
-                                [ Html.i [] [ Html.text (recommendedMedia.recommenderUsername ++ " recommends...") ]
+                                [ Html.i [] [ Html.text (recommendedMedia.recommenderFullName ++ " recommends...") ]
                                 , viewMovieDetails movie
                                 , viewRecommendedMediaDropdown (MovieType movie)
                                 ]
@@ -855,7 +855,7 @@ viewRecommendationType recommendationType =
                         [ Html.div [ class "media-card", class "media-card-long" ]
                             [ Html.div [ class "media-image" ] [ viewMediaCover tv.posterUrl ]
                             , Html.div [ class "media-info" ]
-                                [ Html.i [] [ Html.text (recommendedMedia.recommenderUsername ++ " recommends...") ]
+                                [ Html.i [] [ Html.text (recommendedMedia.recommenderFullName ++ " recommends...") ]
                                 , viewTVDetails tv
                                 , viewRecommendedMediaDropdown (TVType tv)
                                 ]
@@ -870,7 +870,7 @@ viewRecommendationType recommendationType =
                             [ Html.div [ class "media-image" ] [ viewMediaCover book.coverUrl ]
                             , Html.div [ class "media-info" ]
                                 [ Html.i []
-                                    [ Html.text ("I recommended to " ++ recommendedMedia.recommendedUsername ++ "...") ]
+                                    [ Html.text ("I recommended to " ++ recommendedMedia.recommendedFullName ++ "...") ]
                                 , viewBookDetails book
                                 ]
                             ]
@@ -881,7 +881,7 @@ viewRecommendationType recommendationType =
                         [ Html.div [ class "media-card" ]
                             [ Html.div [ class "media-image" ] [ viewMediaCover movie.posterUrl ]
                             , Html.div [ class "media-info" ]
-                                [ Html.i [] [ Html.text ("I recommended to " ++ recommendedMedia.recommendedUsername ++ "...") ]
+                                [ Html.i [] [ Html.text ("I recommended to " ++ recommendedMedia.recommendedFullName ++ "...") ]
                                 , viewMovieDetails movie
                                 ]
                             ]
@@ -892,7 +892,7 @@ viewRecommendationType recommendationType =
                         [ Html.div [ class "media-card" ]
                             [ Html.div [ class "media-image" ] [ viewMediaCover tv.posterUrl ]
                             , Html.div [ class "media-info" ]
-                                [ Html.i [] [ Html.text ("I recommended to " ++ recommendedMedia.recommendedUsername ++ "...") ]
+                                [ Html.i [] [ Html.text ("I recommended to " ++ recommendedMedia.recommendedFullName ++ "...") ]
                                 , viewTVDetails tv
                                 ]
                             ]
