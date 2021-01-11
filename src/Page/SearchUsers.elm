@@ -7,7 +7,7 @@ import Http
 import Json.Decode as Decode
 import RemoteData exposing (RemoteData(..), WebData)
 import Skeleton
-import User exposing (FriendLink, FriendStatus(..), User, UserWithFriendStatus, friendLinkDecoder, friendLinkEncoder)
+import User exposing (FriendLink, FriendStatus(..), UserWithFriendStatus, friendLinkDecoder, friendLinkEncoder)
 
 
 

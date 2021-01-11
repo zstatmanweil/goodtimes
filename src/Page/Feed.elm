@@ -12,7 +12,7 @@ import Movie exposing (Movie)
 import RemoteData exposing (RemoteData(..), WebData)
 import Skeleton
 import TV exposing (TV)
-import User
+import User exposing (UserInfo, getUserFullName)
 
 
 
@@ -20,8 +20,8 @@ import User
 
 
 type alias Model =
-    { logged_in_user : WebData User.User
-    , friends : WebData (List User.User)
+    { logged_in_user : WebData UserInfo
+    , friends : WebData (List UserInfo)
     , eventResults : WebData (List Event)
     }
 
@@ -35,7 +35,7 @@ init : () -> ( Model, Cmd Msg )
 init _ =
     let
         user =
-            Success (User.User 1 "zstat" "zoe" "statman-weil" "zstatmanweil@gmail.com")
+            Success (UserInfo 1 "123" "zoe" "statman-weil" "zoe statman-weil " "zstatmanweil@gmail.com" "mypicture")
     in
     ( { logged_in_user = user
       , friends = NotAsked
@@ -67,7 +67,7 @@ update msg model =
             )
 
 
-getUserAndFriendEvents : WebData User.User -> Cmd Msg
+getUserAndFriendEvents : WebData UserInfo -> Cmd Msg
 getUserAndFriendEvents user =
     Http.get
         { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/friend/events"
@@ -95,7 +95,7 @@ body : Model -> Html Msg
 body model =
     Html.main_ [ class "content" ]
         [ Html.div [ id "content-wrap" ]
-            [ Html.div [ id "user-profile" ] [ Html.text ("Welcome " ++ User.getUsername model.logged_in_user ++ "!") ]
+            [ Html.div [ id "user-profile" ] [ Html.text ("Welcome " ++ getUserFullName model.logged_in_user ++ "!") ]
             , Html.div [ class "results" ]
                 [ viewEvents model ]
             ]

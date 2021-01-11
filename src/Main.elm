@@ -18,7 +18,7 @@ import Routes exposing (..)
 import Skeleton
 import Url
 import Url.Parser as Parser
-import User exposing (UnverifiedUser, UserInfo)
+import User exposing (UnverifiedUser, UserInfo, unverifiedToUserInfo)
 
 
 main : Program Flags Model Msg
@@ -345,7 +345,7 @@ stepUrl url model =
             let
                 -- TODO actually verify!!
                 newAuth =
-                    Authenticated token (User.unverifiedToVerifyUser unverifiedUser 1)
+                    Authenticated token (unverifiedToUserInfo unverifiedUser 1)
             in
             ( { model | auth = newAuth }, Nav.pushUrl model.key "feed" )
 
