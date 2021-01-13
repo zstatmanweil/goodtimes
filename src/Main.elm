@@ -150,10 +150,10 @@ view model =
                 ]
             }
 
-        LoggedIn userInfo loggedInPage ->
+        LoggedIn loggedInUser loggedInPage ->
             let
                 _ =
-                    Debug.log "User" userInfo
+                    Debug.log "User" loggedInUser
             in
             case loggedInPage of
                 Feed feed ->
@@ -166,7 +166,7 @@ view model =
                     Skeleton.view model.isOpenMenu ToggleViewMenu SearchUsersMsg (SearchUsers.view search)
 
                 UserProfile user ->
-                    Skeleton.view model.isOpenMenu ToggleViewMenu UserProfileMsg (UserProfile.view user)
+                    Skeleton.view model.isOpenMenu ToggleViewMenu UserProfileMsg (UserProfile.view loggedInUser user)
 
 
 
@@ -230,33 +230,33 @@ update msg model =
 
         FeedMsg msge ->
             case model.page of
-                LoggedIn userInfo (Feed feed) ->
-                    stepFeed model userInfo (Feed.update msge feed)
+                LoggedIn loggedInUser (Feed feed) ->
+                    stepFeed model loggedInUser (Feed.update msge feed)
 
                 _ ->
                     ( model, Cmd.none )
 
         SearchMsg msge ->
             case model.page of
-                LoggedIn userInfo (Search search) ->
+                LoggedIn loggedInUser (Search search) ->
                     -- if you receive a search message on the search page, update the Search page. If you recieve another message, ignore
-                    stepSearch model userInfo (Search.update msge search)
+                    stepSearch model loggedInUser (Search.update msge search)
 
                 _ ->
                     ( model, Cmd.none )
 
         SearchUsersMsg msge ->
             case model.page of
-                LoggedIn userInfo (SearchUsers search) ->
-                    stepSearchUsers model userInfo (SearchUsers.update msge search)
+                LoggedIn loggedInUser (SearchUsers search) ->
+                    stepSearchUsers model loggedInUser (SearchUsers.update msge search)
 
                 _ ->
                     ( model, Cmd.none )
 
         UserProfileMsg msge ->
             case model.page of
-                LoggedIn userInfo (UserProfile user) ->
-                    stepUser model userInfo (UserProfile.update msge user)
+                LoggedIn loggedInUser (UserProfile user) ->
+                    stepUser model loggedInUser (UserProfile.update loggedInUser msge user)
 
                 _ ->
                     ( model, Cmd.none )

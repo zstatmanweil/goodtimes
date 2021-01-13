@@ -13,7 +13,7 @@ import Recommendation exposing (RecommendationType(..), RecommendedByUserMedia, 
 import RemoteData exposing (RemoteData(..), WebData)
 import Skeleton
 import TV exposing (TV)
-import User exposing (FriendLink, FriendStatus(..), UserInfo, friendLinkDecoder, friendLinkEncoder, getUserFullName, getUserId, userInfoDecoder)
+import User exposing (FriendLink, FriendStatus(..), LoggedInUser, UserInfo, friendLinkDecoder, friendLinkEncoder, getUserFullName, getUserId, userInfoDecoder)
 
 
 
@@ -21,8 +21,7 @@ import User exposing (FriendLink, FriendStatus(..), UserInfo, friendLinkDecoder,
 
 
 type alias Model =
-    { logged_in_user : WebData UserInfo
-    , profile_user : WebData UserInfo
+    { profileUser : WebData UserInfo
     , friends : WebData (List UserInfo)
     , searchResults : WebData (List MediaType)
     , filteredMediaResults : WebData (List MediaType)
@@ -57,8 +56,7 @@ type Msg
 
 init : Int -> ( Model, Cmd Msg )
 init userID =
-    ( { logged_in_user = Success (UserInfo 1 "123" "zoe" "statman-weil" "zoe statman-weil " "zstatmanweil@gmail.com" "mypicture")
-      , profile_user = NotAsked
+    ( { profileUser = NotAsked
       , friends = NotAsked
       , searchResults = NotAsked
       , filteredMediaResults = NotAsked
@@ -77,8 +75,8 @@ init userID =
 -- UPDATE
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update : LoggedInUser -> Msg -> Model -> ( Model, Cmd Msg )
+update loggedInUser msg model =
     case msg of
         AddMediaTabRow ->
             ( { model
@@ -106,17 +104,17 @@ update msg model =
                     case mediaTabSelection of
                         BookTab ->
                             ( new_model
-                            , searchUserBooks model.logged_in_user
+                            , searchUserBooks loggedInUser
                             )
 
                         MovieTab ->
                             ( new_model
-                            , searchUserMovies model.logged_in_user
+                            , searchUserMovies loggedInUser
                             )
 
                         TVTab ->
                             ( new_model
-                            , searchUserTV model.logged_in_user
+                            , searchUserTV loggedInUser
                             )
 
                         _ ->
@@ -134,12 +132,12 @@ update msg model =
                     case model.recommendationSelectedTab of
                         ToUserTab ->
                             ( new_model
-                            , getRecommendedToUserMedia model.logged_in_user (mediaTabSelectionToString mediaTabSelection)
+                            , getRecommendedToUserMedia loggedInUser (mediaTabSelectionToString mediaTabSelection)
                             )
 
                         FromUserTab ->
                             ( new_model
-                            , getRecommendedByUserMedia model.logged_in_user (mediaTabSelectionToString mediaTabSelection)
+                            , getRecommendedByUserMedia loggedInUser (mediaTabSelectionToString mediaTabSelection)
                             )
 
                         _ ->
@@ -161,20 +159,20 @@ update msg model =
             )
 
         AddMediaToProfile mediaType status ->
-            ( model, addMediaToProfile mediaType status model.logged_in_user )
+            ( model, addMediaToProfile mediaType status loggedInUser )
 
         MediaAddedToProfile result ->
             case result of
                 Ok consumption ->
                     case model.mediaSelectedTab of
                         BookTab ->
-                            ( model, searchUserBooks model.logged_in_user )
+                            ( model, searchUserBooks loggedInUser )
 
                         MovieTab ->
-                            ( model, searchUserMovies model.logged_in_user )
+                            ( model, searchUserMovies loggedInUser )
 
                         TVTab ->
-                            ( model, searchUserTV model.logged_in_user )
+                            ( model, searchUserTV loggedInUser )
 
                         _ ->
                             ( model, Cmd.none )
@@ -210,12 +208,12 @@ update msg model =
             case friendshipTab of
                 ExistingFriendsTab ->
                     ( new_model
-                    , getExistingFriends (User.getUserId model.logged_in_user)
+                    , getExistingFriends loggedInUser
                     )
 
                 RequestedFriendsTab ->
                     ( new_model
-                    , getFriendRequests (User.getUserId model.logged_in_user)
+                    , getFriendRequests loggedInUser
                     )
 
                 _ ->
@@ -224,13 +222,13 @@ update msg model =
         UserResponse userResponse ->
             case userResponse of
                 Ok user ->
-                    if User.getUserId model.logged_in_user == user.goodTimesId then
-                        ( { model | profile_user = Success user }, getExistingFriends user.goodTimesId )
+                    if loggedInUser.userInfo.goodTimesId == user.goodTimesId then
+                        ( { model | profileUser = Success user }, getExistingFriends loggedInUser )
 
                     else
                         -- TODO: command here should be something like get if profile user is friends with logged in user,
                         -- of if friendship has been requested
-                        ( { model | profile_user = Success user }, Cmd.none )
+                        ( { model | profileUser = Success user }, Cmd.none )
 
                 -- TODO: handle error
                 Err resp ->
@@ -246,12 +244,12 @@ update msg model =
                     ( model, Cmd.none )
 
         AddFriendLink user friendStatus ->
-            ( model, addFriendLink user (User.getUserId model.logged_in_user) friendStatus )
+            ( model, addFriendLink loggedInUser user.goodTimesId friendStatus )
 
         FriendLinkAdded result ->
             case result of
                 Ok friendLink ->
-                    ( model, getFriendRequests (User.getUserId model.logged_in_user) )
+                    ( model, getFriendRequests loggedInUser )
 
                 Err httpError ->
                     -- TODO handle error!
@@ -281,7 +279,7 @@ update msg model =
             )
 
         Recommend mediaType friend ->
-            ( model, recommendMedia (User.getUserId model.logged_in_user) friend.goodTimesId mediaType Recommendation.Pending )
+            ( model, recommendMedia loggedInUser friend.goodTimesId mediaType Recommendation.Pending )
 
         RecommendationResponse rec ->
             -- TODO: what do do with this response?
@@ -304,26 +302,26 @@ update msg model =
             ( model, Cmd.none )
 
 
-searchUserBooks : WebData UserInfo -> Cmd Msg
-searchUserBooks user =
+searchUserBooks : LoggedInUser -> Cmd Msg
+searchUserBooks loggedInUser =
     Http.get
-        { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/media/book"
+        { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/book"
         , expect = Http.expectJson MediaResponse (Decode.list (Media.bookToMediaDecoder Book.decoder))
         }
 
 
-searchUserMovies : WebData UserInfo -> Cmd Msg
-searchUserMovies user =
+searchUserMovies : LoggedInUser -> Cmd Msg
+searchUserMovies loggedInUser =
     Http.get
-        { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/media/movie"
+        { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/movie"
         , expect = Http.expectJson MediaResponse (Decode.list (Media.movieToMediaDecoder Movie.decoder))
         }
 
 
-searchUserTV : WebData UserInfo -> Cmd Msg
-searchUserTV user =
+searchUserTV : LoggedInUser -> Cmd Msg
+searchUserTV loggedInUser =
     Http.get
-        { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/media/tv"
+        { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/tv"
         , expect = Http.expectJson MediaResponse (Decode.list (Media.tvToMediaDecoder TV.decoder))
         }
 
@@ -336,76 +334,76 @@ getUser userID =
         }
 
 
-getExistingFriends : Int -> Cmd Msg
-getExistingFriends userID =
+getExistingFriends : LoggedInUser -> Cmd Msg
+getExistingFriends loggedInUser =
     Http.get
-        { url = "http://localhost:5000/user/" ++ String.fromInt userID ++ "/friends"
+        { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/friends"
         , expect = Http.expectJson FriendResponse (Decode.list userInfoDecoder)
         }
 
 
-getFriendRequests : Int -> Cmd Msg
-getFriendRequests userID =
+getFriendRequests : LoggedInUser -> Cmd Msg
+getFriendRequests loggedInUser =
     Http.get
-        { url = "http://localhost:5000/user/" ++ String.fromInt userID ++ "/requests"
+        { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/requests"
         , expect = Http.expectJson FriendResponse (Decode.list userInfoDecoder)
         }
 
 
-addFriendLink : UserInfo -> Int -> FriendStatus -> Cmd Msg
-addFriendLink user currentUserId status =
+addFriendLink : LoggedInUser -> Int -> FriendStatus -> Cmd Msg
+addFriendLink loggedInUser currentUserId status =
     Http.post
         { url = "http://localhost:5000/friend"
-        , body = Http.jsonBody (friendLinkEncoder user.goodTimesId currentUserId status)
+        , body = Http.jsonBody (friendLinkEncoder loggedInUser.userInfo.goodTimesId currentUserId status)
         , expect = Http.expectJson FriendLinkAdded friendLinkDecoder
         }
 
 
-getRecommendedToUserMedia : WebData UserInfo -> String -> Cmd Msg
-getRecommendedToUserMedia user mediaType =
+getRecommendedToUserMedia : LoggedInUser -> String -> Cmd Msg
+getRecommendedToUserMedia loggedInUser mediaType =
     Http.get
-        { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/recommendations/" ++ mediaType
+        { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/recommendations/" ++ mediaType
         , expect = Http.expectJson RecommendedMediaResponse (Decode.list (recToUserToRecTypeDecoder recommendedToUserMediaDecoder))
         }
 
 
-getRecommendedByUserMedia : WebData UserInfo -> String -> Cmd Msg
-getRecommendedByUserMedia user mediaType =
+getRecommendedByUserMedia : LoggedInUser -> String -> Cmd Msg
+getRecommendedByUserMedia loggedInUser mediaType =
     Http.get
-        { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/recommended/" ++ mediaType
+        { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/recommended/" ++ mediaType
         , expect = Http.expectJson RecommendedMediaResponse (Decode.list (recByUserToRecTypeDecoder recommendedByUserMediaDecoder))
         }
 
 
-recommendMedia : Int -> Int -> MediaType -> Recommendation.Status -> Cmd Msg
-recommendMedia recommenderUserID recommendedUserID mediaType recommendation =
+recommendMedia : LoggedInUser -> Int -> MediaType -> Recommendation.Status -> Cmd Msg
+recommendMedia recommenderUser recommendedUserID mediaType recommendation =
     Http.post
         { url = "http://localhost:5000/media/" ++ Media.getMediaTypeAsString mediaType ++ "/recommendation"
-        , body = Http.jsonBody (Recommendation.encoder mediaType recommenderUserID recommendedUserID recommendation)
+        , body = Http.jsonBody (Recommendation.encoder mediaType recommenderUser.userInfo.goodTimesId recommendedUserID recommendation)
         , expect = Http.expectJson RecommendationResponse Recommendation.decoder
         }
 
 
-addMediaToProfile : MediaType -> Consumption.Status -> WebData UserInfo -> Cmd Msg
-addMediaToProfile mediaType status user =
+addMediaToProfile : MediaType -> Consumption.Status -> LoggedInUser -> Cmd Msg
+addMediaToProfile mediaType status loggedInUser =
     case mediaType of
         BookType book ->
             Http.post
-                { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/media/book"
+                { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/book"
                 , body = Http.jsonBody (Book.encoderWithStatus book status)
                 , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
                 }
 
         MovieType movie ->
             Http.post
-                { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/media/movie"
+                { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/movie"
                 , body = Http.jsonBody (Movie.encoderWithStatus movie status)
                 , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
                 }
 
         TVType tv ->
             Http.post
-                { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/media/tv"
+                { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/tv"
                 , body = Http.jsonBody (TV.encoderWithStatus tv status)
                 , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
                 }
@@ -415,24 +413,24 @@ addMediaToProfile mediaType status user =
 -- VIEW
 
 
-view : Model -> Skeleton.Details Msg
-view model =
+view : LoggedInUser -> Model -> Skeleton.Details Msg
+view loggedInUser model =
     { title = "User Profile"
     , attrs = []
     , kids =
         [ Html.div [ class "container", id "page-container" ]
-            [ body model
+            [ body loggedInUser model
             ]
         ]
     }
 
 
-body : Model -> Html Msg
-body model =
-    if getUserId model.logged_in_user == getUserId model.profile_user then
+body : LoggedInUser -> Model -> Html Msg
+body loggedInUser model =
+    if loggedInUser.userInfo.goodTimesId == getUserId model.profileUser then
         Html.main_ [ class "content" ]
             [ Html.div [ id "content-wrap" ]
-                [ Html.div [ id "user-profile" ] [ Html.text ("welcome " ++ getUserFullName model.logged_in_user ++ "!") ]
+                [ Html.div [ id "user-profile" ] [ Html.text ("Welcome " ++ loggedInUser.userInfo.fullName ++ "!") ]
                 , Html.div [ class "tab" ]
                     [ createFirstTab model MediaTab "my media"
                     , createFirstTab model RecommendationTab "recommendations"
