@@ -157,7 +157,7 @@ view model =
             in
             case loggedInPage of
                 Feed feedModel ->
-                    Skeleton.view model.isOpenMenu ToggleViewMenu FeedMsg (Feed.view feedModel)
+                    Skeleton.view model.isOpenMenu ToggleViewMenu FeedMsg (Feed.view loggedInUser feedModel)
 
                 Search searchModel ->
                     Skeleton.view model.isOpenMenu ToggleViewMenu SearchMsg (Search.view searchModel)
@@ -383,7 +383,7 @@ stepUrl url model =
                         Routes.Feed ->
                             let
                                 ( feedModel, feedCommand ) =
-                                    Feed.init ()
+                                    Feed.init loggedInUser
                             in
                             ( { model | page = LoggedIn loggedInUser (Feed feedModel) }
                             , Cmd.map FeedMsg feedCommand

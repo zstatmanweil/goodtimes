@@ -12,7 +12,7 @@ import Movie exposing (Movie)
 import RemoteData exposing (RemoteData(..), WebData)
 import Skeleton
 import TV exposing (TV)
-import User exposing (UserInfo, getUserFullName)
+import User exposing (LoggedInUser, UserInfo, getUserFullName)
 
 
 
@@ -20,8 +20,7 @@ import User exposing (UserInfo, getUserFullName)
 
 
 type alias Model =
-    { logged_in_user : WebData UserInfo
-    , friends : WebData (List UserInfo)
+    { friends : WebData (List UserInfo)
     , eventResults : WebData (List Event)
     }
 
@@ -31,14 +30,9 @@ type Msg
     | None
 
 
-init : () -> ( Model, Cmd Msg )
-init _ =
-    let
-        user =
-            Success (UserInfo 1 "123" "zoe" "statman-weil" "zoe statman-weil " "zstatmanweil@gmail.com" "mypicture")
-    in
-    ( { logged_in_user = user
-      , friends = NotAsked
+init : LoggedInUser -> ( Model, Cmd Msg )
+init user =
+    ( { friends = NotAsked
       , eventResults = NotAsked
       }
     , getUserAndFriendEvents user
@@ -67,10 +61,10 @@ update msg model =
             )
 
 
-getUserAndFriendEvents : WebData UserInfo -> Cmd Msg
-getUserAndFriendEvents user =
+getUserAndFriendEvents : LoggedInUser -> Cmd Msg
+getUserAndFriendEvents loggedInUser =
     Http.get
-        { url = "http://localhost:5000/user/" ++ String.fromInt (User.getUserId user) ++ "/friend/events"
+        { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/friend/events"
         , expect = Http.expectJson EventResponse (Decode.list Event.decoder)
         }
 
@@ -79,31 +73,31 @@ getUserAndFriendEvents user =
 -- VIEW
 
 
-view : Model -> Skeleton.Details Msg
-view model =
+view : LoggedInUser -> Model -> Skeleton.Details Msg
+view loggedInUser model =
     { title = "Feed"
     , attrs = []
     , kids =
         [ Html.div [ class "container", id "page-container" ]
-            [ body model
+            [ body loggedInUser model
             ]
         ]
     }
 
 
-body : Model -> Html Msg
-body model =
+body : LoggedInUser -> Model -> Html Msg
+body loggedInUser model =
     Html.main_ [ class "content" ]
         [ Html.div [ id "content-wrap" ]
-            [ Html.div [ id "user-profile" ] [ Html.text ("Welcome " ++ getUserFullName model.logged_in_user ++ "!") ]
+            [ Html.div [ id "user-profile" ] [ Html.text ("Welcome " ++ loggedInUser.userInfo.fullName ++ "!") ]
             , Html.div [ class "results" ]
-                [ viewEvents model ]
+                [ viewEvents loggedInUser model ]
             ]
         ]
 
 
-viewEvents : Model -> Html Msg
-viewEvents model =
+viewEvents : LoggedInUser -> Model -> Html Msg
+viewEvents loggedInUser model =
     case model.eventResults of
         NotAsked ->
             Html.text "see your friend's events"
@@ -121,7 +115,7 @@ viewEvents model =
 
             else
                 Html.ul [ class "book-list" ]
-                    (List.map (viewEvent (User.getUserId model.logged_in_user)) events)
+                    (List.map (viewEvent loggedInUser.userInfo.goodTimesId) events)
 
 
 viewEvent : Int -> Event -> Html Msg
