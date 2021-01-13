@@ -240,58 +240,58 @@ getMediaStatusAsString logged_in_user_id event =
                         "you want to read"
 
                     else
-                        event.username ++ " wants to read"
+                        event.fullName ++ " wants to read"
 
                 Consuming ->
                     if event.userId == logged_in_user_id then
                         "you are reading"
 
                     else
-                        event.username ++ " is reading"
+                        event.fullName ++ " reading"
 
                 Finished ->
                     if event.userId == logged_in_user_id then
                         "you read"
 
                     else
-                        event.username ++ " read"
+                        event.fullName ++ " read"
 
                 Abandoned ->
                     if event.userId == logged_in_user_id then
                         "you abandoned"
 
                     else
-                        event.username ++ " abandoned"
+                        event.fullName ++ " abandoned"
 
         _ ->
             case event.status of
                 WantToConsume ->
                     if event.userId == logged_in_user_id then
-                        "you want to want"
+                        "you want to watch"
 
                     else
-                        event.username ++ " wants to watch"
+                        event.fullName ++ " wants to watch"
 
                 Consuming ->
                     if event.userId == logged_in_user_id then
                         "you are watching"
 
                     else
-                        event.username ++ " is watching"
+                        event.fullName ++ " is watching"
 
                 Finished ->
                     if event.userId == logged_in_user_id then
                         "you watched"
 
                     else
-                        event.username ++ " watched"
+                        event.fullName ++ " watched"
 
                 Abandoned ->
                     if event.userId == logged_in_user_id then
                         "you abandoned"
 
                     else
-                        event.username ++ " abandoned"
+                        event.fullName ++ " abandoned"
 
 
 hrsToString : Int -> String

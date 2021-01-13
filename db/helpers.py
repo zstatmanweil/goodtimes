@@ -242,8 +242,11 @@ def get_friend_event_records(user_id, session):
             .join(Consumption, media_class.id == Consumption.media_id) \
             .join(User, Consumption.user_id == User.id) \
             .join(friend_subq, or_(User.id == friend_subq.c.requester_id,
-                                   User.id == friend_subq.c.requested_id)) \
-            .filter(Consumption.media_type == media_type) \
+                                   User.id == friend_subq.c.requested_id), isouter=True) \
+            .filter(and_(Consumption.media_type == media_type,
+                    or_(friend_subq.c.requested_id == user_id,
+                        friend_subq.c.requester_id == user_id,
+                        User.id == user_id))) \
             .all()
 
         final_results.append(media_results)

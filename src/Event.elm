@@ -9,7 +9,7 @@ type alias Event =
     { media : MediaType
     , mediaType : String
     , userId : Int
-    , username : String
+    , fullName : String
     , status : Consumption.Status
     , created : String
     , timeSince : Int
@@ -22,7 +22,7 @@ decoder =
         (Decode.field "media" Media.unknownMediaDecoder)
         (Decode.field "media_type" Decode.string)
         (Decode.field "user_id" Decode.int)
-        (Decode.field "username" Decode.string)
+        (Decode.field "full_name" Decode.string)
         (Decode.field "status" Consumption.statusDecoder)
         (Decode.field "created" Decode.string)
         (Decode.field "time_since" Decode.int)
