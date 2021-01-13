@@ -42,7 +42,7 @@ header toggleViewMenu =
     Html.header [ class "header" ]
         [ Html.div [ class "hamburger", Html.Events.onClick toggleViewMenu ] [ Html.div [ class "bar" ] [], Html.div [ class "bar" ] [], Html.div [ class "bar" ] [] ]
         , Html.h1 [] [ Html.a [ Attr.href "/feed" ] [ Html.text "good times" ] ]
-        , Html.p [] [ Html.text "a book, movie & tv finder - for having a good time" ]
+        , Html.p [] [ Html.text "a book, movie & tv show finder - for having a good time" ]
         ]
 
 

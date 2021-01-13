@@ -430,7 +430,7 @@ body loggedInUser model =
     if loggedInUser.userInfo.goodTimesId == getUserId model.profileUser then
         Html.main_ [ class "content" ]
             [ Html.div [ id "content-wrap" ]
-                [ Html.div [ id "user-profile" ] [ Html.text ("Welcome " ++ loggedInUser.userInfo.fullName ++ "!") ]
+                [ Html.div [ id "user-profile" ] [ Html.text ("welcome " ++ String.toLower loggedInUser.userInfo.fullName ++ "!") ]
                 , Html.div [ class "tab" ]
                     [ createFirstTab model MediaTab "my media"
                     , createFirstTab model RecommendationTab "recommendations"
