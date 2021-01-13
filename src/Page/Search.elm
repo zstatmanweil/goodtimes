@@ -13,6 +13,7 @@ import Movie exposing (..)
 import RemoteData exposing (RemoteData(..), WebData)
 import Skeleton
 import TV exposing (..)
+import User exposing (LoggedInUser)
 
 
 
@@ -50,8 +51,8 @@ init _ =
 -- Update
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update : LoggedInUser -> Msg -> Model -> ( Model, Cmd Msg )
+update loggedInUser msg model =
     case msg of
         SearchMedia ->
             if model.selectedMediaType == BookSelection then
@@ -89,7 +90,7 @@ update msg model =
                 newBooks =
                     RemoteData.map mediaUpdater model.searchResults
             in
-            ( { model | searchResults = newBooks }, addMediaToProfile mediaType status )
+            ( { model | searchResults = newBooks }, addMediaToProfile loggedInUser mediaType status )
 
         MediaAddedToProfile result ->
             case result of
@@ -140,26 +141,26 @@ searchTV titleString =
         }
 
 
-addMediaToProfile : MediaType -> Consumption.Status -> Cmd Msg
-addMediaToProfile mediaType status =
+addMediaToProfile : LoggedInUser -> MediaType -> Consumption.Status -> Cmd Msg
+addMediaToProfile loggedInUser mediaType status =
     case mediaType of
         BookType book ->
             Http.post
-                { url = "http://localhost:5000/user/" ++ String.fromInt 1 ++ "/media/book"
+                { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/book"
                 , body = Http.jsonBody (Book.encoderWithStatus book status)
                 , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
                 }
 
         MovieType movie ->
             Http.post
-                { url = "http://localhost:5000/user/" ++ String.fromInt 1 ++ "/media/movie"
+                { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/movie"
                 , body = Http.jsonBody (Movie.encoderWithStatus movie status)
                 , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
                 }
 
         TVType tv ->
             Http.post
-                { url = "http://localhost:5000/user/" ++ String.fromInt 1 ++ "/media/tv"
+                { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/tv"
                 , body = Http.jsonBody (TV.encoderWithStatus tv status)
                 , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
                 }

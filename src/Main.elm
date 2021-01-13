@@ -240,7 +240,7 @@ update msg model =
             case model.page of
                 LoggedIn loggedInUser (Search searchModel) ->
                     -- if you receive a search message on the search page, update the Search page. If you recieve another message, ignore
-                    stepSearch model loggedInUser (Search.update msge searchModel)
+                    stepSearch model loggedInUser (Search.update loggedInUser msge searchModel)
 
                 _ ->
                     ( model, Cmd.none )

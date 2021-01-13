@@ -12,7 +12,7 @@ import Movie exposing (Movie)
 import RemoteData exposing (RemoteData(..), WebData)
 import Skeleton
 import TV exposing (TV)
-import User exposing (LoggedInUser, UserInfo, getUserFullName)
+import User exposing (LoggedInUser, UserInfo)
 
 
 
