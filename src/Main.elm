@@ -156,17 +156,17 @@ view model =
                     Debug.log "User" loggedInUser
             in
             case loggedInPage of
-                Feed feed ->
-                    Skeleton.view model.isOpenMenu ToggleViewMenu FeedMsg (Feed.view feed)
+                Feed feedModel ->
+                    Skeleton.view model.isOpenMenu ToggleViewMenu FeedMsg (Feed.view feedModel)
 
-                Search search ->
-                    Skeleton.view model.isOpenMenu ToggleViewMenu SearchMsg (Search.view search)
+                Search searchModel ->
+                    Skeleton.view model.isOpenMenu ToggleViewMenu SearchMsg (Search.view searchModel)
 
-                SearchUsers search ->
-                    Skeleton.view model.isOpenMenu ToggleViewMenu SearchUsersMsg (SearchUsers.view search)
+                SearchUsers searchUsersModel ->
+                    Skeleton.view model.isOpenMenu ToggleViewMenu SearchUsersMsg (SearchUsers.view searchUsersModel)
 
-                UserProfile user ->
-                    Skeleton.view model.isOpenMenu ToggleViewMenu UserProfileMsg (UserProfile.view loggedInUser user)
+                UserProfile userProfileModel ->
+                    Skeleton.view model.isOpenMenu ToggleViewMenu UserProfileMsg (UserProfile.view loggedInUser userProfileModel)
 
 
 
@@ -230,33 +230,33 @@ update msg model =
 
         FeedMsg msge ->
             case model.page of
-                LoggedIn loggedInUser (Feed feed) ->
-                    stepFeed model loggedInUser (Feed.update msge feed)
+                LoggedIn loggedInUser (Feed feedModel) ->
+                    stepFeed model loggedInUser (Feed.update msge feedModel)
 
                 _ ->
                     ( model, Cmd.none )
 
         SearchMsg msge ->
             case model.page of
-                LoggedIn loggedInUser (Search search) ->
+                LoggedIn loggedInUser (Search searchModel) ->
                     -- if you receive a search message on the search page, update the Search page. If you recieve another message, ignore
-                    stepSearch model loggedInUser (Search.update msge search)
+                    stepSearch model loggedInUser (Search.update msge searchModel)
 
                 _ ->
                     ( model, Cmd.none )
 
         SearchUsersMsg msge ->
             case model.page of
-                LoggedIn loggedInUser (SearchUsers search) ->
-                    stepSearchUsers model loggedInUser (SearchUsers.update msge search)
+                LoggedIn loggedInUser (SearchUsers searchUsersModel) ->
+                    stepSearchUsers model loggedInUser (SearchUsers.update loggedInUser msge searchUsersModel)
 
                 _ ->
                     ( model, Cmd.none )
 
         UserProfileMsg msge ->
             case model.page of
-                LoggedIn loggedInUser (UserProfile user) ->
-                    stepUser model loggedInUser (UserProfile.update loggedInUser msge user)
+                LoggedIn loggedInUser (UserProfile userProfileModel) ->
+                    stepUser model loggedInUser (UserProfile.update loggedInUser msge userProfileModel)
 
                 _ ->
                     ( model, Cmd.none )

@@ -7,7 +7,7 @@ import Http
 import Json.Decode as Decode
 import RemoteData exposing (RemoteData(..), WebData)
 import Skeleton
-import User exposing (FriendLink, FriendStatus(..), UserWithFriendStatus, friendLinkDecoder, friendLinkEncoder)
+import User exposing (FriendLink, FriendStatus(..), LoggedInUser, UserWithFriendStatus, friendLinkDecoder, friendLinkEncoder)
 
 
 
@@ -42,12 +42,11 @@ init _ =
 -- UPDATE
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update : LoggedInUser -> Msg -> Model -> ( Model, Cmd Msg )
+update loggedInUser msg model =
     case msg of
-        --TODO pass in user id instead of 1
         SearchUsers ->
-            ( model, searchUsers 1 model.query )
+            ( model, searchUsers loggedInUser.userInfo.goodTimesId model.query )
 
         UpdateQuery newString ->
             ( { model | query = newString }, Cmd.none )
