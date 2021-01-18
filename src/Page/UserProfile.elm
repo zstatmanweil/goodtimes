@@ -41,7 +41,7 @@ type Msg
     | AddMediaTabRow
     | SearchBasedOnMediaTab MediaTabSelection
     | FilterBasedOnConsumptionTab ConsumptionTabSelection
-    | AddMediaToProfile MediaType Consumption.Status
+    | AddMediaToProfile MediaType Consumption.Status (WebData UserInfo)
     | MediaAddedToProfile (Result Http.Error Consumption)
     | MediaResponse (Result Http.Error (List MediaType))
     | SearchFriendsBasedOnTab FriendshipTabSelection
@@ -112,17 +112,17 @@ update loggedInUser msg model =
                             case mediaTabSelection of
                                 BookTab ->
                                     ( new_model
-                                    , searchUserBooks loggedInUser Nothing
+                                    , searchUserBooks loggedInUser loggedInUser.userInfo.goodTimesId
                                     )
 
                                 MovieTab ->
                                     ( new_model
-                                    , searchUserMovies loggedInUser Nothing
+                                    , searchUserMovies loggedInUser loggedInUser.userInfo.goodTimesId
                                     )
 
                                 TVTab ->
                                     ( new_model
-                                    , searchUserTV loggedInUser Nothing
+                                    , searchUserTV loggedInUser loggedInUser.userInfo.goodTimesId
                                     )
 
                                 _ ->
@@ -142,17 +142,17 @@ update loggedInUser msg model =
                             case mediaTabSelection of
                                 BookTab ->
                                     ( new_model
-                                    , searchUserBooks loggedInUser (Just (getUserId model.profileUser))
+                                    , searchUserBooks loggedInUser (getUserId model.profileUser)
                                     )
 
                                 MovieTab ->
                                     ( new_model
-                                    , searchUserMovies loggedInUser (Just (getUserId model.profileUser))
+                                    , searchUserMovies loggedInUser (getUserId model.profileUser)
                                     )
 
                                 TVTab ->
                                     ( new_model
-                                    , searchUserTV loggedInUser (Just (getUserId model.profileUser))
+                                    , searchUserTV loggedInUser (getUserId model.profileUser)
                                     )
 
                                 _ ->
@@ -199,23 +199,32 @@ update loggedInUser msg model =
             , Cmd.none
             )
 
-        AddMediaToProfile mediaType status ->
-            ( model, addMediaToProfile mediaType status loggedInUser )
+        AddMediaToProfile mediaType status userInfo ->
+            ( model, addMediaToProfile mediaType status loggedInUser userInfo )
 
         MediaAddedToProfile result ->
             case result of
                 Ok consumption ->
-                    case model.mediaSelectedTab of
-                        BookTab ->
-                            ( model, searchUserBooks loggedInUser Nothing )
+                    case ( model.profileType, model.mediaSelectedTab ) of
+                        ( LoggedInUserProfile, BookTab ) ->
+                            ( model, searchUserBooks loggedInUser loggedInUser.userInfo.goodTimesId )
 
-                        MovieTab ->
-                            ( model, searchUserMovies loggedInUser Nothing )
+                        ( LoggedInUserProfile, MovieTab ) ->
+                            ( model, searchUserMovies loggedInUser loggedInUser.userInfo.goodTimesId )
 
-                        TVTab ->
-                            ( model, searchUserTV loggedInUser Nothing )
+                        ( LoggedInUserProfile, TVTab ) ->
+                            ( model, searchUserTV loggedInUser loggedInUser.userInfo.goodTimesId )
 
-                        _ ->
+                        ( FriendProfile, BookTab ) ->
+                            ( model, searchUserBooks loggedInUser (getUserId model.profileUser) )
+
+                        ( FriendProfile, MovieTab ) ->
+                            ( model, searchUserMovies loggedInUser (getUserId model.profileUser) )
+
+                        ( FriendProfile, TVTab ) ->
+                            ( model, searchUserTV loggedInUser (getUserId model.profileUser) )
+
+                        ( _, _ ) ->
                             ( model, Cmd.none )
 
                 Err httpError ->
@@ -235,26 +244,37 @@ update loggedInUser msg model =
             )
 
         SearchFriendsBasedOnTab friendshipTab ->
-            let
-                new_model =
-                    { model
-                        | firstSelectedTab = FriendsTab
-                        , mediaSelectedTab = NoMediaTab
-                        , consumptionSelectedTab = NoConsumptionTab
-                        , recommendationSelectedTab = NoRecommendationTab
-                        , friendshipSelectedTab = friendshipTab
-                        , friends = Loading
-                    }
-            in
-            case friendshipTab of
-                ExistingFriendsTab ->
-                    ( new_model
-                    , getExistingFriends loggedInUser
-                    )
+            case model.profileType of
+                LoggedInUserProfile ->
+                    let
+                        new_model =
+                            { model
+                                | firstSelectedTab = FriendsTab
+                                , mediaSelectedTab = NoMediaTab
+                                , consumptionSelectedTab = NoConsumptionTab
+                                , recommendationSelectedTab = NoRecommendationTab
+                                , friendshipSelectedTab = friendshipTab
+                                , overlapSelectedTab = NoOverlapTab
+                                , friends = Loading
+                            }
+                    in
+                    case friendshipTab of
+                        ExistingFriendsTab ->
+                            ( new_model
+                            , getExistingFriends loggedInUser Nothing
+                            )
 
-                RequestedFriendsTab ->
-                    ( new_model
-                    , getFriendRequests loggedInUser
+                        RequestedFriendsTab ->
+                            ( new_model
+                            , getFriendRequests loggedInUser
+                            )
+
+                        _ ->
+                            ( model, Cmd.none )
+
+                FriendProfile ->
+                    ( model
+                    , getExistingFriends loggedInUser (Just (getUserId model.profileUser))
                     )
 
                 _ ->
@@ -268,7 +288,7 @@ update loggedInUser msg model =
                             | profileType = LoggedInUserProfile
                             , profileUser = Success user
                           }
-                        , getExistingFriends loggedInUser
+                        , getExistingFriends loggedInUser Nothing
                         )
 
                     else
@@ -353,52 +373,28 @@ update loggedInUser msg model =
             ( model, Cmd.none )
 
 
-searchUserBooks : LoggedInUser -> Maybe Int -> Cmd Msg
+searchUserBooks : LoggedInUser -> Int -> Cmd Msg
 searchUserBooks loggedInUser userId =
-    case userId of
-        Just id ->
-            Http.get
-                { url = "http://localhost:5000/user/" ++ String.fromInt id ++ "/media/book"
-                , expect = Http.expectJson MediaResponse (Decode.list (Media.bookToMediaDecoder Book.decoder))
-                }
-
-        Nothing ->
-            Http.get
-                { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/book"
-                , expect = Http.expectJson MediaResponse (Decode.list (Media.bookToMediaDecoder Book.decoder))
-                }
+    Http.get
+        { url = "http://localhost:5000/user/" ++ String.fromInt userId ++ "/media/book"
+        , expect = Http.expectJson MediaResponse (Decode.list (Media.bookToMediaDecoder Book.decoder))
+        }
 
 
-searchUserMovies : LoggedInUser -> Maybe Int -> Cmd Msg
+searchUserMovies : LoggedInUser -> Int -> Cmd Msg
 searchUserMovies loggedInUser userId =
-    case userId of
-        Just id ->
-            Http.get
-                { url = "http://localhost:5000/user/" ++ String.fromInt id ++ "/media/movie"
-                , expect = Http.expectJson MediaResponse (Decode.list (Media.movieToMediaDecoder Movie.decoder))
-                }
-
-        Nothing ->
-            Http.get
-                { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/book"
-                , expect = Http.expectJson MediaResponse (Decode.list (Media.movieToMediaDecoder Movie.decoder))
-                }
+    Http.get
+        { url = "http://localhost:5000/user/" ++ String.fromInt userId ++ "/media/movie"
+        , expect = Http.expectJson MediaResponse (Decode.list (Media.movieToMediaDecoder Movie.decoder))
+        }
 
 
-searchUserTV : LoggedInUser -> Maybe Int -> Cmd Msg
+searchUserTV : LoggedInUser -> Int -> Cmd Msg
 searchUserTV loggedInUser userId =
-    case userId of
-        Just id ->
-            Http.get
-                { url = "http://localhost:5000/user/" ++ String.fromInt id ++ "/media/tv"
-                , expect = Http.expectJson MediaResponse (Decode.list (Media.tvToMediaDecoder TV.decoder))
-                }
-
-        Nothing ->
-            Http.get
-                { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/tv"
-                , expect = Http.expectJson MediaResponse (Decode.list (Media.tvToMediaDecoder TV.decoder))
-                }
+    Http.get
+        { url = "http://localhost:5000/user/" ++ String.fromInt userId ++ "/media/tv"
+        , expect = Http.expectJson MediaResponse (Decode.list (Media.tvToMediaDecoder TV.decoder))
+        }
 
 
 getUser : Int -> Cmd Msg
@@ -409,12 +405,20 @@ getUser userID =
         }
 
 
-getExistingFriends : LoggedInUser -> Cmd Msg
-getExistingFriends loggedInUser =
-    Http.get
-        { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/friends"
-        , expect = Http.expectJson FriendResponse (Decode.list userInfoDecoder)
-        }
+getExistingFriends : LoggedInUser -> Maybe Int -> Cmd Msg
+getExistingFriends loggedInUser userId =
+    case userId of
+        Just id ->
+            Http.get
+                { url = "http://localhost:5000/user/" ++ String.fromInt id ++ "/friends"
+                , expect = Http.expectJson FriendResponse (Decode.list userInfoDecoder)
+                }
+
+        Nothing ->
+            Http.get
+                { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/friends"
+                , expect = Http.expectJson FriendResponse (Decode.list userInfoDecoder)
+                }
 
 
 getFriendRequests : LoggedInUser -> Cmd Msg
@@ -459,26 +463,26 @@ recommendMedia recommenderUser recommendedUserID mediaType recommendation =
         }
 
 
-addMediaToProfile : MediaType -> Consumption.Status -> LoggedInUser -> Cmd Msg
-addMediaToProfile mediaType status loggedInUser =
+addMediaToProfile : MediaType -> Consumption.Status -> LoggedInUser -> WebData UserInfo -> Cmd Msg
+addMediaToProfile mediaType status loggedInUser userInfo =
     case mediaType of
         BookType book ->
             Http.post
-                { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/book"
+                { url = "http://localhost:5000/user/" ++ String.fromInt (getUserId userInfo) ++ "/media/book"
                 , body = Http.jsonBody (Book.encoderWithStatus book status)
                 , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
                 }
 
         MovieType movie ->
             Http.post
-                { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/movie"
+                { url = "http://localhost:5000/user/" ++ String.fromInt (getUserId userInfo) ++ "/media/movie"
                 , body = Http.jsonBody (Movie.encoderWithStatus movie status)
                 , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
                 }
 
         TVType tv ->
             Http.post
-                { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/tv"
+                { url = "http://localhost:5000/user/" ++ String.fromInt (getUserId userInfo) ++ "/media/tv"
                 , body = Http.jsonBody (TV.encoderWithStatus tv status)
                 , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
                 }
@@ -517,7 +521,7 @@ body loggedInUser model =
                     , viewMediaTabRow model
                     , viewConsumptionTabRow model
                     , Html.div [ class "results" ]
-                        [ viewTabContent model ]
+                        [ viewTabContent model (Success loggedInUser.userInfo) ]
                     ]
                 ]
 
@@ -536,7 +540,7 @@ body loggedInUser model =
                     , viewMediaTabRow model
                     , viewConsumptionTabRow model
                     , Html.div [ class "results" ]
-                        [ viewTabContent model ]
+                        [ viewTabContent model model.profileUser ]
                     ]
                 ]
 
@@ -545,14 +549,14 @@ body loggedInUser model =
                 [ Html.div [ id "content-wrap" ] [ Html.text "something is up" ] ]
 
 
-viewTabContent : Model -> Html Msg
-viewTabContent model =
+viewTabContent : Model -> WebData UserInfo -> Html Msg
+viewTabContent model userInfo =
     case model.firstSelectedTab of
         RecommendationTab ->
-            viewRecommendations model.recommendedResults
+            viewRecommendations model.recommendedResults userInfo
 
         MediaTab ->
-            viewMedias model.filteredMediaResults model.friends
+            viewMedias model.filteredMediaResults model.friends userInfo
 
         FriendsTab ->
             case model.friendshipSelectedTab of
@@ -610,14 +614,19 @@ viewRecommendationTabRow model =
 
 viewFriendshipTabRow : Model -> Html Msg
 viewFriendshipTabRow model =
-    if model.friendshipSelectedTab /= NoFriendshipTab then
-        Html.div [ class "tab" ]
-            [ createFriendshipTab model ExistingFriendsTab "existing"
-            , createFriendshipTab model RequestedFriendsTab "requests"
-            ]
+    case model.profileType of
+        LoggedInUserProfile ->
+            if model.friendshipSelectedTab /= NoFriendshipTab then
+                Html.div [ class "tab" ]
+                    [ createFriendshipTab model ExistingFriendsTab "existing"
+                    , createFriendshipTab model RequestedFriendsTab "requests"
+                    ]
 
-    else
-        Html.div [] []
+            else
+                Html.div [] []
+
+        _ ->
+            Html.div [] []
 
 
 viewFriends : WebData (List UserInfo) -> Html Msg
@@ -700,8 +709,8 @@ viewAcceptFriendButton user =
         ]
 
 
-viewMedias : WebData (List MediaType) -> WebData (List UserInfo) -> Html Msg
-viewMedias receivedMedia friends =
+viewMedias : WebData (List MediaType) -> WebData (List UserInfo) -> WebData UserInfo -> Html Msg
+viewMedias receivedMedia friends userInfo =
     case receivedMedia of
         NotAsked ->
             Html.div [ class "page-text" ] [ Html.text "select a media type" ]
@@ -719,11 +728,11 @@ viewMedias receivedMedia friends =
 
             else
                 Html.ul [ class "book-list" ]
-                    (List.map (viewMediaType friends) (List.sortBy Media.getTitle media))
+                    (List.map (viewMediaType friends userInfo) (List.sortBy Media.getTitle media))
 
 
-viewMediaType : WebData (List UserInfo) -> MediaType -> Html Msg
-viewMediaType friends mediaType =
+viewMediaType : WebData (List UserInfo) -> WebData UserInfo -> MediaType -> Html Msg
+viewMediaType friends userInfo mediaType =
     case mediaType of
         BookType book ->
             Html.li []
@@ -732,7 +741,7 @@ viewMediaType friends mediaType =
                     , Html.div [ class "media-info" ]
                         [ viewBookDetails book
                         , Html.div [ class "media-status" ]
-                            [ viewMediaDropdown (BookType book)
+                            [ viewMediaDropdown userInfo (BookType book)
                             , Html.div
                                 [ class "media-recommend" ]
                                 [ viewFriendsToRecommendDropdown (BookType book) friends ]
@@ -748,7 +757,7 @@ viewMediaType friends mediaType =
                     , Html.div [ class "media-info" ]
                         [ viewMovieDetails movie
                         , Html.div [ class "media-status" ]
-                            [ viewMediaDropdown (MovieType movie)
+                            [ viewMediaDropdown userInfo (MovieType movie)
                             , Html.div [ class "media-recommend" ]
                                 [ viewFriendsToRecommendDropdown (MovieType movie) friends ]
                             ]
@@ -763,7 +772,7 @@ viewMediaType friends mediaType =
                     , Html.div [ class "media-info" ]
                         [ viewTVDetails tv
                         , Html.div [ class "media-status" ]
-                            [ viewMediaDropdown (TVType tv)
+                            [ viewMediaDropdown userInfo (TVType tv)
                             , Html.div [ class "media-recommend" ]
                                 [ viewFriendsToRecommendDropdown (TVType tv) friends ]
                             ]
@@ -811,33 +820,33 @@ viewTVDetails tv =
         ]
 
 
-viewMediaDropdown : MediaType -> Html Msg
-viewMediaDropdown mediaType =
+viewMediaDropdown : WebData UserInfo -> MediaType -> Html Msg
+viewMediaDropdown userInfo mediaType =
     Html.div [ class "dropdown" ] <|
         case mediaType of
             BookType book ->
                 [ Html.button [ class "dropbtn-existing-status " ] [ Html.text (Book.maybeStatusAsString book.status) ]
-                , viewDropdownContent (BookType book) "to read" "reading" "read" "abandon"
+                , viewDropdownContent userInfo (BookType book) "to read" "reading" "read" "abandon"
                 ]
 
             MovieType movie ->
                 [ Html.button [ class "dropbtn-existing-status " ] [ Html.text (Movie.maybeStatusAsString movie.status) ]
-                , viewDropdownContent (MovieType movie) "to watch" "watching" "watched" "abandon"
+                , viewDropdownContent userInfo (MovieType movie) "to watch" "watching" "watched" "abandon"
                 ]
 
             TVType tv ->
                 [ Html.button [ class "dropbtn-existing-status " ] [ Html.text (TV.maybeStatusAsString tv.status) ]
-                , viewDropdownContent (TVType tv) "to watch" "watching" "watched" "abandon"
+                , viewDropdownContent userInfo (TVType tv) "to watch" "watching" "watched" "abandon"
                 ]
 
 
-viewDropdownContent : MediaType -> String -> String -> String -> String -> Html Msg
-viewDropdownContent mediaType wantToConsume consuming finished abandoned =
+viewDropdownContent : WebData UserInfo -> MediaType -> String -> String -> String -> String -> Html Msg
+viewDropdownContent userInfo mediaType wantToConsume consuming finished abandoned =
     Html.div [ class "dropdown-content" ]
-        [ Html.p [ Html.Events.onClick (AddMediaToProfile mediaType WantToConsume) ] [ Html.text wantToConsume ]
-        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Consuming) ] [ Html.text consuming ]
-        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Finished) ] [ Html.text finished ]
-        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Abandoned) ] [ Html.text abandoned ]
+        [ Html.p [ Html.Events.onClick (AddMediaToProfile mediaType WantToConsume userInfo) ] [ Html.text wantToConsume ]
+        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Consuming userInfo) ] [ Html.text consuming ]
+        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Finished userInfo) ] [ Html.text finished ]
+        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Abandoned userInfo) ] [ Html.text abandoned ]
         ]
 
 
@@ -887,8 +896,8 @@ viewMediaCover maybeCoverUrl =
             Html.div [ class "no-media" ] []
 
 
-viewRecommendations : WebData (List RecommendationType) -> Html Msg
-viewRecommendations recommendedMedia =
+viewRecommendations : WebData (List RecommendationType) -> WebData UserInfo -> Html Msg
+viewRecommendations recommendedMedia userInfo =
     case recommendedMedia of
         NotAsked ->
             Html.text "see your recommendations"
@@ -906,16 +915,16 @@ viewRecommendations recommendedMedia =
 
             else
                 Html.ul [ class "book-list" ]
-                    (List.map viewRecommendedMedia rec)
+                    (List.map (viewRecommendedMedia userInfo) rec)
 
 
-viewRecommendedMedia : RecommendationType -> Html Msg
-viewRecommendedMedia recommendationType =
-    viewRecommendationType recommendationType
+viewRecommendedMedia : WebData UserInfo -> RecommendationType -> Html Msg
+viewRecommendedMedia userInfo recommendationType =
+    viewRecommendationType recommendationType userInfo
 
 
-viewRecommendationType : RecommendationType -> Html Msg
-viewRecommendationType recommendationType =
+viewRecommendationType : RecommendationType -> WebData UserInfo -> Html Msg
+viewRecommendationType recommendationType userInfo =
     case recommendationType of
         RecToUserType recommendedMedia ->
             case recommendedMedia.media of
@@ -926,7 +935,7 @@ viewRecommendationType recommendationType =
                             , Html.div [ class "media-info" ]
                                 [ Html.i [] [ Html.text (recommendedMedia.recommenderFullName ++ " recommends...") ]
                                 , viewBookDetails book
-                                , viewRecommendedMediaDropdown (BookType book)
+                                , viewRecommendedMediaDropdown userInfo (BookType book)
                                 ]
                             ]
                         ]
@@ -938,7 +947,7 @@ viewRecommendationType recommendationType =
                             , Html.div [ class "media-info" ]
                                 [ Html.i [] [ Html.text (recommendedMedia.recommenderFullName ++ " recommends...") ]
                                 , viewMovieDetails movie
-                                , viewRecommendedMediaDropdown (MovieType movie)
+                                , viewRecommendedMediaDropdown userInfo (MovieType movie)
                                 ]
                             ]
                         ]
@@ -950,7 +959,7 @@ viewRecommendationType recommendationType =
                             , Html.div [ class "media-info" ]
                                 [ Html.i [] [ Html.text (recommendedMedia.recommenderFullName ++ " recommends...") ]
                                 , viewTVDetails tv
-                                , viewRecommendedMediaDropdown (TVType tv)
+                                , viewRecommendedMediaDropdown userInfo (TVType tv)
                                 ]
                             ]
                         ]
@@ -992,15 +1001,15 @@ viewRecommendationType recommendationType =
                         ]
 
 
-viewRecommendedMediaDropdown : MediaType -> Html Msg
-viewRecommendedMediaDropdown mediaType =
+viewRecommendedMediaDropdown : WebData UserInfo -> MediaType -> Html Msg
+viewRecommendedMediaDropdown userInfo mediaType =
     Html.div [ class "dropdown" ] <|
         case mediaType of
             BookType book ->
                 case book.status of
                     Nothing ->
                         [ Html.button [ class "dropbtn" ] [ Html.text "Add Book >>" ]
-                        , viewDropdownContent (BookType book) "to read" "reading" "read" "abandon"
+                        , viewDropdownContent userInfo (BookType book) "to read" "reading" "read" "abandon"
                         ]
 
                     Just status ->
@@ -1010,7 +1019,7 @@ viewRecommendedMediaDropdown mediaType =
                 case movie.status of
                     Nothing ->
                         [ Html.button [ class "dropbtn" ] [ Html.text "Add Movie >>" ]
-                        , viewDropdownContent (MovieType movie) "to watch" "watching" "watched" "abandon"
+                        , viewDropdownContent userInfo (MovieType movie) "to watch" "watching" "watched" "abandon"
                         ]
 
                     Just status ->
@@ -1020,7 +1029,7 @@ viewRecommendedMediaDropdown mediaType =
                 case tv.status of
                     Nothing ->
                         [ Html.button [ class "dropbtn" ] [ Html.text "Add TV Show >>" ]
-                        , viewDropdownContent (TVType tv) "to watch" "watching" "watched" "abandon"
+                        , viewDropdownContent userInfo (TVType tv) "to watch" "watching" "watched" "abandon"
                         ]
 
                     Just status ->
