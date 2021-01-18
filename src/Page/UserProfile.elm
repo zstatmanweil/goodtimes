@@ -41,7 +41,7 @@ type Msg
     | AddMediaTabRow
     | SearchBasedOnMediaTab MediaTabSelection
     | FilterBasedOnConsumptionTab ConsumptionTabSelection
-    | AddMediaToProfile MediaType Consumption.Status (WebData UserInfo)
+    | AddMediaToProfile MediaType Consumption.Status
     | MediaAddedToProfile (Result Http.Error Consumption)
     | MediaResponse (Result Http.Error (List MediaType))
     | SearchFriendsBasedOnTab FriendshipTabSelection
@@ -199,8 +199,8 @@ update loggedInUser msg model =
             , Cmd.none
             )
 
-        AddMediaToProfile mediaType status profileUserInfo ->
-            ( model, addMediaToProfile mediaType status loggedInUser profileUserInfo )
+        AddMediaToProfile mediaType status ->
+            ( model, addMediaToProfile mediaType status loggedInUser )
 
         MediaAddedToProfile result ->
             case result of
@@ -467,26 +467,26 @@ recommendMedia recommenderUser recommendedUserID mediaType recommendation =
         }
 
 
-addMediaToProfile : MediaType -> Consumption.Status -> LoggedInUser -> WebData UserInfo -> Cmd Msg
-addMediaToProfile mediaType status loggedInUser userInfo =
+addMediaToProfile : MediaType -> Consumption.Status -> LoggedInUser -> Cmd Msg
+addMediaToProfile mediaType status loggedInUser =
     case mediaType of
         BookType book ->
             Http.post
-                { url = "http://localhost:5000/user/" ++ String.fromInt (getUserId userInfo) ++ "/media/book"
+                { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/book"
                 , body = Http.jsonBody (Book.encoderWithStatus book status)
                 , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
                 }
 
         MovieType movie ->
             Http.post
-                { url = "http://localhost:5000/user/" ++ String.fromInt (getUserId userInfo) ++ "/media/movie"
+                { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/movie"
                 , body = Http.jsonBody (Movie.encoderWithStatus movie status)
                 , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
                 }
 
         TVType tv ->
             Http.post
-                { url = "http://localhost:5000/user/" ++ String.fromInt (getUserId userInfo) ++ "/media/tv"
+                { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/tv"
                 , body = Http.jsonBody (TV.encoderWithStatus tv status)
                 , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
                 }
@@ -557,7 +557,7 @@ viewTabContent : Model -> WebData UserInfo -> Html Msg
 viewTabContent model profileUserInfo =
     case model.firstSelectedTab of
         RecommendationTab ->
-            viewRecommendations model.recommendedResults profileUserInfo
+            viewRecommendations model.recommendedResults
 
         MediaTab ->
             viewMedias model.filteredMediaResults model.friends profileUserInfo model.profileType
@@ -833,27 +833,27 @@ viewMediaDropdown profileUserInfo mediaType =
         case mediaType of
             BookType book ->
                 [ Html.button [ class "dropbtn-existing-status " ] [ Html.text (Book.maybeStatusAsString book.status) ]
-                , viewDropdownContent profileUserInfo (BookType book) "to read" "reading" "read" "abandon"
+                , viewDropdownContent (BookType book) "to read" "reading" "read" "abandon"
                 ]
 
             MovieType movie ->
                 [ Html.button [ class "dropbtn-existing-status " ] [ Html.text (Movie.maybeStatusAsString movie.status) ]
-                , viewDropdownContent profileUserInfo (MovieType movie) "to watch" "watching" "watched" "abandon"
+                , viewDropdownContent (MovieType movie) "to watch" "watching" "watched" "abandon"
                 ]
 
             TVType tv ->
                 [ Html.button [ class "dropbtn-existing-status " ] [ Html.text (TV.maybeStatusAsString tv.status) ]
-                , viewDropdownContent profileUserInfo (TVType tv) "to watch" "watching" "watched" "abandon"
+                , viewDropdownContent (TVType tv) "to watch" "watching" "watched" "abandon"
                 ]
 
 
-viewDropdownContent : WebData UserInfo -> MediaType -> String -> String -> String -> String -> Html Msg
-viewDropdownContent profileUserInfo mediaType wantToConsume consuming finished abandoned =
+viewDropdownContent : MediaType -> String -> String -> String -> String -> Html Msg
+viewDropdownContent mediaType wantToConsume consuming finished abandoned =
     Html.div [ class "dropdown-content" ]
-        [ Html.p [ Html.Events.onClick (AddMediaToProfile mediaType WantToConsume profileUserInfo) ] [ Html.text wantToConsume ]
-        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Consuming profileUserInfo) ] [ Html.text consuming ]
-        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Finished profileUserInfo) ] [ Html.text finished ]
-        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Abandoned profileUserInfo) ] [ Html.text abandoned ]
+        [ Html.p [ Html.Events.onClick (AddMediaToProfile mediaType WantToConsume) ] [ Html.text wantToConsume ]
+        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Consuming) ] [ Html.text consuming ]
+        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Finished) ] [ Html.text finished ]
+        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Abandoned) ] [ Html.text abandoned ]
         ]
 
 
@@ -909,8 +909,8 @@ viewMediaCover maybeCoverUrl =
             Html.div [ class "no-media" ] []
 
 
-viewRecommendations : WebData (List RecommendationType) -> WebData UserInfo -> Html Msg
-viewRecommendations recommendedMedia userInfo =
+viewRecommendations : WebData (List RecommendationType) -> Html Msg
+viewRecommendations recommendedMedia =
     case recommendedMedia of
         NotAsked ->
             Html.text "see your recommendations"
@@ -928,16 +928,16 @@ viewRecommendations recommendedMedia userInfo =
 
             else
                 Html.ul [ class "book-list" ]
-                    (List.map (viewRecommendedMedia userInfo) rec)
+                    (List.map viewRecommendedMedia rec)
 
 
-viewRecommendedMedia : WebData UserInfo -> RecommendationType -> Html Msg
-viewRecommendedMedia userInfo recommendationType =
-    viewRecommendationType recommendationType userInfo
+viewRecommendedMedia : RecommendationType -> Html Msg
+viewRecommendedMedia recommendationType =
+    viewRecommendationType recommendationType
 
 
-viewRecommendationType : RecommendationType -> WebData UserInfo -> Html Msg
-viewRecommendationType recommendationType userInfo =
+viewRecommendationType : RecommendationType -> Html Msg
+viewRecommendationType recommendationType =
     case recommendationType of
         RecToUserType recommendedMedia ->
             case recommendedMedia.media of
@@ -948,7 +948,7 @@ viewRecommendationType recommendationType userInfo =
                             , Html.div [ class "media-info" ]
                                 [ Html.i [] [ Html.text (recommendedMedia.recommenderFullName ++ " recommends...") ]
                                 , viewBookDetails book
-                                , viewRecommendedMediaDropdown userInfo (BookType book)
+                                , viewRecommendedMediaDropdown (BookType book)
                                 ]
                             ]
                         ]
@@ -960,7 +960,7 @@ viewRecommendationType recommendationType userInfo =
                             , Html.div [ class "media-info" ]
                                 [ Html.i [] [ Html.text (recommendedMedia.recommenderFullName ++ " recommends...") ]
                                 , viewMovieDetails movie
-                                , viewRecommendedMediaDropdown userInfo (MovieType movie)
+                                , viewRecommendedMediaDropdown (MovieType movie)
                                 ]
                             ]
                         ]
@@ -972,7 +972,7 @@ viewRecommendationType recommendationType userInfo =
                             , Html.div [ class "media-info" ]
                                 [ Html.i [] [ Html.text (recommendedMedia.recommenderFullName ++ " recommends...") ]
                                 , viewTVDetails tv
-                                , viewRecommendedMediaDropdown userInfo (TVType tv)
+                                , viewRecommendedMediaDropdown (TVType tv)
                                 ]
                             ]
                         ]
@@ -1014,15 +1014,15 @@ viewRecommendationType recommendationType userInfo =
                         ]
 
 
-viewRecommendedMediaDropdown : WebData UserInfo -> MediaType -> Html Msg
-viewRecommendedMediaDropdown userInfo mediaType =
+viewRecommendedMediaDropdown : MediaType -> Html Msg
+viewRecommendedMediaDropdown mediaType =
     Html.div [ class "dropdown" ] <|
         case mediaType of
             BookType book ->
                 case book.status of
                     Nothing ->
                         [ Html.button [ class "dropbtn" ] [ Html.text "Add Book >>" ]
-                        , viewDropdownContent userInfo (BookType book) "to read" "reading" "read" "abandon"
+                        , viewDropdownContent (BookType book) "to read" "reading" "read" "abandon"
                         ]
 
                     Just status ->
@@ -1032,7 +1032,7 @@ viewRecommendedMediaDropdown userInfo mediaType =
                 case movie.status of
                     Nothing ->
                         [ Html.button [ class "dropbtn" ] [ Html.text "Add Movie >>" ]
-                        , viewDropdownContent userInfo (MovieType movie) "to watch" "watching" "watched" "abandon"
+                        , viewDropdownContent (MovieType movie) "to watch" "watching" "watched" "abandon"
                         ]
 
                     Just status ->
@@ -1042,7 +1042,7 @@ viewRecommendedMediaDropdown userInfo mediaType =
                 case tv.status of
                     Nothing ->
                         [ Html.button [ class "dropbtn" ] [ Html.text "Add TV Show >>" ]
-                        , viewDropdownContent userInfo (TVType tv) "to watch" "watching" "watched" "abandon"
+                        , viewDropdownContent (TVType tv) "to watch" "watching" "watched" "abandon"
                         ]
 
                     Just status ->
