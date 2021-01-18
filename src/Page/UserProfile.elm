@@ -574,10 +574,10 @@ viewTabContent model profileUserInfo =
                     viewFriends model.friends
 
                 ( _, _ ) ->
-                    Html.text "something went wrong"
+                    Html.div [ class "page-text" ] [ Html.text "something went wrong" ]
 
         _ ->
-            Html.div [] [ Html.text "select a tab and start exploring!" ]
+            Html.div [ class "page-text" ] [ Html.text "select a tab and start exploring!" ]
 
 
 viewMediaTabRow : Model -> Html Msg
@@ -640,18 +640,18 @@ viewFriends : WebData (List UserInfo) -> Html Msg
 viewFriends friends =
     case friends of
         NotAsked ->
-            Html.text "you want friends"
+            Html.div [ class "page-text" ] [ Html.text "you want friends" ]
 
         Loading ->
-            Html.text "looking for friends!"
+            Html.div [ class "page-text" ] [ Html.text "looking for friends!" ]
 
         Failure error ->
             -- TODO show better error!
-            Html.text "something went wrong"
+            Html.div [ class "page-text" ] [ Html.text "something went wrong" ]
 
         Success users ->
             if List.isEmpty users then
-                Html.text "no friends..."
+                Html.div [ class "page-text" ] [ Html.text "no friends..." ]
 
             else
                 Html.ul []
@@ -913,18 +913,18 @@ viewRecommendations : WebData (List RecommendationType) -> Html Msg
 viewRecommendations recommendedMedia =
     case recommendedMedia of
         NotAsked ->
-            Html.text "see your recommendations"
+            Html.div [ class "page-text" ] [ Html.text "see your recommendations" ]
 
         Loading ->
-            Html.text "entering the database!"
+            Html.div [ class "page-text" ] [ Html.text "entering the database!" ]
 
         Failure error ->
             -- TODO show better error!
-            Html.text "something went wrong"
+            Html.div [ class "page-text" ] [ Html.text "something went wrong" ]
 
         Success rec ->
             if List.isEmpty rec then
-                Html.text "no recommendations..."
+                Html.div [ class "page-text" ] [ Html.text "no recommendations..." ]
 
             else
                 Html.ul [ class "book-list" ]
