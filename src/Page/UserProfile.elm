@@ -204,7 +204,7 @@ update loggedInUser msg model =
 
         MediaAddedToProfile result ->
             case result of
-                Ok consumption ->
+                Ok _ ->
                     case ( model.profileType, model.mediaSelectedTab ) of
                         ( LoggedInUserProfile, BookTab ) ->
                             ( model, searchUserBooks loggedInUser loggedInUser.userInfo.goodTimesId )
@@ -261,7 +261,7 @@ update loggedInUser msg model =
                     case friendshipTab of
                         ExistingFriendsTab ->
                             ( new_model
-                            , getExistingFriends loggedInUser Nothing
+                            , getExistingFriends loggedInUser loggedInUser.userInfo.goodTimesId
                             )
 
                         RequestedFriendsTab ->
@@ -273,8 +273,20 @@ update loggedInUser msg model =
                             ( model, Cmd.none )
 
                 FriendProfile ->
-                    ( model
-                    , getExistingFriends loggedInUser (Just (getUserId model.profileUser))
+                    let
+                        new_model =
+                            { model
+                                | firstSelectedTab = FriendsTab
+                                , mediaSelectedTab = NoMediaTab
+                                , consumptionSelectedTab = NoConsumptionTab
+                                , recommendationSelectedTab = NoRecommendationTab
+                                , friendshipSelectedTab = NoFriendshipTab
+                                , overlapSelectedTab = NoOverlapTab
+                                , friends = Loading
+                            }
+                    in
+                    ( new_model
+                    , getExistingFriends loggedInUser (getUserId model.profileUser)
                     )
 
                 _ ->
@@ -288,7 +300,7 @@ update loggedInUser msg model =
                             | profileType = LoggedInUserProfile
                             , profileUser = Success user
                           }
-                        , getExistingFriends loggedInUser Nothing
+                        , getExistingFriends loggedInUser loggedInUser.userInfo.goodTimesId
                         )
 
                     else
@@ -405,20 +417,12 @@ getUser userID =
         }
 
 
-getExistingFriends : LoggedInUser -> Maybe Int -> Cmd Msg
+getExistingFriends : LoggedInUser -> Int -> Cmd Msg
 getExistingFriends loggedInUser userId =
-    case userId of
-        Just id ->
-            Http.get
-                { url = "http://localhost:5000/user/" ++ String.fromInt id ++ "/friends"
-                , expect = Http.expectJson FriendResponse (Decode.list userInfoDecoder)
-                }
-
-        Nothing ->
-            Http.get
-                { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/friends"
-                , expect = Http.expectJson FriendResponse (Decode.list userInfoDecoder)
-                }
+    Http.get
+        { url = "http://localhost:5000/user/" ++ String.fromInt userId ++ "/friends"
+        , expect = Http.expectJson FriendResponse (Decode.list userInfoDecoder)
+        }
 
 
 getFriendRequests : LoggedInUser -> Cmd Msg
@@ -559,14 +563,17 @@ viewTabContent model userInfo =
             viewMedias model.filteredMediaResults model.friends userInfo
 
         FriendsTab ->
-            case model.friendshipSelectedTab of
-                ExistingFriendsTab ->
+            case ( model.profileType, model.friendshipSelectedTab ) of
+                ( LoggedInUserProfile, ExistingFriendsTab ) ->
                     viewFriends model.friends
 
-                RequestedFriendsTab ->
+                ( LoggedInUserProfile, RequestedFriendsTab ) ->
                     viewFriendRequests model.friends
 
-                _ ->
+                ( FriendProfile, _ ) ->
+                    viewFriends model.friends
+
+                ( _, _ ) ->
                     Html.text "something went wrong"
 
         _ ->
