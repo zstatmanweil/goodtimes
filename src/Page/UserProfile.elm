@@ -13,7 +13,7 @@ import Recommendation exposing (RecommendationType(..), RecommendedByUserMedia, 
 import RemoteData exposing (RemoteData(..), WebData)
 import Skeleton
 import TV exposing (TV)
-import User exposing (FriendLink, FriendStatus(..), LoggedInUser, UserInfo, friendLinkDecoder, friendLinkEncoder, getUserFullName, getUserId, userInfoDecoder)
+import User exposing (FriendLink, FriendStatus(..), LoggedInUser, Profile(..), UserInfo, friendLinkDecoder, friendLinkEncoder, getUserId, userInfoDecoder)
 
 
 
@@ -22,6 +22,7 @@ import User exposing (FriendLink, FriendStatus(..), LoggedInUser, UserInfo, frie
 
 type alias Model =
     { profileUser : WebData UserInfo
+    , profileType : Profile
     , friends : WebData (List UserInfo)
     , searchResults : WebData (List MediaType)
     , filteredMediaResults : WebData (List MediaType)
@@ -31,6 +32,7 @@ type alias Model =
     , consumptionSelectedTab : ConsumptionTabSelection
     , recommendationSelectedTab : RecommendationTabSelection
     , friendshipSelectedTab : FriendshipTabSelection
+    , overlapSelectedTab : OverlapTabSelection
     }
 
 
@@ -57,6 +59,7 @@ type Msg
 init : Int -> ( Model, Cmd Msg )
 init userID =
     ( { profileUser = NotAsked
+      , profileType = NoProfile
       , friends = NotAsked
       , searchResults = NotAsked
       , filteredMediaResults = NotAsked
@@ -66,6 +69,7 @@ init userID =
       , consumptionSelectedTab = NoConsumptionTab
       , recommendationSelectedTab = NoRecommendationTab
       , friendshipSelectedTab = NoFriendshipTab
+      , overlapSelectedTab = NoOverlapTab
       }
     , getUser userID
     )
@@ -85,6 +89,7 @@ update loggedInUser msg model =
                 , mediaSelectedTab = NoSelectedMediaTab
                 , friendshipSelectedTab = NoFriendshipTab
                 , recommendationSelectedTab = NoRecommendationTab
+                , consumptionSelectedTab = NoConsumptionTab
               }
             , Cmd.none
             )
@@ -92,32 +97,68 @@ update loggedInUser msg model =
         SearchBasedOnMediaTab mediaTabSelection ->
             case model.firstSelectedTab of
                 MediaTab ->
-                    let
-                        new_model =
-                            { model
-                                | mediaSelectedTab = mediaTabSelection
-                                , consumptionSelectedTab = AllTab
-                                , recommendationSelectedTab = NoRecommendationTab
-                                , friendshipSelectedTab = NoFriendshipTab
-                            }
-                    in
-                    case mediaTabSelection of
-                        BookTab ->
-                            ( new_model
-                            , searchUserBooks loggedInUser
-                            )
+                    case model.profileType of
+                        LoggedInUserProfile ->
+                            let
+                                new_model =
+                                    { model
+                                        | mediaSelectedTab = mediaTabSelection
+                                        , consumptionSelectedTab = AllTab
+                                        , recommendationSelectedTab = NoRecommendationTab
+                                        , friendshipSelectedTab = NoFriendshipTab
+                                        , overlapSelectedTab = NoOverlapTab
+                                    }
+                            in
+                            case mediaTabSelection of
+                                BookTab ->
+                                    ( new_model
+                                    , searchUserBooks loggedInUser Nothing
+                                    )
 
-                        MovieTab ->
-                            ( new_model
-                            , searchUserMovies loggedInUser
-                            )
+                                MovieTab ->
+                                    ( new_model
+                                    , searchUserMovies loggedInUser Nothing
+                                    )
 
-                        TVTab ->
-                            ( new_model
-                            , searchUserTV loggedInUser
-                            )
+                                TVTab ->
+                                    ( new_model
+                                    , searchUserTV loggedInUser Nothing
+                                    )
 
-                        _ ->
+                                _ ->
+                                    ( model, Cmd.none )
+
+                        FriendProfile ->
+                            let
+                                new_model =
+                                    { model
+                                        | mediaSelectedTab = mediaTabSelection
+                                        , consumptionSelectedTab = AllTab
+                                        , recommendationSelectedTab = NoRecommendationTab
+                                        , friendshipSelectedTab = NoFriendshipTab
+                                        , overlapSelectedTab = NoOverlapTab
+                                    }
+                            in
+                            case mediaTabSelection of
+                                BookTab ->
+                                    ( new_model
+                                    , searchUserBooks loggedInUser (Just (getUserId model.profileUser))
+                                    )
+
+                                MovieTab ->
+                                    ( new_model
+                                    , searchUserMovies loggedInUser (Just (getUserId model.profileUser))
+                                    )
+
+                                TVTab ->
+                                    ( new_model
+                                    , searchUserTV loggedInUser (Just (getUserId model.profileUser))
+                                    )
+
+                                _ ->
+                                    ( model, Cmd.none )
+
+                        NoProfile ->
                             ( model, Cmd.none )
 
                 RecommendationTab ->
@@ -166,13 +207,13 @@ update loggedInUser msg model =
                 Ok consumption ->
                     case model.mediaSelectedTab of
                         BookTab ->
-                            ( model, searchUserBooks loggedInUser )
+                            ( model, searchUserBooks loggedInUser Nothing )
 
                         MovieTab ->
-                            ( model, searchUserMovies loggedInUser )
+                            ( model, searchUserMovies loggedInUser Nothing )
 
                         TVTab ->
-                            ( model, searchUserTV loggedInUser )
+                            ( model, searchUserTV loggedInUser Nothing )
 
                         _ ->
                             ( model, Cmd.none )
@@ -223,12 +264,22 @@ update loggedInUser msg model =
             case userResponse of
                 Ok user ->
                     if loggedInUser.userInfo.goodTimesId == user.goodTimesId then
-                        ( { model | profileUser = Success user }, getExistingFriends loggedInUser )
+                        ( { model
+                            | profileType = LoggedInUserProfile
+                            , profileUser = Success user
+                          }
+                        , getExistingFriends loggedInUser
+                        )
 
                     else
                         -- TODO: command here should be something like get if profile user is friends with logged in user,
                         -- of if friendship has been requested
-                        ( { model | profileUser = Success user }, Cmd.none )
+                        ( { model
+                            | profileType = FriendProfile
+                            , profileUser = Success user
+                          }
+                        , Cmd.none
+                        )
 
                 -- TODO: handle error
                 Err resp ->
@@ -302,28 +353,52 @@ update loggedInUser msg model =
             ( model, Cmd.none )
 
 
-searchUserBooks : LoggedInUser -> Cmd Msg
-searchUserBooks loggedInUser =
-    Http.get
-        { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/book"
-        , expect = Http.expectJson MediaResponse (Decode.list (Media.bookToMediaDecoder Book.decoder))
-        }
+searchUserBooks : LoggedInUser -> Maybe Int -> Cmd Msg
+searchUserBooks loggedInUser userId =
+    case userId of
+        Just id ->
+            Http.get
+                { url = "http://localhost:5000/user/" ++ String.fromInt id ++ "/media/book"
+                , expect = Http.expectJson MediaResponse (Decode.list (Media.bookToMediaDecoder Book.decoder))
+                }
+
+        Nothing ->
+            Http.get
+                { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/book"
+                , expect = Http.expectJson MediaResponse (Decode.list (Media.bookToMediaDecoder Book.decoder))
+                }
 
 
-searchUserMovies : LoggedInUser -> Cmd Msg
-searchUserMovies loggedInUser =
-    Http.get
-        { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/movie"
-        , expect = Http.expectJson MediaResponse (Decode.list (Media.movieToMediaDecoder Movie.decoder))
-        }
+searchUserMovies : LoggedInUser -> Maybe Int -> Cmd Msg
+searchUserMovies loggedInUser userId =
+    case userId of
+        Just id ->
+            Http.get
+                { url = "http://localhost:5000/user/" ++ String.fromInt id ++ "/media/movie"
+                , expect = Http.expectJson MediaResponse (Decode.list (Media.movieToMediaDecoder Movie.decoder))
+                }
+
+        Nothing ->
+            Http.get
+                { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/book"
+                , expect = Http.expectJson MediaResponse (Decode.list (Media.movieToMediaDecoder Movie.decoder))
+                }
 
 
-searchUserTV : LoggedInUser -> Cmd Msg
-searchUserTV loggedInUser =
-    Http.get
-        { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/tv"
-        , expect = Http.expectJson MediaResponse (Decode.list (Media.tvToMediaDecoder TV.decoder))
-        }
+searchUserTV : LoggedInUser -> Maybe Int -> Cmd Msg
+searchUserTV loggedInUser userId =
+    case userId of
+        Just id ->
+            Http.get
+                { url = "http://localhost:5000/user/" ++ String.fromInt id ++ "/media/tv"
+                , expect = Http.expectJson MediaResponse (Decode.list (Media.tvToMediaDecoder TV.decoder))
+                }
+
+        Nothing ->
+            Http.get
+                { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/tv"
+                , expect = Http.expectJson MediaResponse (Decode.list (Media.tvToMediaDecoder TV.decoder))
+                }
 
 
 getUser : Int -> Cmd Msg
@@ -427,27 +502,47 @@ view loggedInUser model =
 
 body : LoggedInUser -> Model -> Html Msg
 body loggedInUser model =
-    if loggedInUser.userInfo.goodTimesId == getUserId model.profileUser then
-        Html.main_ [ class "content" ]
-            [ Html.div [ id "content-wrap" ]
-                [ Html.div [ id "user-profile" ] [ Html.text ("welcome " ++ String.toLower loggedInUser.userInfo.fullName ++ "!") ]
-                , Html.div [ class "tab" ]
-                    [ createFirstTab model MediaTab "my media"
-                    , createFirstTab model RecommendationTab "recommendations"
-                    , createFirstTab model FriendsTab "friends"
+    case model.profileType of
+        LoggedInUserProfile ->
+            Html.main_ [ class "content" ]
+                [ Html.div [ id "content-wrap" ]
+                    [ Html.div [ id "user-profile" ] [ Html.text ("welcome " ++ String.toLower loggedInUser.userInfo.fullName ++ "!") ]
+                    , Html.div [ class "tab" ]
+                        [ createFirstTab model MediaTab "my media"
+                        , createFirstTab model RecommendationTab "recommendations"
+                        , createFirstTab model FriendsTab "friends"
+                        ]
+                    , viewFriendshipTabRow model
+                    , viewRecommendationTabRow model
+                    , viewMediaTabRow model
+                    , viewConsumptionTabRow model
+                    , Html.div [ class "results" ]
+                        [ viewTabContent model ]
                     ]
-                , viewFriendshipTabRow model
-                , viewRecommendationTabRow model
-                , viewMediaTabRow model
-                , viewConsumptionTabRow model
-                , Html.div [ class "results" ]
-                    [ viewTabContent model ]
                 ]
-            ]
 
-    else
-        Html.main_ [ class "content" ]
-            [ Html.div [ id "content-wrap" ] [ Html.text "here is another user!" ] ]
+        FriendProfile ->
+            Html.main_ [ class "content" ]
+                [ Html.div [ id "content-wrap" ]
+                    [ Html.div [ id "user-profile" ] [ Html.text (String.toLower (User.getUserFullName model.profileUser) ++ "'s profile!") ]
+                    , Html.div [ class "tab" ]
+                        [ createFirstTab model MediaTab (User.getUserFirstName model.profileUser ++ "'s media")
+                        , createFirstTab model OverlapTab "overlapping media"
+                        , createFirstTab model RecommendationTab "recommendations"
+                        , createFirstTab model FriendsTab "friends"
+                        ]
+                    , viewFriendshipTabRow model
+                    , viewRecommendationTabRow model
+                    , viewMediaTabRow model
+                    , viewConsumptionTabRow model
+                    , Html.div [ class "results" ]
+                        [ viewTabContent model ]
+                    ]
+                ]
+
+        NoProfile ->
+            Html.main_ [ class "content" ]
+                [ Html.div [ id "content-wrap" ] [ Html.text "something is up" ] ]
 
 
 viewTabContent : Model -> Html Msg
@@ -609,7 +704,7 @@ viewMedias : WebData (List MediaType) -> WebData (List UserInfo) -> Html Msg
 viewMedias receivedMedia friends =
     case receivedMedia of
         NotAsked ->
-            Html.div [ class "page-text" ] [ Html.text "select a media type to see what you are tracking" ]
+            Html.div [ class "page-text" ] [ Html.text "select a media type" ]
 
         Loading ->
             Html.div [ class "page-text" ] [ Html.text "entering the database!" ]
@@ -941,6 +1036,7 @@ type FirstTabSelection
     = MediaTab
     | RecommendationTab
     | FriendsTab
+    | OverlapTab
     | NoFirstTab
 
 
@@ -971,6 +1067,10 @@ type FriendshipTabSelection
     = RequestedFriendsTab
     | ExistingFriendsTab
     | NoFriendshipTab
+
+
+type OverlapTabSelection
+    = NoOverlapTab
 
 
 mediaTabSelectionToString : MediaTabSelection -> String

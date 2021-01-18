@@ -96,6 +96,23 @@ getUserFullName user =
             u.fullName
 
 
+getUserFirstName : WebData UserInfo -> String
+getUserFirstName user =
+    case user of
+        NotAsked ->
+            "no user"
+
+        Loading ->
+            "friend"
+
+        Failure error ->
+            -- TODO show better error!
+            "something went wrong"
+
+        Success u ->
+            u.firstName
+
+
 getUserId : WebData UserInfo -> Int
 getUserId user =
     case user of
@@ -228,3 +245,9 @@ userWithStatusDecoder =
         (Decode.field "last_name" Decode.string)
         (Decode.field "email" Decode.string)
         (Decode.maybe (Decode.field "status" friendStatusDecoder))
+
+
+type Profile
+    = NoProfile
+    | LoggedInUserProfile
+    | FriendProfile
