@@ -663,7 +663,7 @@ viewFriend user =
     Html.li []
         [ Html.div [ class "user-card" ]
             [ Html.div [ class "user-info" ]
-                [ Html.b [] [ Html.text (user.firstName ++ " " ++ user.lastName) ]
+                [ Html.a [ Attr.href (String.fromInt user.goodTimesId) ] [ Html.text (String.toLower (user.firstName ++ " " ++ user.lastName)) ]
                 , Html.text user.email
                 ]
             ]
