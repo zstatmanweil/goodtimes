@@ -609,18 +609,18 @@ viewMedias : WebData (List MediaType) -> WebData (List UserInfo) -> Html Msg
 viewMedias receivedMedia friends =
     case receivedMedia of
         NotAsked ->
-            Html.text "select a media type to see what you are tracking"
+            Html.div [ class "page-text" ] [ Html.text "select a media type to see what you are tracking" ]
 
         Loading ->
-            Html.text "entering the database!"
+            Html.div [ class "page-text" ] [ Html.text "entering the database!" ]
 
         Failure error ->
             -- TODO show better error!
-            Html.text "something went wrong"
+            Html.div [ class "page-text" ] [ Html.text "something went wrong" ]
 
         Success media ->
             if List.isEmpty media then
-                Html.text "no results..."
+                Html.div [ class "page-text" ] [ Html.text "no results..." ]
 
             else
                 Html.ul [ class "book-list" ]
