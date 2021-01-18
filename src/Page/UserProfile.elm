@@ -310,7 +310,7 @@ update loggedInUser msg model =
                             | profileType = FriendProfile
                             , profileUser = Success user
                           }
-                        , Cmd.none
+                        , getExistingFriends loggedInUser loggedInUser.userInfo.goodTimesId
                         )
 
                 -- TODO: handle error
@@ -560,7 +560,7 @@ viewTabContent model userInfo =
             viewRecommendations model.recommendedResults userInfo
 
         MediaTab ->
-            viewMedias model.filteredMediaResults model.friends userInfo
+            viewMedias model.filteredMediaResults model.friends userInfo model.profileType
 
         FriendsTab ->
             case ( model.profileType, model.friendshipSelectedTab ) of
@@ -716,8 +716,8 @@ viewAcceptFriendButton user =
         ]
 
 
-viewMedias : WebData (List MediaType) -> WebData (List UserInfo) -> WebData UserInfo -> Html Msg
-viewMedias receivedMedia friends userInfo =
+viewMedias : WebData (List MediaType) -> WebData (List UserInfo) -> WebData UserInfo -> Profile -> Html Msg
+viewMedias receivedMedia friends userInfo profileType =
     case receivedMedia of
         NotAsked ->
             Html.div [ class "page-text" ] [ Html.text "select a media type" ]
@@ -735,11 +735,11 @@ viewMedias receivedMedia friends userInfo =
 
             else
                 Html.ul [ class "book-list" ]
-                    (List.map (viewMediaType friends userInfo) (List.sortBy Media.getTitle media))
+                    (List.map (viewMediaType friends userInfo profileType) (List.sortBy Media.getTitle media))
 
 
-viewMediaType : WebData (List UserInfo) -> WebData UserInfo -> MediaType -> Html Msg
-viewMediaType friends userInfo mediaType =
+viewMediaType : WebData (List UserInfo) -> WebData UserInfo -> Profile -> MediaType -> Html Msg
+viewMediaType friends userInfo profileType mediaType =
     case mediaType of
         BookType book ->
             Html.li []
@@ -751,7 +751,7 @@ viewMediaType friends userInfo mediaType =
                             [ viewMediaDropdown userInfo (BookType book)
                             , Html.div
                                 [ class "media-recommend" ]
-                                [ viewFriendsToRecommendDropdown (BookType book) friends ]
+                                [ viewFriendsToRecommendDropdown profileType (BookType book) friends ]
                             ]
                         ]
                     ]
@@ -766,7 +766,7 @@ viewMediaType friends userInfo mediaType =
                         , Html.div [ class "media-status" ]
                             [ viewMediaDropdown userInfo (MovieType movie)
                             , Html.div [ class "media-recommend" ]
-                                [ viewFriendsToRecommendDropdown (MovieType movie) friends ]
+                                [ viewFriendsToRecommendDropdown profileType (MovieType movie) friends ]
                             ]
                         ]
                     ]
@@ -781,7 +781,7 @@ viewMediaType friends userInfo mediaType =
                         , Html.div [ class "media-status" ]
                             [ viewMediaDropdown userInfo (TVType tv)
                             , Html.div [ class "media-recommend" ]
-                                [ viewFriendsToRecommendDropdown (TVType tv) friends ]
+                                [ viewFriendsToRecommendDropdown profileType (TVType tv) friends ]
                             ]
                         ]
                     ]
@@ -857,8 +857,8 @@ viewDropdownContent userInfo mediaType wantToConsume consuming finished abandone
         ]
 
 
-viewFriendsToRecommendDropdown : MediaType -> WebData (List UserInfo) -> Html Msg
-viewFriendsToRecommendDropdown mediaType userFriends =
+viewFriendsToRecommendDropdown : Profile -> MediaType -> WebData (List UserInfo) -> Html Msg
+viewFriendsToRecommendDropdown profileType mediaType userFriends =
     case userFriends of
         NotAsked ->
             Html.text ""
@@ -871,19 +871,25 @@ viewFriendsToRecommendDropdown mediaType userFriends =
             Html.text "something went wrong"
 
         Success friends ->
-            if List.isEmpty friends then
-                Html.div [ class "dropdown" ] <|
-                    [ Html.button [ class "dropbtn" ] [ Html.text "recommend >>" ]
-                    , Html.div [ class "dropdown-content" ]
-                        [ Html.a [ Attr.href "/search/users" ] [ Html.text "find friends to recommend!" ] ]
-                    ]
+            case profileType of
+                LoggedInUserProfile ->
+                    if List.isEmpty friends then
+                        Html.div [ class "dropdown" ] <|
+                            [ Html.button [ class "dropbtn" ] [ Html.text "recommend >>" ]
+                            , Html.div [ class "dropdown-content" ]
+                                --TODO: reformat the css so this doesn't look like alink
+                                [ Html.a [ Attr.href "/search/users" ] [ Html.text "find friends to recommend!" ] ]
+                            ]
 
-            else
-                Html.div [ class "dropdown" ] <|
-                    [ Html.button [ class "dropbtn" ] [ Html.text "recommend >>" ]
-                    , Html.div [ class "dropdown-content" ]
-                        (List.map (viewFriendFullName mediaType) (List.sortBy .fullName friends))
-                    ]
+                    else
+                        Html.div [ class "dropdown" ] <|
+                            [ Html.button [ class "dropbtn" ] [ Html.text "recommend >>" ]
+                            , Html.div [ class "dropdown-content" ]
+                                (List.map (viewFriendFullName mediaType) (List.sortBy .fullName friends))
+                            ]
+
+                _ ->
+                    Html.div [] []
 
 
 viewFriendFullName : MediaType -> UserInfo -> Html Msg
