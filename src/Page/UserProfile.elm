@@ -199,8 +199,8 @@ update loggedInUser msg model =
             , Cmd.none
             )
 
-        AddMediaToProfile mediaType status userInfo ->
-            ( model, addMediaToProfile mediaType status loggedInUser userInfo )
+        AddMediaToProfile mediaType status profileUserInfo ->
+            ( model, addMediaToProfile mediaType status loggedInUser profileUserInfo )
 
         MediaAddedToProfile result ->
             case result of
@@ -554,13 +554,13 @@ body loggedInUser model =
 
 
 viewTabContent : Model -> WebData UserInfo -> Html Msg
-viewTabContent model userInfo =
+viewTabContent model profileUserInfo =
     case model.firstSelectedTab of
         RecommendationTab ->
-            viewRecommendations model.recommendedResults userInfo
+            viewRecommendations model.recommendedResults profileUserInfo
 
         MediaTab ->
-            viewMedias model.filteredMediaResults model.friends userInfo model.profileType
+            viewMedias model.filteredMediaResults model.friends profileUserInfo model.profileType
 
         FriendsTab ->
             case ( model.profileType, model.friendshipSelectedTab ) of
@@ -739,7 +739,7 @@ viewMedias receivedMedia friends userInfo profileType =
 
 
 viewMediaType : WebData (List UserInfo) -> WebData UserInfo -> Profile -> MediaType -> Html Msg
-viewMediaType friends userInfo profileType mediaType =
+viewMediaType friends profileUserInfo profileType mediaType =
     case mediaType of
         BookType book ->
             Html.li []
@@ -748,7 +748,7 @@ viewMediaType friends userInfo profileType mediaType =
                     , Html.div [ class "media-info" ]
                         [ viewBookDetails book
                         , Html.div [ class "media-status" ]
-                            [ viewMediaDropdown userInfo (BookType book)
+                            [ viewMediaDropdown profileUserInfo (BookType book)
                             , Html.div
                                 [ class "media-recommend" ]
                                 [ viewFriendsToRecommendDropdown profileType (BookType book) friends ]
@@ -764,7 +764,7 @@ viewMediaType friends userInfo profileType mediaType =
                     , Html.div [ class "media-info" ]
                         [ viewMovieDetails movie
                         , Html.div [ class "media-status" ]
-                            [ viewMediaDropdown userInfo (MovieType movie)
+                            [ viewMediaDropdown profileUserInfo (MovieType movie)
                             , Html.div [ class "media-recommend" ]
                                 [ viewFriendsToRecommendDropdown profileType (MovieType movie) friends ]
                             ]
@@ -779,7 +779,7 @@ viewMediaType friends userInfo profileType mediaType =
                     , Html.div [ class "media-info" ]
                         [ viewTVDetails tv
                         , Html.div [ class "media-status" ]
-                            [ viewMediaDropdown userInfo (TVType tv)
+                            [ viewMediaDropdown profileUserInfo (TVType tv)
                             , Html.div [ class "media-recommend" ]
                                 [ viewFriendsToRecommendDropdown profileType (TVType tv) friends ]
                             ]
@@ -828,32 +828,32 @@ viewTVDetails tv =
 
 
 viewMediaDropdown : WebData UserInfo -> MediaType -> Html Msg
-viewMediaDropdown userInfo mediaType =
+viewMediaDropdown profileUserInfo mediaType =
     Html.div [ class "dropdown" ] <|
         case mediaType of
             BookType book ->
                 [ Html.button [ class "dropbtn-existing-status " ] [ Html.text (Book.maybeStatusAsString book.status) ]
-                , viewDropdownContent userInfo (BookType book) "to read" "reading" "read" "abandon"
+                , viewDropdownContent profileUserInfo (BookType book) "to read" "reading" "read" "abandon"
                 ]
 
             MovieType movie ->
                 [ Html.button [ class "dropbtn-existing-status " ] [ Html.text (Movie.maybeStatusAsString movie.status) ]
-                , viewDropdownContent userInfo (MovieType movie) "to watch" "watching" "watched" "abandon"
+                , viewDropdownContent profileUserInfo (MovieType movie) "to watch" "watching" "watched" "abandon"
                 ]
 
             TVType tv ->
                 [ Html.button [ class "dropbtn-existing-status " ] [ Html.text (TV.maybeStatusAsString tv.status) ]
-                , viewDropdownContent userInfo (TVType tv) "to watch" "watching" "watched" "abandon"
+                , viewDropdownContent profileUserInfo (TVType tv) "to watch" "watching" "watched" "abandon"
                 ]
 
 
 viewDropdownContent : WebData UserInfo -> MediaType -> String -> String -> String -> String -> Html Msg
-viewDropdownContent userInfo mediaType wantToConsume consuming finished abandoned =
+viewDropdownContent profileUserInfo mediaType wantToConsume consuming finished abandoned =
     Html.div [ class "dropdown-content" ]
-        [ Html.p [ Html.Events.onClick (AddMediaToProfile mediaType WantToConsume userInfo) ] [ Html.text wantToConsume ]
-        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Consuming userInfo) ] [ Html.text consuming ]
-        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Finished userInfo) ] [ Html.text finished ]
-        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Abandoned userInfo) ] [ Html.text abandoned ]
+        [ Html.p [ Html.Events.onClick (AddMediaToProfile mediaType WantToConsume profileUserInfo) ] [ Html.text wantToConsume ]
+        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Consuming profileUserInfo) ] [ Html.text consuming ]
+        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Finished profileUserInfo) ] [ Html.text finished ]
+        , Html.p [ Html.Events.onClick (AddMediaToProfile mediaType Abandoned profileUserInfo) ] [ Html.text abandoned ]
         ]
 
 
@@ -877,7 +877,7 @@ viewFriendsToRecommendDropdown profileType mediaType userFriends =
                         Html.div [ class "dropdown" ] <|
                             [ Html.button [ class "dropbtn" ] [ Html.text "recommend >>" ]
                             , Html.div [ class "dropdown-content" ]
-                                --TODO: reformat the css so this doesn't look like alink
+                                --TODO: make this onClick Event
                                 [ Html.a [ Attr.href "/search/users" ] [ Html.text "find friends to recommend!" ] ]
                             ]
 
