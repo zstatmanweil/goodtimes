@@ -24,7 +24,8 @@ import User exposing (FriendLink, FriendStatus(..), LoggedInUser, Profile(..), U
 type alias Model =
     { profileUser : WebData UserInfo
     , profileType : Profile
-    , friends : WebData (List UserInfo)
+    , loggedInUserFriends : WebData (List UserInfo)
+    , profileUserFriends : WebData (List UserInfo)
     , searchResults : WebData (List MediaType)
     , filteredMediaResults : WebData (List MediaType)
     , recommendedResults : WebData (List RecommendationType)
@@ -63,7 +64,8 @@ init : Int -> ( Model, Cmd Msg )
 init userID =
     ( { profileUser = NotAsked
       , profileType = NoProfile
-      , friends = NotAsked
+      , loggedInUserFriends = NotAsked
+      , profileUserFriends = NotAsked
       , searchResults = NotAsked
       , filteredMediaResults = NotAsked
       , recommendedResults = NotAsked
@@ -299,7 +301,7 @@ update loggedInUser msg model =
                                 , consumptionSelectedTab = NoConsumptionTab
                                 , recommendationSelectedTab = NoRecommendationTab
                                 , friendshipSelectedTab = friendshipTab
-                                , friends = Loading
+                                , loggedInUserFriends = Loading
                             }
                     in
                     case friendshipTab of
@@ -325,7 +327,7 @@ update loggedInUser msg model =
                                 , consumptionSelectedTab = NoConsumptionTab
                                 , recommendationSelectedTab = NoRecommendationTab
                                 , friendshipSelectedTab = NoFriendshipTab
-                                , friends = Loading
+                                , profileUserFriends = Loading
                             }
                     in
                     ( new_model
@@ -363,7 +365,12 @@ update loggedInUser msg model =
         FriendResponse friendResponse ->
             case friendResponse of
                 Ok friends ->
-                    ( { model | friends = Success friends }, Cmd.none )
+                    case model.profileType of
+                        FriendProfile ->
+                            ( { model | profileUserFriends = Success friends }, Cmd.none )
+
+                        _ ->
+                            ( { model | loggedInUserFriends = Success friends }, Cmd.none )
 
                 -- TODO: handle error
                 Err resp ->
@@ -622,18 +629,18 @@ viewTabContent model profileUserInfo =
             viewRecommendations model.recommendedResults
 
         MediaTab ->
-            viewMedias model.filteredMediaResults model.friends profileUserInfo model.profileType
+            viewMedias model.filteredMediaResults model.loggedInUserFriends profileUserInfo model.profileType
 
         FriendsTab ->
             case ( model.profileType, model.friendshipSelectedTab ) of
                 ( LoggedInUserProfile, ExistingFriendsTab ) ->
-                    viewFriends model.friends
+                    viewFriends model.loggedInUserFriends
 
                 ( LoggedInUserProfile, RequestedFriendsTab ) ->
-                    viewFriendRequests model.friends
+                    viewFriendRequests model.loggedInUserFriends
 
                 ( FriendProfile, _ ) ->
-                    viewFriends model.friends
+                    viewFriends model.profileUserFriends
 
                 ( _, _ ) ->
                     Html.div [ class "page-text" ] [ Html.text "something went wrong" ]
@@ -977,17 +984,17 @@ viewFriendMediaStatus mediaType =
         case mediaType of
             BookType book ->
                 [ Html.button [ class "friend-media-existing-status-not-btn" ]
-                    [ Html.text ("friend's status: " ++ Book.maybeStatusAsString book.status ++ ">>") ]
+                    [ Html.text ("friend's status: " ++ Book.maybeStatusAsString book.status ++ " >>") ]
                 ]
 
             MovieType movie ->
                 [ Html.button [ class "friend-media-existing-status-not-btn" ]
-                    [ Html.text ("friend's status: " ++ Movie.maybeStatusAsString movie.status ++ ">>") ]
+                    [ Html.text ("friend's status: " ++ Movie.maybeStatusAsString movie.status ++ " >>") ]
                 ]
 
             TVType tv ->
                 [ Html.button [ class "friend-media-existing-status-not-btn" ]
-                    [ Html.text ("friend's status: " ++ TV.maybeStatusAsString tv.status ++ ">>") ]
+                    [ Html.text ("friend's status: " ++ TV.maybeStatusAsString tv.status ++ " >>") ]
                 ]
 
 
