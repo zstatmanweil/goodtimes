@@ -107,16 +107,36 @@
         padding-left: 8px;
     }
 
+    .media-buttons {
+        display: flex;
+        flex-direction: row;
+        margin-top: 6px;
+        font-weight: bold;
+    }
+
     .media-status {
         display: flex;
         flex-direction: row;
         color: theme.color('primary', 'base');
         top: 4px;
-        font-weight: bold
+        font-weight: bold;
+        margin-right: 10px;
     }
 
-    .media-recommend {
-        margin-left: 10px;
+    .media-existing-status-not-btn {
+      background-color: theme.color('scale', 'light');
+      color: theme.color('primary', 'base');
+      font-weight: bold;
+      padding: 5px;
+      border: 1px solid theme.color('primary', 'base');
+    }
+
+    .friend-media-existing-status-not-btn {
+      background-color: theme.color('scale', 'light');
+      color: theme.color('accent', 'base');
+      font-weight: bold;
+      padding: 5px;
+      border: 1px solid theme.color('accent', 'base');
     }
 }
 

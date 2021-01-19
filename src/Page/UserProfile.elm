@@ -9,6 +9,7 @@ import Http
 import Json.Decode as Decode
 import Media exposing (..)
 import Movie exposing (Movie)
+import Overlap exposing (OverlapMedia)
 import Recommendation exposing (RecommendationType(..), RecommendedByUserMedia, RecommendedToUserMedia, recByUserToRecTypeDecoder, recToUserToRecTypeDecoder, recommendedByUserMediaDecoder, recommendedToUserMediaDecoder)
 import RemoteData exposing (RemoteData(..), WebData)
 import Skeleton
@@ -27,18 +28,19 @@ type alias Model =
     , searchResults : WebData (List MediaType)
     , filteredMediaResults : WebData (List MediaType)
     , recommendedResults : WebData (List RecommendationType)
+    , overlapResults : WebData (List OverlapMedia)
+    , filteredOverlapResults : WebData (List OverlapMedia)
     , firstSelectedTab : FirstTabSelection
     , mediaSelectedTab : MediaTabSelection
     , consumptionSelectedTab : ConsumptionTabSelection
     , recommendationSelectedTab : RecommendationTabSelection
     , friendshipSelectedTab : FriendshipTabSelection
-    , overlapSelectedTab : OverlapTabSelection
     }
 
 
 type Msg
     = None
-    | AddMediaTabRow
+    | AddMediaTabRow FirstTabSelection
     | SearchBasedOnMediaTab MediaTabSelection
     | FilterBasedOnConsumptionTab ConsumptionTabSelection
     | AddMediaToProfile MediaType Consumption.Status
@@ -54,6 +56,7 @@ type Msg
     | Recommend MediaType UserInfo
     | RecommendationResponse (Result Http.Error Recommendation.Recommendation)
     | RecommendedMediaResponse (Result Http.Error (List RecommendationType))
+    | OverlapResponse (Result Http.Error (List OverlapMedia))
 
 
 init : Int -> ( Model, Cmd Msg )
@@ -64,12 +67,13 @@ init userID =
       , searchResults = NotAsked
       , filteredMediaResults = NotAsked
       , recommendedResults = NotAsked
+      , overlapResults = NotAsked
+      , filteredOverlapResults = NotAsked
       , firstSelectedTab = NoFirstTab
       , mediaSelectedTab = NoMediaTab
       , consumptionSelectedTab = NoConsumptionTab
       , recommendationSelectedTab = NoRecommendationTab
       , friendshipSelectedTab = NoFriendshipTab
-      , overlapSelectedTab = NoOverlapTab
       }
     , getUser userID
     )
@@ -82,10 +86,15 @@ init userID =
 update : LoggedInUser -> Msg -> Model -> ( Model, Cmd Msg )
 update loggedInUser msg model =
     case msg of
-        AddMediaTabRow ->
+        AddMediaTabRow firstTab ->
+            let
+                _ =
+                    Debug.log "making it to AddMediaTabRow" 0
+            in
             ( { model
                 | filteredMediaResults = NotAsked
-                , firstSelectedTab = MediaTab
+                , filteredOverlapResults = NotAsked
+                , firstSelectedTab = firstTab
                 , mediaSelectedTab = NoSelectedMediaTab
                 , friendshipSelectedTab = NoFriendshipTab
                 , recommendationSelectedTab = NoRecommendationTab
@@ -106,7 +115,6 @@ update loggedInUser msg model =
                                         , consumptionSelectedTab = AllTab
                                         , recommendationSelectedTab = NoRecommendationTab
                                         , friendshipSelectedTab = NoFriendshipTab
-                                        , overlapSelectedTab = NoOverlapTab
                                     }
                             in
                             case mediaTabSelection of
@@ -130,13 +138,15 @@ update loggedInUser msg model =
 
                         FriendProfile ->
                             let
+                                _ =
+                                    Debug.log "making it to SearchBasedOnTab, MediaTab" 0
+
                                 new_model =
                                     { model
                                         | mediaSelectedTab = mediaTabSelection
                                         , consumptionSelectedTab = AllTab
                                         , recommendationSelectedTab = NoRecommendationTab
                                         , friendshipSelectedTab = NoFriendshipTab
-                                        , overlapSelectedTab = NoOverlapTab
                                     }
                             in
                             case mediaTabSelection of
@@ -184,6 +194,38 @@ update loggedInUser msg model =
                         _ ->
                             ( model, Cmd.none )
 
+                OverlapTab ->
+                    let
+                        _ =
+                            Debug.log "making it to SearchBasedOnTab, OverlapTab" 1
+
+                        new_model =
+                            { model
+                                | mediaSelectedTab = mediaTabSelection
+                                , consumptionSelectedTab = AllTab
+                                , recommendationSelectedTab = NoRecommendationTab
+                                , friendshipSelectedTab = NoFriendshipTab
+                            }
+                    in
+                    case mediaTabSelection of
+                        BookTab ->
+                            ( new_model
+                            , getOverlappingMedia "book" loggedInUser (getUserId model.profileUser)
+                            )
+
+                        MovieTab ->
+                            ( new_model
+                            , getOverlappingMedia "movie" loggedInUser (getUserId model.profileUser)
+                            )
+
+                        TVTab ->
+                            ( new_model
+                            , getOverlappingMedia "tv" loggedInUser (getUserId model.profileUser)
+                            )
+
+                        _ ->
+                            ( model, Cmd.none )
+
                 _ ->
                     ( model, Cmd.none )
 
@@ -191,10 +233,14 @@ update loggedInUser msg model =
             let
                 filteredMedia =
                     RemoteData.map (List.filter (resultMatchesStatus consumptionTab)) model.searchResults
+
+                filteredOverlapMedia =
+                    RemoteData.map (List.filter (overlapResultMatchesStatus consumptionTab)) model.overlapResults
             in
             ( { model
-                | filteredMediaResults = filteredMedia
-                , consumptionSelectedTab = consumptionTab
+                | consumptionSelectedTab = consumptionTab
+                , filteredMediaResults = filteredMedia
+                , filteredOverlapResults = filteredOverlapMedia
               }
             , Cmd.none
             )
@@ -254,7 +300,6 @@ update loggedInUser msg model =
                                 , consumptionSelectedTab = NoConsumptionTab
                                 , recommendationSelectedTab = NoRecommendationTab
                                 , friendshipSelectedTab = friendshipTab
-                                , overlapSelectedTab = NoOverlapTab
                                 , friends = Loading
                             }
                     in
@@ -281,7 +326,6 @@ update loggedInUser msg model =
                                 , consumptionSelectedTab = NoConsumptionTab
                                 , recommendationSelectedTab = NoRecommendationTab
                                 , friendshipSelectedTab = NoFriendshipTab
-                                , overlapSelectedTab = NoOverlapTab
                                 , friends = Loading
                             }
                     in
@@ -381,6 +425,18 @@ update loggedInUser msg model =
             in
             ( { model | recommendedResults = receivedRecommendation }, Cmd.none )
 
+        OverlapResponse overlapMediaResponse ->
+            let
+                receivedOverlapMedia =
+                    RemoteData.fromResult overlapMediaResponse
+            in
+            ( { model
+                | overlapResults = receivedOverlapMedia
+                , filteredOverlapResults = receivedOverlapMedia
+              }
+            , Cmd.none
+            )
+
         None ->
             ( model, Cmd.none )
 
@@ -464,6 +520,14 @@ recommendMedia recommenderUser recommendedUserID mediaType recommendation =
         { url = "http://localhost:5000/media/" ++ Media.getMediaTypeAsString mediaType ++ "/recommendation"
         , body = Http.jsonBody (Recommendation.encoder mediaType recommenderUser.userInfo.goodTimesId recommendedUserID recommendation)
         , expect = Http.expectJson RecommendationResponse Recommendation.decoder
+        }
+
+
+getOverlappingMedia : String -> LoggedInUser -> Int -> Cmd Msg
+getOverlappingMedia mediaType loggedInUser friendUserId =
+    Http.get
+        { url = "http://localhost:5000/overlaps/" ++ mediaType ++ "/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/" ++ String.fromInt friendUserId
+        , expect = Http.expectJson OverlapResponse (Decode.list Overlap.overlapMediaDecoder)
         }
 
 
@@ -574,6 +638,9 @@ viewTabContent model profileUserInfo =
 
                 ( _, _ ) ->
                     Html.div [ class "page-text" ] [ Html.text "something went wrong" ]
+
+        OverlapTab ->
+            viewOverlapMedias model.filteredOverlapResults
 
         _ ->
             Html.div [ class "page-text" ] [ Html.text "select a tab and start exploring!" ]
@@ -746,10 +813,11 @@ viewMediaType friends profileUserInfo profileType mediaType =
                     [ Html.div [ class "media-image" ] [ viewMediaCover book.coverUrl ]
                     , Html.div [ class "media-info" ]
                         [ viewBookDetails book
-                        , Html.div [ class "media-status" ]
-                            [ viewMediaDropdown profileUserInfo (BookType book)
+                        , Html.div [ class "media-buttons" ]
+                            -- TODO: pass in profileType and use organge button for friend profile
+                            [ Html.div [ class "media-status" ] [ viewMediaStatusDropdown (BookType book) ]
                             , Html.div
-                                [ class "media-recommend" ]
+                                []
                                 [ viewFriendsToRecommendDropdown profileType (BookType book) friends ]
                             ]
                         ]
@@ -762,9 +830,9 @@ viewMediaType friends profileUserInfo profileType mediaType =
                     [ Html.div [ class "media-image" ] [ viewMediaCover movie.posterUrl ]
                     , Html.div [ class "media-info" ]
                         [ viewMovieDetails movie
-                        , Html.div [ class "media-status" ]
-                            [ viewMediaDropdown profileUserInfo (MovieType movie)
-                            , Html.div [ class "media-recommend" ]
+                        , Html.div [ class "media-buttons" ]
+                            [ Html.div [ class "media-status" ] [ viewMediaStatusDropdown (MovieType movie) ]
+                            , Html.div []
                                 [ viewFriendsToRecommendDropdown profileType (MovieType movie) friends ]
                             ]
                         ]
@@ -777,11 +845,70 @@ viewMediaType friends profileUserInfo profileType mediaType =
                     [ Html.div [ class "media-image" ] [ viewMediaCover tv.posterUrl ]
                     , Html.div [ class "media-info" ]
                         [ viewTVDetails tv
-                        , Html.div [ class "media-status" ]
-                            [ viewMediaDropdown profileUserInfo (TVType tv)
-                            , Html.div [ class "media-recommend" ]
+                        , Html.div [ class "media-buttons" ]
+                            [ Html.div [ class "media-status" ] [ viewMediaStatusDropdown (TVType tv) ]
+                            , Html.div []
                                 [ viewFriendsToRecommendDropdown profileType (TVType tv) friends ]
                             ]
+                        ]
+                    ]
+                ]
+
+
+viewOverlapMedias : WebData (List OverlapMedia) -> Html Msg
+viewOverlapMedias overlapMedia =
+    case overlapMedia of
+        NotAsked ->
+            Html.div [ class "page-text" ] [ Html.text "see your overlapping media" ]
+
+        Loading ->
+            Html.div [ class "page-text" ] [ Html.text "entering the database!" ]
+
+        Failure error ->
+            -- TODO show better error!
+            Html.div [ class "page-text" ] [ Html.text "something went wrong" ]
+
+        Success media ->
+            if List.isEmpty media then
+                Html.div [ class "page-text" ] [ Html.text "no overlapping media..." ]
+
+            else
+                Html.ul [ class "book-list" ]
+                    (List.map viewOverlappingMedia media)
+
+
+viewOverlappingMedia : OverlapMedia -> Html Msg
+viewOverlappingMedia overlapMedia =
+    case overlapMedia.media of
+        BookType book ->
+            Html.li []
+                [ Html.div [ class "media-card", class "media-card-long" ]
+                    [ Html.div [ class "media-image" ] [ viewMediaCover book.coverUrl ]
+                    , Html.div [ class "media-info" ]
+                        [ viewBookDetails book
+                        , viewOverlappingMediaStatus (BookType book) overlapMedia.otherUserStatus
+                        ]
+                    ]
+                ]
+
+        MovieType movie ->
+            Html.li []
+                [ Html.div [ class "media-card", class "media-card-long" ]
+                    [ Html.div [ class "media-image" ] [ viewMediaCover movie.posterUrl ]
+                    , Html.div [ class "media-info" ]
+                        [ viewMovieDetails movie
+                        , viewOverlappingMediaStatus (MovieType movie) overlapMedia.otherUserStatus
+                        ]
+                    ]
+                ]
+
+        TVType tv ->
+            Html.li []
+                [ Html.div [ class "media-card", class "media-card-long" ]
+                    [ Html.div [ class "media-image" ] [ viewMediaCover tv.posterUrl ]
+                    , Html.div [ class "media-info" ]
+                        [ viewTVDetails tv
+                        , viewOverlappingMediaStatus (TVType tv) overlapMedia.otherUserStatus
                         ]
                     ]
                 ]
@@ -826,8 +953,8 @@ viewTVDetails tv =
         ]
 
 
-viewMediaDropdown : WebData UserInfo -> MediaType -> Html Msg
-viewMediaDropdown profileUserInfo mediaType =
+viewMediaStatusDropdown : MediaType -> Html Msg
+viewMediaStatusDropdown mediaType =
     Html.div [ class "dropdown" ] <|
         case mediaType of
             BookType book ->
@@ -843,6 +970,40 @@ viewMediaDropdown profileUserInfo mediaType =
             TVType tv ->
                 [ Html.button [ class "dropbtn-existing-status " ] [ Html.text (TV.maybeStatusAsString tv.status) ]
                 , viewDropdownContent (TVType tv) "to watch" "watching" "watched" "abandon"
+                ]
+
+
+viewOverlappingMediaStatus : MediaType -> Consumption.Status -> Html Msg
+viewOverlappingMediaStatus mediaType otherUserStatus =
+    case mediaType of
+        BookType book ->
+            Html.div [ class "media-buttons" ]
+                [ Html.div [ class "media-status" ]
+                    [ Html.div [ class "media-existing-status-not-btn" ] [ Html.text ("your status: " ++ Book.maybeStatusAsString book.status) ]
+                    ]
+                , Html.div [ class "media-status" ]
+                    [ Html.div [ class "friend-media-existing-status-not-btn" ] [ Html.text ("friend's status: " ++ Book.maybeStatusAsString (Just otherUserStatus)) ]
+                    ]
+                ]
+
+        MovieType movie ->
+            Html.div [ class "media-buttons" ]
+                [ Html.div [ class "media-status" ]
+                    [ Html.div [ class "media-existing-status-not-btn" ] [ Html.text ("your status: " ++ Movie.maybeStatusAsString movie.status) ]
+                    ]
+                , Html.div [ class "media-status" ]
+                    [ Html.div [ class "friend-media-existing-status-not-btn" ] [ Html.text ("friend's status: " ++ Movie.maybeStatusAsString (Just otherUserStatus)) ]
+                    ]
+                ]
+
+        TVType tv ->
+            Html.div [ class "media-buttons" ]
+                [ Html.div [ class "media-status" ]
+                    [ Html.div [ class "media-existing-status-not-btn" ] [ Html.text ("your status: " ++ TV.maybeStatusAsString tv.status) ]
+                    ]
+                , Html.div [ class "media-status" ]
+                    [ Html.div [ class "friend-media-existing-status-not-btn" ] [ Html.text ("friend's status: " ++ TV.maybeStatusAsString (Just otherUserStatus)) ]
+                    ]
                 ]
 
 
@@ -1090,10 +1251,6 @@ type FriendshipTabSelection
     | NoFriendshipTab
 
 
-type OverlapTabSelection
-    = NoOverlapTab
-
-
 mediaTabSelectionToString : MediaTabSelection -> String
 mediaTabSelectionToString mediaTab =
     case mediaTab of
@@ -1165,7 +1322,12 @@ createFirstTabWithActiveState firstTabSelection activeState tabString =
     case firstTabSelection of
         MediaTab ->
             Html.button
-                [ class activeState, Html.Events.onClick AddMediaTabRow ]
+                [ class activeState, Html.Events.onClick (AddMediaTabRow MediaTab) ]
+                [ Html.text tabString ]
+
+        OverlapTab ->
+            Html.button
+                [ class activeState, Html.Events.onClick (AddMediaTabRow OverlapTab) ]
                 [ Html.text tabString ]
 
         RecommendationTab ->
@@ -1250,6 +1412,30 @@ resultMatchesStatus consumptionTabSelection media =
 
                 FinishedTab ->
                     status == Consumption.Finished
+
+                _ ->
+                    False
+
+        Nothing ->
+            False
+
+
+overlapResultMatchesStatus : ConsumptionTabSelection -> OverlapMedia -> Bool
+overlapResultMatchesStatus consumptionTabSelection overlapMedia =
+    case Media.getMediaStatus overlapMedia.media of
+        Just primaryUserStatus ->
+            case consumptionTabSelection of
+                AllTab ->
+                    True
+
+                WantToConsumeTab ->
+                    (primaryUserStatus == overlapMedia.otherUserStatus) && (primaryUserStatus == Consumption.WantToConsume)
+
+                ConsumingTab ->
+                    (primaryUserStatus == overlapMedia.otherUserStatus) && (primaryUserStatus == Consumption.Consuming)
+
+                FinishedTab ->
+                    (primaryUserStatus == overlapMedia.otherUserStatus) && (primaryUserStatus == Consumption.Finished)
 
                 _ ->
                     False

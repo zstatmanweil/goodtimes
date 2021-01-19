@@ -310,8 +310,8 @@ def get_media_recommended_by_user(user_id, media_type):
     return jsonify(sorted(final, key=lambda m: m.get('created'), reverse=True)), 200
 
 
-@user.route("/overlaps", methods=["GET"])
-def get_overlapping_media():
+@user.route("/overlaps/<media_type>/<int:primary_user_id>/<int:other_user_id>", methods=["GET"])
+def get_overlapping_media(media_type, primary_user_id, other_user_id):
     """
     Endpoint for getting overlapping media. Args:
     "primary_user_id": int,
@@ -328,23 +328,14 @@ def get_overlapping_media():
                 "publish_year": 2020,
                 "source": "open library",
                 "source_id": "0123",
-                "title": "The Queen Of Nothing"}
+                "title": "The Queen Of Nothing"
+                "status": "consuming"}
         "media_type": "book",
-        "primary_user_id": int,
-        "primary_user_status": str,
-        "other_user_id": int,
-        "other_user_status": str
+        "other_user_id": 1,
+        "other_user_status": "finished"
 
     }
     """
-    args = request.args
-    primary_user_id = args.get("primary_user_id")
-    other_user_id = args.get("other_user_id")
-    media_type = args.get('media_type')
-
-    if not (primary_user_id and other_user_id and media_type):
-        abort(400, "Parameters require primary_user_id, other_user_id, and media_type")
-
     if media_type not in MEDIAS.keys():
         abort(400, "Media_type must be 'book', 'movie', or tv")
 
@@ -355,12 +346,10 @@ def get_overlapping_media():
     final = []
     for record in record_results:
         record_dict = dict(record)
-        primary_user_status = record_dict.pop("primary_user_status")
+        record_dict['status'] = record_dict.pop("primary_user_status")
         other_user_status = record_dict.pop("other_user_status")
         m = {"media": record_dict,
              "media_type": media_type,
-             "primary_user_id": primary_user_id,
-             "primary_user_status": primary_user_status,
              "other_user_id": other_user_id,
              "other_user_status": other_user_status
              }
