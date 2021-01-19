@@ -241,26 +241,35 @@ update loggedInUser msg model =
         MediaAddedToProfile result ->
             case result of
                 Ok _ ->
-                    case ( model.profileType, model.mediaSelectedTab ) of
-                        ( LoggedInUserProfile, BookTab ) ->
+                    case ( model.firstSelectedTab, model.profileType, model.mediaSelectedTab ) of
+                        ( MediaTab, LoggedInUserProfile, BookTab ) ->
                             ( model, searchUserBooks loggedInUser loggedInUser.userInfo.goodTimesId )
 
-                        ( LoggedInUserProfile, MovieTab ) ->
+                        ( MediaTab, LoggedInUserProfile, MovieTab ) ->
                             ( model, searchUserMovies loggedInUser loggedInUser.userInfo.goodTimesId )
 
-                        ( LoggedInUserProfile, TVTab ) ->
+                        ( MediaTab, LoggedInUserProfile, TVTab ) ->
                             ( model, searchUserTV loggedInUser loggedInUser.userInfo.goodTimesId )
 
-                        ( FriendProfile, BookTab ) ->
+                        ( MediaTab, FriendProfile, BookTab ) ->
                             ( model, searchUserBooks loggedInUser (getUserId model.profileUser) )
 
-                        ( FriendProfile, MovieTab ) ->
+                        ( MediaTab, FriendProfile, MovieTab ) ->
                             ( model, searchUserMovies loggedInUser (getUserId model.profileUser) )
 
-                        ( FriendProfile, TVTab ) ->
+                        ( MediaTab, FriendProfile, TVTab ) ->
                             ( model, searchUserTV loggedInUser (getUserId model.profileUser) )
 
-                        ( _, _ ) ->
+                        ( OverlapTab, FriendProfile, BookTab ) ->
+                            ( model, getOverlappingMedia "book" loggedInUser (getUserId model.profileUser) )
+
+                        ( OverlapTab, FriendProfile, MovieTab ) ->
+                            ( model, getOverlappingMedia "movie" loggedInUser (getUserId model.profileUser) )
+
+                        ( OverlapTab, FriendProfile, TVTab ) ->
+                            ( model, getOverlappingMedia "tv" loggedInUser (getUserId model.profileUser) )
+
+                        _ ->
                             ( model, Cmd.none )
 
                 Err httpError ->
@@ -590,7 +599,7 @@ body loggedInUser model =
                     , Html.div [ class "tab" ]
                         [ createFirstTab model MediaTab (User.getUserFirstName model.profileUser ++ "'s media")
                         , createFirstTab model OverlapTab "overlapping media"
-                        , createFirstTab model FriendsTab "friends"
+                        , createFirstTab model FriendsTab (User.getUserFirstName model.profileUser ++ "'s friends")
                         ]
                     , viewFriendshipTabRow model
                     , viewRecommendationTabRow model
@@ -947,17 +956,17 @@ viewMediaStatusDropdown mediaType =
     Html.div [ class "dropdown" ] <|
         case mediaType of
             BookType book ->
-                [ Html.button [ class "dropbtn-existing-status " ] [ Html.text (Book.maybeStatusAsString book.status) ]
+                [ Html.button [ class "dropbtn-existing-status" ] [ Html.text (Book.maybeStatusAsString book.status ++ " >>") ]
                 , viewDropdownContent (BookType book) "to read" "reading" "read" "abandon"
                 ]
 
             MovieType movie ->
-                [ Html.button [ class "dropbtn-existing-status " ] [ Html.text (Movie.maybeStatusAsString movie.status) ]
+                [ Html.button [ class "dropbtn-existing-status" ] [ Html.text (Movie.maybeStatusAsString movie.status ++ " >>") ]
                 , viewDropdownContent (MovieType movie) "to watch" "watching" "watched" "abandon"
                 ]
 
             TVType tv ->
-                [ Html.button [ class "dropbtn-existing-status " ] [ Html.text (TV.maybeStatusAsString tv.status) ]
+                [ Html.button [ class "dropbtn-existing-status" ] [ Html.text (TV.maybeStatusAsString tv.status ++ " >>") ]
                 , viewDropdownContent (TVType tv) "to watch" "watching" "watched" "abandon"
                 ]
 
@@ -967,15 +976,18 @@ viewFriendMediaStatus mediaType =
     Html.div [ class "media-status" ] <|
         case mediaType of
             BookType book ->
-                [ Html.button [ class "friend-media-existing-status-not-btn" ] [ Html.text ("friend's status: " ++ Book.maybeStatusAsString book.status) ]
+                [ Html.button [ class "friend-media-existing-status-not-btn" ]
+                    [ Html.text ("friend's status: " ++ Book.maybeStatusAsString book.status ++ ">>") ]
                 ]
 
             MovieType movie ->
-                [ Html.button [ class "friend-media-existing-status-not-btn" ] [ Html.text ("friend's status: " ++ Movie.maybeStatusAsString movie.status) ]
+                [ Html.button [ class "friend-media-existing-status-not-btn" ]
+                    [ Html.text ("friend's status: " ++ Movie.maybeStatusAsString movie.status ++ ">>") ]
                 ]
 
             TVType tv ->
-                [ Html.button [ class "friend-media-existing-status-not-btn" ] [ Html.text ("friend's status: " ++ TV.maybeStatusAsString tv.status) ]
+                [ Html.button [ class "friend-media-existing-status-not-btn" ]
+                    [ Html.text ("friend's status: " ++ TV.maybeStatusAsString tv.status ++ ">>") ]
                 ]
 
 
@@ -985,8 +997,11 @@ viewOverlappingMediaStatus mediaType otherUserStatus =
         BookType book ->
             Html.div [ class "media-buttons" ]
                 [ Html.div [ class "media-status" ]
-                    -- TODO: make this a dropdown so you can update your own status
-                    [ Html.div [ class "media-existing-status-not-btn" ] [ Html.text ("your status: " ++ Book.maybeStatusAsString book.status) ]
+                    [ Html.div [ class "dropdown" ]
+                        [ Html.div [ class "dropbtn-existing-status" ]
+                            [ Html.text ("your status: " ++ Book.maybeStatusAsString book.status ++ " >>") ]
+                        , viewDropdownContent (BookType book) "to read" "reading" "read" "abandon"
+                        ]
                     ]
                 , Html.div [ class "media-status" ]
                     [ Html.div [ class "friend-media-existing-status-not-btn" ] [ Html.text ("friend's status: " ++ Book.maybeStatusAsString (Just otherUserStatus)) ]
@@ -996,7 +1011,11 @@ viewOverlappingMediaStatus mediaType otherUserStatus =
         MovieType movie ->
             Html.div [ class "media-buttons" ]
                 [ Html.div [ class "media-status" ]
-                    [ Html.div [ class "media-existing-status-not-btn" ] [ Html.text ("your status: " ++ Movie.maybeStatusAsString movie.status) ]
+                    [ Html.div [ class "dropdown" ]
+                        [ Html.div [ class "dropbtn-existing-status" ]
+                            [ Html.text ("your status: " ++ Movie.maybeStatusAsString movie.status ++ " >>") ]
+                        , viewDropdownContent (MovieType movie) "to watch" "watching" "watched" "abandon"
+                        ]
                     ]
                 , Html.div [ class "media-status" ]
                     [ Html.div [ class "friend-media-existing-status-not-btn" ] [ Html.text ("friend's status: " ++ Movie.maybeStatusAsString (Just otherUserStatus)) ]
@@ -1006,7 +1025,11 @@ viewOverlappingMediaStatus mediaType otherUserStatus =
         TVType tv ->
             Html.div [ class "media-buttons" ]
                 [ Html.div [ class "media-status" ]
-                    [ Html.div [ class "media-existing-status-not-btn" ] [ Html.text ("your status: " ++ TV.maybeStatusAsString tv.status) ]
+                    [ Html.div [ class "dropdown" ]
+                        [ Html.div [ class "dropbtn-existing-status" ]
+                            [ Html.text ("your status: " ++ TV.maybeStatusAsString tv.status ++ " >>") ]
+                        , viewDropdownContent (TVType tv) "to watch" "watching" "watched" "abandon"
+                        ]
                     ]
                 , Html.div [ class "media-status" ]
                     [ Html.div [ class "friend-media-existing-status-not-btn" ] [ Html.text ("friend's status: " ++ TV.maybeStatusAsString (Just otherUserStatus)) ]
