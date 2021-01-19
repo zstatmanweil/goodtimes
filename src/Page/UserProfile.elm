@@ -87,10 +87,6 @@ update : LoggedInUser -> Msg -> Model -> ( Model, Cmd Msg )
 update loggedInUser msg model =
     case msg of
         AddMediaTabRow firstTab ->
-            let
-                _ =
-                    Debug.log "making it to AddMediaTabRow" 0
-            in
             ( { model
                 | filteredMediaResults = NotAsked
                 , filteredOverlapResults = NotAsked
@@ -138,9 +134,6 @@ update loggedInUser msg model =
 
                         FriendProfile ->
                             let
-                                _ =
-                                    Debug.log "making it to SearchBasedOnTab, MediaTab" 0
-
                                 new_model =
                                     { model
                                         | mediaSelectedTab = mediaTabSelection
@@ -196,9 +189,6 @@ update loggedInUser msg model =
 
                 OverlapTab ->
                     let
-                        _ =
-                            Debug.log "making it to SearchBasedOnTab, OverlapTab" 1
-
                         new_model =
                             { model
                                 | mediaSelectedTab = mediaTabSelection
@@ -814,8 +804,7 @@ viewMediaType friends profileUserInfo profileType mediaType =
                     , Html.div [ class "media-info" ]
                         [ viewBookDetails book
                         , Html.div [ class "media-buttons" ]
-                            -- TODO: pass in profileType and use organge button for friend profile
-                            [ Html.div [ class "media-status" ] [ viewMediaStatusDropdown (BookType book) ]
+                            [ viewFriendMediaStatus (BookType book)
                             , Html.div
                                 []
                                 [ viewFriendsToRecommendDropdown profileType (BookType book) friends ]
@@ -831,7 +820,7 @@ viewMediaType friends profileUserInfo profileType mediaType =
                     , Html.div [ class "media-info" ]
                         [ viewMovieDetails movie
                         , Html.div [ class "media-buttons" ]
-                            [ Html.div [ class "media-status" ] [ viewMediaStatusDropdown (MovieType movie) ]
+                            [ viewFriendMediaStatus (MovieType movie)
                             , Html.div []
                                 [ viewFriendsToRecommendDropdown profileType (MovieType movie) friends ]
                             ]
@@ -846,7 +835,7 @@ viewMediaType friends profileUserInfo profileType mediaType =
                     , Html.div [ class "media-info" ]
                         [ viewTVDetails tv
                         , Html.div [ class "media-buttons" ]
-                            [ Html.div [ class "media-status" ] [ viewMediaStatusDropdown (TVType tv) ]
+                            [ viewFriendMediaStatus (TVType tv)
                             , Html.div []
                                 [ viewFriendsToRecommendDropdown profileType (TVType tv) friends ]
                             ]
@@ -973,12 +962,30 @@ viewMediaStatusDropdown mediaType =
                 ]
 
 
+viewFriendMediaStatus : MediaType -> Html Msg
+viewFriendMediaStatus mediaType =
+    Html.div [ class "media-status" ] <|
+        case mediaType of
+            BookType book ->
+                [ Html.button [ class "friend-media-existing-status-not-btn" ] [ Html.text ("friend's status: " ++ Book.maybeStatusAsString book.status) ]
+                ]
+
+            MovieType movie ->
+                [ Html.button [ class "friend-media-existing-status-not-btn" ] [ Html.text ("friend's status: " ++ Movie.maybeStatusAsString movie.status) ]
+                ]
+
+            TVType tv ->
+                [ Html.button [ class "friend-media-existing-status-not-btn" ] [ Html.text ("friend's status: " ++ TV.maybeStatusAsString tv.status) ]
+                ]
+
+
 viewOverlappingMediaStatus : MediaType -> Consumption.Status -> Html Msg
 viewOverlappingMediaStatus mediaType otherUserStatus =
     case mediaType of
         BookType book ->
             Html.div [ class "media-buttons" ]
                 [ Html.div [ class "media-status" ]
+                    -- TODO: make this a dropdown so you can update your own status
                     [ Html.div [ class "media-existing-status-not-btn" ] [ Html.text ("your status: " ++ Book.maybeStatusAsString book.status) ]
                     ]
                 , Html.div [ class "media-status" ]
