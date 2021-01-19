@@ -316,41 +316,57 @@ def get_overlapping_media():
     Endpoint for getting overlapping media. Args:
     "primary_user_id": int,
     "other_user_id": int,
-    "media_type": string,
-    "status": string
+    "media_type": string
 
     :return: media object, e,g,,
      {
-        "author_names": [
-            "Holly Black"
-            ],
-        "cover_url": "http://covers.openlibrary.org/b/id/10381918-M.jpg",
-        "id": 2,
-        "publish_year": 2020,
-        "source": "open library",
-        "source_id": "0123",
-        "title": "The Queen Of Nothing"}
+        "media": { "author_names": [
+                    "Holly Black"
+                    ],
+                "cover_url": "http://covers.openlibrary.org/b/id/10381918-M.jpg",
+                "id": 2,
+                "publish_year": 2020,
+                "source": "open library",
+                "source_id": "0123",
+                "title": "The Queen Of Nothing"}
+        "media_type": "book",
+        "primary_user_id": int,
+        "primary_user_status": str,
+        "other_user_id": int,
+        "other_user_status": str
+
+    }
     """
     args = request.args
     primary_user_id = args.get("primary_user_id")
     other_user_id = args.get("other_user_id")
     media_type = args.get('media_type')
-    status = args.get('status')
 
-    if not (primary_user_id and other_user_id and media_type and status):
-        abort(400, "Parameters require primary_user_id, other_user_id, media_type, and status")
+    if not (primary_user_id and other_user_id and media_type):
+        abort(400, "Parameters require primary_user_id, other_user_id, and media_type")
 
     if media_type not in MEDIAS.keys():
         abort(400, "Media_type must be 'book', 'movie', or tv")
 
-    if status not in [v.value for v in ConsumptionStatus]:
-        abort(400, description="Status must be 'want to consume', 'consuming', 'finished', or 'abandoned'")
-
     session = Session()
-    media_class = MEDIAS.get(media_type)
-    record_results = get_overlapping_records(primary_user_id, other_user_id, media_type, status, session)
+    record_results = get_overlapping_records(primary_user_id, other_user_id, media_type, session)
     session.close()
-    return media_class.schema().dumps(record_results, many=True), 200
+
+    final = []
+    for record in record_results:
+        record_dict = dict(record)
+        primary_user_status = record_dict.pop("primary_user_status")
+        other_user_status = record_dict.pop("other_user_status")
+        m = {"media": record_dict,
+             "media_type": media_type,
+             "primary_user_id": primary_user_id,
+             "primary_user_status": primary_user_status,
+             "other_user_id": other_user_id,
+             "other_user_status": other_user_status
+             }
+        final.append(m)
+
+    return jsonify(sorted(final, key=lambda m: m.get('media').get('title'))), 200
 
 
 @user.route("/user/<int:user_id>/friend/events", methods=["GET"])

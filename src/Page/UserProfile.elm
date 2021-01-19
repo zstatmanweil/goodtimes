@@ -536,7 +536,6 @@ body loggedInUser model =
                     , Html.div [ class "tab" ]
                         [ createFirstTab model MediaTab (User.getUserFirstName model.profileUser ++ "'s media")
                         , createFirstTab model OverlapTab "overlapping media"
-                        , createFirstTab model RecommendationTab "recommendations"
                         , createFirstTab model FriendsTab "friends"
                         ]
                     , viewFriendshipTabRow model

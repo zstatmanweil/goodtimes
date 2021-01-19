@@ -195,38 +195,51 @@ def get_user_friend_requests(user_id: int, session: session) -> List[Tuple]:
     return results
 
 
-def get_overlapping_records(primary_user_id: int, other_user_id: int, media_type: str, status: str, session: session) -> List:
+def get_overlapping_records(primary_user_id: int, other_user_id: int, media_type: str, session: session) -> List:
     """
     Get media records of a given status that two users have in common.
     :param primary_user_id: The logged in user.
     :param other_user_id: The user the logged in user is veewing.
     :param media_type: book, movie or tv
-    :param status: want to consume, consuming, finished, abandoned
     :param session:
     :return: media class object
     """
     media_class = MEDIAS.get(media_type)
     # Get most recent record for each item in consumption table associated with either one of the users.
-    consumption_subq = session.query(Consumption.user_id, Consumption.media_id, Consumption.media_type,
+    consumption_max_created_subq = session.query(Consumption.user_id, Consumption.media_id, Consumption.media_type,
                          func.max(Consumption.created).label("max_created")) \
         .filter(or_(Consumption.user_id == primary_user_id, Consumption.user_id == other_user_id)) \
         .filter(Consumption.media_type == media_type) \
         .group_by(Consumption.user_id, Consumption.media_id, Consumption.media_type) \
         .subquery()
 
-    # Filter consumption records above by the ones that match the selected status.
-    consumption_w_status_subq = session.query(Consumption) \
-        .join(consumption_subq, and_(Consumption.media_id == consumption_subq.c.media_id,
-                         Consumption.media_type == consumption_subq.c.media_type,
-                         Consumption.created == consumption_subq.c.max_created)) \
-        .filter(Consumption.status == status) \
+    # Select latest Consumption records
+    consumption_subq = session.query(Consumption) \
+        .join(consumption_max_created_subq, and_(Consumption.media_id == consumption_max_created_subq.c.media_id,
+                         Consumption.media_type == consumption_max_created_subq.c.media_type,
+                         Consumption.created == consumption_max_created_subq.c.max_created)) \
         .subquery()
 
     # Identify all media associated with consumption records above.
-    results = session.query(media_class) \
-        .join(consumption_w_status_subq, and_(media_class.id == consumption_w_status_subq.c.media_id))\
+    overlap_media_subq = session.query(media_class) \
+        .join(consumption_subq, and_(media_class.id == consumption_subq.c.media_id))\
         .group_by(media_class)\
-        .having(func.count(consumption_w_status_subq.c.user_id) > 1)\
+        .having(func.count(consumption_subq.c.user_id) > 1)\
+        .subquery()
+
+    consumption_primary_user_subq = session.query(consumption_subq)\
+        .filter(consumption_subq.c.user_id == primary_user_id).subquery()
+
+    consumption_other_user_subq = session.query(consumption_subq) \
+        .filter(consumption_subq.c.user_id == other_user_id).subquery()
+
+    results = session.query(overlap_media_subq,
+                            consumption_primary_user_subq.c.status.label("primary_user_status"),
+                            consumption_other_user_subq.c.status.label("other_user_status")) \
+        .join(consumption_primary_user_subq, overlap_media_subq.c.id == consumption_primary_user_subq.c.media_id,
+              isouter=True) \
+        .join(consumption_other_user_subq, overlap_media_subq.c.id == consumption_other_user_subq.c.media_id,
+              isouter=True) \
         .all()
 
     return results
