@@ -59,13 +59,12 @@ update loggedInUser msg model =
             ( { model | searchResults = foundUsers }, Cmd.none )
 
         RequestFriend user status ->
-            ( model, addFriendLink user status )
+            ( model, addFriendLink loggedInUser user status )
 
         FriendLinkAdded result ->
             case result of
-                Ok friendLink ->
-                    -- TODO pass in user id instead of 1
-                    ( model, searchUsers 1 model.query )
+                Ok _ ->
+                    ( model, searchUsers loggedInUser.userInfo.goodTimesId model.query )
 
                 Err httpError ->
                     -- TODO handle error!
@@ -83,15 +82,11 @@ searchUsers userId emailString =
         }
 
 
-
--- TODO replace 1 with real userId
-
-
-addFriendLink : UserWithFriendStatus -> FriendStatus -> Cmd Msg
-addFriendLink user status =
+addFriendLink : LoggedInUser -> UserWithFriendStatus -> FriendStatus -> Cmd Msg
+addFriendLink loggedInUser user status =
     Http.post
         { url = "http://localhost:5000/friend"
-        , body = Http.jsonBody (friendLinkEncoder 1 user.id status)
+        , body = Http.jsonBody (friendLinkEncoder loggedInUser.userInfo.goodTimesId user.id status)
         , expect = Http.expectJson FriendLinkAdded friendLinkDecoder
         }
 

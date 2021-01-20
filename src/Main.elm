@@ -389,10 +389,10 @@ stepUrl url model =
                             , Cmd.map FeedMsg feedCommand
                             )
 
-                        Routes.User userID ->
+                        Routes.User profileUserId ->
                             let
                                 ( userProfileModel, userProfileCommand ) =
-                                    UserProfile.init userID
+                                    UserProfile.init loggedInUser profileUserId
                             in
                             ( { model | page = LoggedIn loggedInUser (UserProfile userProfileModel) }
                             , Cmd.map UserProfileMsg userProfileCommand

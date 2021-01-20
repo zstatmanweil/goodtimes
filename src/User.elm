@@ -251,3 +251,4 @@ type Profile
     = NoProfile
     | LoggedInUserProfile
     | FriendProfile
+    | StrangerProfile

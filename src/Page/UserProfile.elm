@@ -14,7 +14,7 @@ import Recommendation exposing (RecommendationType(..), RecommendedByUserMedia, 
 import RemoteData exposing (RemoteData(..), WebData)
 import Skeleton
 import TV exposing (TV)
-import User exposing (FriendLink, FriendStatus(..), LoggedInUser, Profile(..), UserInfo, friendLinkDecoder, friendLinkEncoder, getUserId, userInfoDecoder)
+import User exposing (FriendLink, FriendStatus(..), LoggedInUser, Profile(..), UserInfo, UserWithFriendStatus, friendLinkDecoder, friendLinkEncoder, getUserId, userInfoDecoder)
 
 
 
@@ -50,7 +50,7 @@ type Msg
     | SearchFriendsBasedOnTab FriendshipTabSelection
     | UserResponse (Result Http.Error UserInfo)
     | FriendResponse (Result Http.Error (List UserInfo))
-    | AddFriendLink UserInfo FriendStatus
+    | AddFriendLink Int FriendStatus
     | FriendLinkAdded (Result Http.Error FriendLink)
     | AddRecommendationTabRow
     | AddRecommendationMediaTabRow RecommendationTabSelection
@@ -58,10 +58,11 @@ type Msg
     | RecommendationResponse (Result Http.Error Recommendation.Recommendation)
     | RecommendedMediaResponse (Result Http.Error (List RecommendationType))
     | OverlapResponse (Result Http.Error (List OverlapMedia))
+    | UserWithFriendStatusResponse (Result Http.Error (List UserWithFriendStatus))
 
 
-init : Int -> ( Model, Cmd Msg )
-init userID =
+init : LoggedInUser -> Int -> ( Model, Cmd Msg )
+init loggedInUser profileUserId =
     ( { profileUser = NotAsked
       , profileType = NoProfile
       , loggedInUserFriends = NotAsked
@@ -77,7 +78,7 @@ init userID =
       , recommendationSelectedTab = NoRecommendationTab
       , friendshipSelectedTab = NoFriendshipTab
       }
-    , getUser userID
+    , getUser profileUserId
     )
 
 
@@ -163,7 +164,7 @@ update loggedInUser msg model =
                                 _ ->
                                     ( model, Cmd.none )
 
-                        NoProfile ->
+                        _ ->
                             ( model, Cmd.none )
 
                 RecommendationTab ->
@@ -349,17 +350,42 @@ update loggedInUser msg model =
                         )
 
                     else
-                        -- TODO: command here should be something like get if profile user is friends with logged in user,
-                        -- of if friendship has been requested
                         ( { model
-                            | profileType = FriendProfile
-                            , profileUser = Success user
+                            | profileUser = Success user
                           }
-                        , getExistingFriends loggedInUser loggedInUser.userInfo.goodTimesId
+                        , searchUsers loggedInUser.userInfo.goodTimesId user.email
                         )
 
                 -- TODO: handle error
                 Err resp ->
+                    ( model, Cmd.none )
+
+        UserWithFriendStatusResponse users ->
+            let
+                --searching by exact email there will only be one result
+                userResults =
+                    RemoteData.fromResult users
+            in
+            case userResults of
+                Success userList ->
+                    case List.head userList of
+                        Just user ->
+                            case user.status of
+                                Just status ->
+                                    case status of
+                                        Accepted ->
+                                            ( { model | profileType = FriendProfile }, Cmd.none )
+
+                                        _ ->
+                                            ( { model | profileType = StrangerProfile }, Cmd.none )
+
+                                Nothing ->
+                                    ( model, Cmd.none )
+
+                        Nothing ->
+                            ( model, Cmd.none )
+
+                _ ->
                     ( model, Cmd.none )
 
         FriendResponse friendResponse ->
@@ -376,8 +402,8 @@ update loggedInUser msg model =
                 Err resp ->
                     ( model, Cmd.none )
 
-        AddFriendLink user friendStatus ->
-            ( model, addFriendLink loggedInUser user.goodTimesId friendStatus )
+        AddFriendLink userId friendStatus ->
+            ( model, addFriendLink loggedInUser userId friendStatus )
 
         FriendLinkAdded result ->
             case result of
@@ -504,6 +530,14 @@ addFriendLink loggedInUser currentUserId status =
         }
 
 
+searchUsers : Int -> String -> Cmd Msg
+searchUsers userId emailString =
+    Http.get
+        { url = "http://localhost:5000/users?email=" ++ emailString ++ "&user_id=" ++ String.fromInt userId
+        , expect = Http.expectJson UserWithFriendStatusResponse (Decode.list User.userWithStatusDecoder)
+        }
+
+
 getRecommendedToUserMedia : LoggedInUser -> String -> Cmd Msg
 getRecommendedToUserMedia loggedInUser mediaType =
     Http.get
@@ -617,9 +651,28 @@ body loggedInUser model =
                     ]
                 ]
 
+        StrangerProfile ->
+            Html.main_ [ class "content" ]
+                [ Html.div [ id "content-wrap" ]
+                    [ Html.div [ id "user-profile" ] [ Html.text (String.toLower (User.getUserFullName model.profileUser) ++ "'s profile!") ]
+                    , viewFriendButton (getUserId model.profileUser)
+                    ]
+                ]
+
         NoProfile ->
             Html.main_ [ class "content" ]
                 [ Html.div [ id "content-wrap" ] [ Html.text "something is up" ] ]
+
+
+viewFriendButton : Int -> Html Msg
+viewFriendButton profileUserId =
+    Html.div [ class "user-button-wrapper" ] <|
+        [ Html.button
+            [ class "user-button"
+            , Html.Events.onClick (AddFriendLink profileUserId Requested)
+            ]
+            [ Html.text "Add Friend >>" ]
+        ]
 
 
 viewTabContent : Model -> WebData UserInfo -> Html Msg
@@ -782,7 +835,7 @@ viewAcceptFriendButton user =
     Html.div [ class "user-button-wrapper" ] <|
         [ Html.button
             [ class "user-button"
-            , Html.Events.onClick (AddFriendLink user Accepted)
+            , Html.Events.onClick (AddFriendLink user.goodTimesId Accepted)
             ]
             [ Html.text "Accept Friend >>" ]
         ]
@@ -807,11 +860,11 @@ viewMedias receivedMedia friends userInfo profileType =
 
             else
                 Html.ul [ class "book-list" ]
-                    (List.map (viewMediaType friends userInfo profileType) (List.sortBy Media.getTitle media))
+                    (List.map (viewMediaType friends profileType) (List.sortBy Media.getTitle media))
 
 
-viewMediaType : WebData (List UserInfo) -> WebData UserInfo -> Profile -> MediaType -> Html Msg
-viewMediaType friends profileUserInfo profileType mediaType =
+viewMediaType : WebData (List UserInfo) -> Profile -> MediaType -> Html Msg
+viewMediaType friends profileType mediaType =
     case mediaType of
         BookType book ->
             Html.li []
