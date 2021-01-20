@@ -24,16 +24,60 @@ view loggedInUser =
 body : Maybe LoggedInUser -> Html msg
 body loggedInUser =
     Html.main_ [ class "content" ]
-        [ Html.div [ id "content-wrap" ]
-            [ Html.h2 [] [ Html.text "good times" ]
-            , case loggedInUser of
+        [ Html.div [ id "content-wrap" ] <|
+            case loggedInUser of
                 Just user ->
-                    Html.text ("You are logged in" ++ user.userInfo.fullName)
+                    [ Html.div [ id "user-profile" ]
+                        [ Html.text ("welcome " ++ String.toLower user.userInfo.fullName ++ "!") ]
+                    , Html.div [ class "about-box" ]
+                        [ Html.h1 [] [ Html.text "about good times" ]
+                        , viewAboutText
+                        ]
+                    ]
 
                 Nothing ->
-                    Html.div []
-                        [ Html.text "You need to log in"
-                        , Html.div [] [ Html.a [ Attr.href auth0LoginUrl ] [ Html.text "login" ] ]
+                    [ Html.div [ class "about-box" ]
+                        [ Html.h1 [] [ Html.text "welcome to good times" ]
+                        , viewAboutText
+                        , Html.br [] []
+                        , Html.div [ class "page-text-center" ]
+                            [ Html.text
+                                "Already a good times enthusiast?"
+                            ]
+                        , Html.h1 [] [ Html.a [ Attr.href auth0LoginUrl ] [ Html.text "login" ] ]
+                        , Html.div [ class "page-text-center" ]
+                            [ Html.text
+                                "Need to make an account?"
+                            ]
+                        , Html.h1 [] [ Html.a [ Attr.href auth0LoginUrl ] [ Html.text "sign up" ] ]
                         ]
+                    ]
+        ]
+
+
+viewAboutText : Html msg
+viewAboutText =
+    Html.p [ class "page-text " ]
+        [ Html.div []
+            [ Html.text <|
+                """
+            Good Times was a product of the Covid-19 pandemic. As we all tried to stay inside and protect our community,
+            we turned to books, movies and TV to bring us joy and entertainment. The Good Times platform can be used to track and share
+            the media we are absorbing, make recommendations to friends, and see the overlaps between a friend's list
+            and ours. Can't make a selection on movie night? Use Good Times to see what movies you and your roommate both
+            want to watch! Tired of getting multiple TV recommendations a week but then not being able to remember one
+            of them when it comes Friday night? Good Times will help you track your personal list and your recommendations.
+            """
+            ]
+        , Html.br [] []
+        , Html.div []
+            [ Html.text <|
+                """This website was also a product of the pandemic quarantine in another significant way. It gave its
+            creators, Aaron Strick and Zoe Statman-Weil, a productive outlet when they got tired of reading and watching movies and TV.
+            Aaron and Zoe met when they were 14, learned to code  in their mid-20s, attended """
+            , Html.a [ Attr.href "https://www.recurse.com/" ] [ Html.text "Recurse Center" ]
+            , Html.text <|
+                """ enthusiastically but separately in 2018/19, and paired up starting in fall 2019 to tackle Good Times one
+            virtual coding session at a time."""
             ]
         ]

@@ -15,6 +15,11 @@
     font-size: 15px;
 }
 
+.page-text-center {
+    font-size: 15px;
+    text-align: center;
+}
+
 //  Header
 .header {
     padding: 8px;
@@ -360,3 +365,32 @@
   margin: 6px 0;
   transition: 0.4s;
 }
+
+// About page
+.about-box {
+  background-color: theme.color('primary', 'really-light');
+  text-align: left;
+  padding: 2%;
+  margin-top: 7%;
+  margin-right: 25%;
+  margin-left: 25%;
+}
+
+.about-box a {
+    color: theme.color('scale', 'dark');
+}
+
+.about-box h1 {
+    padding: 6px;
+    color: theme.color('scale', 'light');
+    text-align: center;
+    padding-bottom: 15px;
+}
+
+.about-box h1 a {
+    color: theme.color('scale', 'light');
+    text-align: center;
+}
+
+.about-box a:hover { color:theme.color('scale', 'light') };
+.about-box a:link {text-decoration:none;}

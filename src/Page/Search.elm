@@ -235,18 +235,18 @@ viewMedias : WebData (List MediaType) -> Html Msg
 viewMedias receivedMedia =
     case receivedMedia of
         NotAsked ->
-            Html.text "select a media type to search!"
+            Html.div [ class "page-text" ] [ Html.text "select a media type to search!" ]
 
         Loading ->
-            Html.text "entering the database!"
+            Html.div [ class "page-text" ] [ Html.text "entering the database!" ]
 
         Failure error ->
             -- TODO show better error!
-            Html.text "something went wrong"
+            Html.div [ class "page-text" ] [ Html.text "something went wrong" ]
 
         Success media ->
             if List.isEmpty media then
-                Html.text "no results..."
+                Html.div [ class "page-text" ] [ Html.text "no results..." ]
 
             else
                 Html.ul [ class "book-list" ]
