@@ -14,7 +14,7 @@ import Recommendation exposing (RecommendationType(..), RecommendedByUserMedia, 
 import RemoteData exposing (RemoteData(..), WebData)
 import Skeleton
 import TV exposing (TV)
-import User exposing (FriendLink, FriendStatus(..), LoggedInUser, Profile(..), UserInfo, UserWithFriendStatus, friendLinkDecoder, friendLinkEncoder, getUserId, userInfoDecoder)
+import User exposing (FriendLink, FriendStatus(..), LoggedInUser, Profile(..), UserInfo, UserWithFriendStatus, friendLinkDecoder, friendLinkEncoder, getUserEmail, getUserId, userInfoDecoder)
 
 
 
@@ -61,8 +61,8 @@ type Msg
     | UserWithFriendStatusResponse (Result Http.Error (List UserWithFriendStatus))
 
 
-init : LoggedInUser -> Int -> ( Model, Cmd Msg )
-init loggedInUser profileUserId =
+init : Int -> ( Model, Cmd Msg )
+init profileUserId =
     ( { profileUser = NotAsked
       , profileType = NoProfile
       , loggedInUserFriends = NotAsked
@@ -369,18 +369,18 @@ update loggedInUser msg model =
             case userResults of
                 Success userList ->
                     case List.head userList of
-                        Just user ->
-                            case user.status of
+                        Just userWithFriendStatus ->
+                            case userWithFriendStatus.status of
                                 Just status ->
                                     case status of
                                         Accepted ->
                                             ( { model | profileType = FriendProfile }, Cmd.none )
 
                                         _ ->
-                                            ( { model | profileType = StrangerProfile }, Cmd.none )
+                                            ( { model | profileType = StrangerProfile userWithFriendStatus }, Cmd.none )
 
                                 Nothing ->
-                                    ( model, Cmd.none )
+                                    ( { model | profileType = StrangerProfile userWithFriendStatus }, Cmd.none )
 
                         Nothing ->
                             ( model, Cmd.none )
@@ -407,8 +407,13 @@ update loggedInUser msg model =
 
         FriendLinkAdded result ->
             case result of
-                Ok friendLink ->
-                    ( model, getFriendRequests loggedInUser )
+                Ok _ ->
+                    case model.profileType of
+                        LoggedInUserProfile ->
+                            ( model, getFriendRequests loggedInUser )
+
+                        _ ->
+                            ( model, searchUsers loggedInUser.userInfo.goodTimesId (getUserEmail model.profileUser) )
 
                 Err httpError ->
                     -- TODO handle error!
@@ -651,11 +656,12 @@ body loggedInUser model =
                     ]
                 ]
 
-        StrangerProfile ->
+        StrangerProfile userWithFriendStatus ->
             Html.main_ [ class "content" ]
                 [ Html.div [ id "content-wrap" ]
                     [ Html.div [ id "user-profile" ] [ Html.text (String.toLower (User.getUserFullName model.profileUser) ++ "'s profile!") ]
-                    , viewFriendButton (getUserId model.profileUser)
+                    , Html.div [ class "results", class "page-text" ] [ Html.text ("Become " ++ User.getUserFullName model.profileUser ++ "'s friend to see their profile...") ]
+                    , viewFriendButton userWithFriendStatus
                     ]
                 ]
 
@@ -664,15 +670,22 @@ body loggedInUser model =
                 [ Html.div [ id "content-wrap" ] [ Html.text "something is up" ] ]
 
 
-viewFriendButton : Int -> Html Msg
-viewFriendButton profileUserId =
+viewFriendButton : UserWithFriendStatus -> Html Msg
+viewFriendButton user =
     Html.div [ class "user-button-wrapper" ] <|
-        [ Html.button
-            [ class "user-button"
-            , Html.Events.onClick (AddFriendLink profileUserId Requested)
-            ]
-            [ Html.text "Add Friend >>" ]
-        ]
+        case user.status of
+            Nothing ->
+                [ Html.button
+                    [ class "user-button"
+                    , Html.Events.onClick (AddFriendLink user.id Requested)
+                    ]
+                    [ Html.text "Add Friend >>" ]
+                ]
+
+            Just status ->
+                [ Html.div [ class "user-status" ]
+                    [ Html.text (User.friendStatusAsString status) ]
+                ]
 
 
 viewTabContent : Model -> WebData UserInfo -> Html Msg

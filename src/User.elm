@@ -1,7 +1,8 @@
 module User exposing (..)
 
 import Json.Decode as Decode exposing (Decoder)
-import Json.Encode as Encode exposing (Value)
+import Json.Encode as Encode exposing (..)
+import Json.Encode.Extra exposing (maybe)
 import RemoteData exposing (..)
 
 
@@ -11,7 +12,7 @@ type alias UnverifiedUser =
     , lastName : String
     , fullName : String
     , email : String
-    , picture : String
+    , picture : Maybe String
     }
 
 
@@ -22,7 +23,7 @@ type alias UserInfo =
     , lastName : String
     , fullName : String
     , email : String
-    , picture : String
+    , picture : Maybe String
     }
 
 
@@ -40,7 +41,7 @@ decodeFromAuth0 =
         (Decode.field "family_name" Decode.string)
         (Decode.field "name" Decode.string)
         (Decode.field "email" Decode.string)
-        (Decode.field "picture" Decode.string)
+        (Decode.maybe (Decode.field "picture" Decode.string))
 
 
 userInfoDecoder : Decoder UserInfo
@@ -52,7 +53,7 @@ userInfoDecoder =
         (Decode.field "last_name" Decode.string)
         (Decode.field "full_name" Decode.string)
         (Decode.field "email" Decode.string)
-        (Decode.field "picture" Decode.string)
+        (Decode.maybe (Decode.field "picture" Decode.string))
 
 
 unverifiedToUserInfo : UnverifiedUser -> Int -> UserInfo
@@ -75,7 +76,7 @@ unverifiedUserEncoder unverifiedUser =
         , ( "last_name", Encode.string unverifiedUser.lastName )
         , ( "full_name", Encode.string unverifiedUser.fullName )
         , ( "email", Encode.string unverifiedUser.email )
-        , ( "picture", Encode.string unverifiedUser.picture )
+        , ( "picture", maybe Encode.string unverifiedUser.picture )
         ]
 
 
@@ -100,10 +101,10 @@ getUserFirstName : WebData UserInfo -> String
 getUserFirstName user =
     case user of
         NotAsked ->
-            "no user"
+            "need to search for a user"
 
         Loading ->
-            "friend"
+            "entering the database"
 
         Failure error ->
             -- TODO show better error!
@@ -111,6 +112,23 @@ getUserFirstName user =
 
         Success u ->
             u.firstName
+
+
+getUserEmail : WebData UserInfo -> String
+getUserEmail user =
+    case user of
+        NotAsked ->
+            "need to search for a user"
+
+        Loading ->
+            "entering the database"
+
+        Failure error ->
+            -- TODO show better error!
+            "something went wrong"
+
+        Success u ->
+            u.email
 
 
 getUserId : WebData UserInfo -> Int
@@ -251,4 +269,4 @@ type Profile
     = NoProfile
     | LoggedInUserProfile
     | FriendProfile
-    | StrangerProfile
+    | StrangerProfile UserWithFriendStatus

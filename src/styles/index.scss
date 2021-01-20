@@ -152,49 +152,49 @@
     border: 1px solid theme.color('accent', 'light');
     padding: 8px;
     height: 60px;
+}
 
-    .user-info {
+.user-info {
         display: flex;
         flex-direction: column;
         padding-left: 8px;
     }
 
-    .user-info a {
-      color: black;
-      text-decoration: none;
-      display: block;
-      font-weight: bold;
-    }
+.user-info a {
+  color: black;
+  text-decoration: none;
+  display: block;
+  font-weight: bold;
+}
 
 
-    .user-button-wrapper {
-        margin-left: 20px;
-        position:relative;
-        height:100%;
-    }
+.user-button-wrapper {
+    margin-left: 20px;
+    position:relative;
+    height:100%;
+}
 
-    .user-button {
-        transform: translateY(+25%);
-        background-color: theme.color('accent', 'base');
-        color: white;
-        padding: 6px;
-        border: none;
-        cursor: pointer;
-    }
+.user-button {
+    transform: translateY(+25%);
+    background-color: theme.color('accent', 'base');
+    color: white;
+    padding: 6px;
+    border: none;
+    cursor: pointer;
+}
 
 
-    .user-button:hover {
-        background-color: theme.color('accent', 'dark');
-    }
+.user-button:hover {
+    background-color: theme.color('accent', 'dark');
+}
 
-    .user-status {
-        transform: translateY(+50%);
-        display: flex;
-        flex-direction: row;
-        color: theme.color('accent', 'base');
-        font-weight: bold;
-        border: none;
-    }
+.user-status {
+    transform: translateY(+50%);
+    display: flex;
+    flex-direction: row;
+    color: theme.color('accent', 'base');
+    font-weight: bold;
+    border: none;
 }
 
 

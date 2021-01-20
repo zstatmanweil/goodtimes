@@ -392,7 +392,7 @@ stepUrl url model =
                         Routes.User profileUserId ->
                             let
                                 ( userProfileModel, userProfileCommand ) =
-                                    UserProfile.init loggedInUser profileUserId
+                                    UserProfile.init profileUserId
                             in
                             ( { model | page = LoggedIn loggedInUser (UserProfile userProfileModel) }
                             , Cmd.map UserProfileMsg userProfileCommand
