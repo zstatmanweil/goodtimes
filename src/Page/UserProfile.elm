@@ -1300,7 +1300,7 @@ viewRecommendedMediaDropdown mediaType =
                         ]
 
                     Just status ->
-                        [ Html.div [ class "media-status" ]
+                        [ Html.div [ class "media-buttons" ]
                             [ Html.div [ class "media-existing-status-not-btn" ]
                                 [ Html.text (Book.statusAsString status) ]
                             ]
@@ -1314,7 +1314,7 @@ viewRecommendedMediaDropdown mediaType =
                         ]
 
                     Just status ->
-                        [ Html.div [ class "media-status" ]
+                        [ Html.div [ class "media-buttons" ]
                             [ Html.div [ class "media-existing-status-not-btn" ]
                                 [ Html.text (Movie.statusAsString status) ]
                             ]
@@ -1330,7 +1330,7 @@ viewRecommendedMediaDropdown mediaType =
                     Just status ->
                         [ Html.div [ class "media-status" ]
                             [ Html.div [ class "media-existing-status-not-btn" ]
-                                [ Html.text (Book.statusAsString status) ]
+                                [ Html.text (TV.statusAsString status) ]
                             ]
                         ]
 

@@ -315,32 +315,56 @@ viewMediaDropdown mediaType =
             BookType book ->
                 case book.status of
                     Nothing ->
-                        [ Html.button [ class "dropbtn" ] [ Html.text "Add Book >>" ]
-                        , viewDropdownContent (BookType book) "to read" "reading" "read"
+                        [ Html.div [ class "media-buttons" ]
+                            [ Html.div [ class "dropdown" ]
+                                [ Html.button [ class "dropbtn" ] [ Html.text "Add Book >>" ]
+                                , viewDropdownContent (BookType book) "to read" "reading" "read"
+                                ]
+                            ]
                         ]
 
                     Just status ->
-                        [ Html.text (Book.statusAsString status) ]
+                        [ Html.div [ class "media-buttons" ]
+                            [ Html.div [ class "media-existing-status-not-btn" ]
+                                [ Html.text (Book.statusAsString status) ]
+                            ]
+                        ]
 
             MovieType movie ->
                 case movie.status of
                     Nothing ->
-                        [ Html.button [ class "dropbtn" ] [ Html.text "Add Movie >>" ]
-                        , viewDropdownContent (MovieType movie) "to watch" "watching" "watched"
+                        [ Html.div [ class "media-buttons" ]
+                            [ Html.div [ class "dropdown" ]
+                                [ Html.button [ class "dropbtn" ] [ Html.text "Add Movie >>" ]
+                                , viewDropdownContent (MovieType movie) "to watch" "watching" "watched"
+                                ]
+                            ]
                         ]
 
                     Just status ->
-                        [ Html.text (Movie.statusAsString status) ]
+                        [ Html.div [ class "media-buttons" ]
+                            [ Html.div [ class "media-existing-status-not-btn" ]
+                                [ Html.text (Movie.statusAsString status) ]
+                            ]
+                        ]
 
             TVType tv ->
                 case tv.status of
                     Nothing ->
-                        [ Html.button [ class "dropbtn" ] [ Html.text "Add TV Show >>" ]
-                        , viewDropdownContent (TVType tv) "to watch" "watching" "watched"
+                        [ Html.div [ class "media-buttons" ]
+                            [ Html.div [ class "dropdown" ]
+                                [ Html.button [ class "dropbtn" ] [ Html.text "Add TV Show >>" ]
+                                , viewDropdownContent (TVType tv) "to watch" "watching" "watched"
+                                ]
+                            ]
                         ]
 
                     Just status ->
-                        [ Html.text (TV.statusAsString status) ]
+                        [ Html.div [ class "media-buttons" ]
+                            [ Html.div [ class "media-existing-status-not-btn" ]
+                                [ Html.text (TV.statusAsString status) ]
+                            ]
+                        ]
 
 
 viewDropdownContent : MediaType -> String -> String -> String -> Html Msg
