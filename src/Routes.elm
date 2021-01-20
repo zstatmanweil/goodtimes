@@ -8,15 +8,15 @@ type Route
     | User Int
     | Search
     | SearchUsers
-    | Login
     | Authorized (Maybe String)
+    | About
 
 
 routeParser : Parser (Route -> a) a
 routeParser =
     oneOf
-        [ map Feed (s "feed")
-        , map Login (s "login")
+        [ map About (s "about")
+        , map Feed (s "feed")
         , map Authorized (s "authorized" </> fragment identity)
         , map User (s "user" </> int)
         , map Search (s "search")

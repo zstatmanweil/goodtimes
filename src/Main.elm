@@ -1,15 +1,16 @@
 module Main exposing (..)
 
-import Auth0
 import Browser exposing (..)
 import Browser.Navigation as Nav
 import Dict
+import GoodtimesAuth0 exposing (auth0Endpoint)
 import Html exposing (Html)
 import Html.Attributes as Attr
 import Http
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Maybe.Extra
+import Page.About as About
 import Page.Feed as Feed
 import Page.Search as Search
 import Page.SearchUsers as SearchUsers
@@ -60,12 +61,13 @@ type AuthStatus
 
 type Page
     = NotFound
-    | Login
+    | About
     | LoggedIn LoggedInUser LoggedInPage
 
 
 type LoggedInPage
-    = Feed Feed.Model
+    = AboutLoggedIn
+    | Feed Feed.Model
     | Search Search.Model
     | SearchUsers SearchUsers.Model
     | UserProfile UserProfile.Model
@@ -80,7 +82,7 @@ init isAuthenticated url key =
     stepUrl url
         { url = url
         , key = key
-        , page = Login
+        , page = About
         , isOpenMenu = False
         , auth = NotAuthed
         }
@@ -90,21 +92,6 @@ init isAuthenticated url key =
 -- VIEW
 
 
-auth0GetUser token =
-    Http.request
-        { method = "POST"
-        , headers = []
-        , url = auth0Endpoint ++ "/userinfo"
-        , body =
-            Http.jsonBody <|
-                Encode.object [ ( "access_token", Encode.string token ) ]
-        , expect =
-            Http.expectJson (GotAuth0Profile token) User.decodeFromAuth0
-        , timeout = Nothing
-        , tracker = Nothing
-        }
-
-
 verifyUser : String -> UnverifiedUser -> Cmd Msg
 verifyUser token unVerifiedUser =
     Http.post
@@ -112,21 +99,6 @@ verifyUser token unVerifiedUser =
         , body = Http.jsonBody (unverifiedUserEncoder unVerifiedUser)
         , expect = Http.expectJson (VerifiedUser token) userInfoDecoder
         }
-
-
-auth0Endpoint : String
-auth0Endpoint =
-    "https://goodtimes-staging.us.auth0.com"
-
-
-auth0LoginUrl : String
-auth0LoginUrl =
-    Auth0.auth0AuthorizeURL
-        (Auth0.Auth0Config auth0Endpoint "68MpVR1fV03q6to9Al7JbNAYLTi2lRGT")
-        "token"
-        "http://localhost:1234/authorized"
-        [ "openid", "name", "email", "profile" ]
-        (Just "google-oauth2")
 
 
 view : Model -> Browser.Document Msg
@@ -141,21 +113,14 @@ view model =
                 , kids = [ Html.div [] [ Html.text "This page does not exist" ] ]
                 }
 
-        Login ->
-            { title = "Welcome to goodtimes"
-            , body =
-                [ Html.h2 [] [ Html.text "good times" ]
-                , Html.text "You need to log in"
-                , Html.div [] [ Html.a [ Attr.href auth0LoginUrl ] [ Html.text "login" ] ]
-                ]
-            }
+        About ->
+            Skeleton.view model.isOpenMenu ToggleViewMenu never (About.view Nothing)
 
         LoggedIn loggedInUser loggedInPage ->
-            let
-                _ =
-                    Debug.log "User" loggedInUser
-            in
             case loggedInPage of
+                AboutLoggedIn ->
+                    Skeleton.view model.isOpenMenu ToggleViewMenu never (About.view (Just loggedInUser))
+
                 Feed feedModel ->
                     Skeleton.view model.isOpenMenu ToggleViewMenu FeedMsg (Feed.view loggedInUser feedModel)
 
@@ -218,7 +183,7 @@ update msg model =
             case result of
                 Ok profile ->
                     ( { model | auth = Authenticated (LoggedInUser token profile) }
-                    , Nav.pushUrl model.key "feed"
+                    , Nav.pushUrl model.key "about"
                     )
 
                 Err err ->
@@ -323,6 +288,21 @@ intoTuple list =
 --     |> String.split "="
 
 
+auth0GetUser token =
+    Http.request
+        { method = "POST"
+        , headers = []
+        , url = auth0Endpoint ++ "/userinfo"
+        , body =
+            Http.jsonBody <|
+                Encode.object [ ( "access_token", Encode.string token ) ]
+        , expect =
+            Http.expectJson (GotAuth0Profile token) User.decodeFromAuth0
+        , timeout = Nothing
+        , tracker = Nothing
+        }
+
+
 {-| URL to Page
 -}
 stepUrl : Url.Url -> Model -> ( Model, Cmd Msg )
@@ -350,12 +330,12 @@ stepUrl url model =
                             ( { model | auth = newAuth }, Nav.pushUrl model.key "feed" )
 
                         _ ->
-                            ( { model | page = Login }
+                            ( { model | page = About }
                             , Cmd.none
                             )
 
                 _ ->
-                    ( { model | page = Login }
+                    ( { model | page = About }
                     , Cmd.none
                     )
 
@@ -408,8 +388,8 @@ stepUrl url model =
                             , Cmd.none
                             )
 
-                        Routes.Login ->
-                            ( { model | page = Login }
+                        Routes.About ->
+                            ( { model | page = LoggedIn loggedInUser AboutLoggedIn }
                             , Cmd.none
                             )
 

@@ -55,6 +55,7 @@ sidebar menuOpen =
                 , Html.a [ Attr.href "/search" ] [ Html.text "search media" ]
                 , Html.a [ Attr.href "/search/users" ] [ Html.text "find friends" ]
                 , Html.a [ Attr.href "/feed" ] [ Html.text "event feed" ]
+                , Html.a [ Attr.href "/about" ] [ Html.text "about goodtimes" ]
                 ]
 
         False ->
