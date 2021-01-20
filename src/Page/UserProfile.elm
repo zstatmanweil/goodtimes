@@ -886,7 +886,7 @@ viewMediaType friends profileType mediaType =
                     , Html.div [ class "media-info" ]
                         [ viewBookDetails book
                         , Html.div [ class "media-buttons" ]
-                            [ viewFriendMediaStatus (BookType book)
+                            [ viewMediaStatus profileType (BookType book)
                             , Html.div
                                 []
                                 [ viewFriendsToRecommendDropdown profileType (BookType book) friends ]
@@ -902,7 +902,7 @@ viewMediaType friends profileType mediaType =
                     , Html.div [ class "media-info" ]
                         [ viewMovieDetails movie
                         , Html.div [ class "media-buttons" ]
-                            [ viewFriendMediaStatus (MovieType movie)
+                            [ viewMediaStatus profileType (MovieType movie)
                             , Html.div []
                                 [ viewFriendsToRecommendDropdown profileType (MovieType movie) friends ]
                             ]
@@ -917,7 +917,7 @@ viewMediaType friends profileType mediaType =
                     , Html.div [ class "media-info" ]
                         [ viewTVDetails tv
                         , Html.div [ class "media-buttons" ]
-                            [ viewFriendMediaStatus (TVType tv)
+                            [ viewMediaStatus profileType (TVType tv)
                             , Html.div []
                                 [ viewFriendsToRecommendDropdown profileType (TVType tv) friends ]
                             ]
@@ -1024,9 +1024,19 @@ viewTVDetails tv =
         ]
 
 
+viewMediaStatus : Profile -> MediaType -> Html Msg
+viewMediaStatus profileType mediaType =
+    case profileType of
+        FriendProfile ->
+            viewFriendMediaStatus mediaType
+
+        _ ->
+            viewMediaStatusDropdown mediaType
+
+
 viewMediaStatusDropdown : MediaType -> Html Msg
 viewMediaStatusDropdown mediaType =
-    Html.div [ class "dropdown" ] <|
+    Html.div [ class "dropdown", class "media-status" ] <|
         case mediaType of
             BookType book ->
                 [ Html.button [ class "dropbtn-existing-status" ] [ Html.text (Book.maybeStatusAsString book.status ++ " >>") ]
@@ -1145,7 +1155,7 @@ viewFriendsToRecommendDropdown profileType mediaType userFriends =
                             ]
 
                     else
-                        Html.div [ class "dropdown" ] <|
+                        Html.div [ class "dropdown", class "media-status" ] <|
                             [ Html.button [ class "dropbtn" ] [ Html.text "recommend >>" ]
                             , Html.div [ class "dropdown-content" ]
                                 (List.map (viewFriendFullName mediaType) (List.sortBy .fullName friends))
