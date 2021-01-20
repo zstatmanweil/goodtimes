@@ -245,7 +245,7 @@ friendStatusAsString status =
 
 
 type alias UserWithFriendStatus =
-    { id : Int
+    { goodTimesId : Int
     , fullName : String
     , firstName : String
     , lastName : String

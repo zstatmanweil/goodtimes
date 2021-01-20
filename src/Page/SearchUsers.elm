@@ -86,7 +86,7 @@ addFriendLink : LoggedInUser -> UserWithFriendStatus -> FriendStatus -> Cmd Msg
 addFriendLink loggedInUser user status =
     Http.post
         { url = "http://localhost:5000/friend"
-        , body = Http.jsonBody (friendLinkEncoder loggedInUser.userInfo.goodTimesId user.id status)
+        , body = Http.jsonBody (friendLinkEncoder loggedInUser.userInfo.goodTimesId user.goodTimesId status)
         , expect = Http.expectJson FriendLinkAdded friendLinkDecoder
         }
 

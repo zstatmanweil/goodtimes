@@ -677,7 +677,7 @@ viewFriendButton user =
             Nothing ->
                 [ Html.button
                     [ class "user-button"
-                    , Html.Events.onClick (AddFriendLink user.id Requested)
+                    , Html.Events.onClick (AddFriendLink user.goodTimesId Requested)
                     ]
                     [ Html.text "Add Friend >>" ]
                 ]
