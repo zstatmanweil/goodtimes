@@ -392,5 +392,10 @@
     text-align: center;
 }
 
+.about-box h2 {
+    margin: 8px;
+    text-align: center;
+}
+
 .about-box a:hover { color:theme.color('scale', 'light') };
 .about-box a:link {text-decoration:none;}

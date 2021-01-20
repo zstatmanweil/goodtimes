@@ -32,6 +32,7 @@ body loggedInUser =
                     , Html.div [ class "about-box" ]
                         [ Html.h1 [] [ Html.text "about good times" ]
                         , viewAboutText
+                        , Html.h2 [] [ Html.a [ Attr.href ("/user/" ++ String.fromInt user.userInfo.goodTimesId) ] [ Html.text "get started" ] ]
                         ]
                     ]
 
@@ -44,12 +45,12 @@ body loggedInUser =
                             [ Html.text
                                 "Already a good times enthusiast?"
                             ]
-                        , Html.h1 [] [ Html.a [ Attr.href auth0LoginUrl ] [ Html.text "login" ] ]
+                        , Html.h2 [] [ Html.a [ Attr.href auth0LoginUrl ] [ Html.text "login" ] ]
                         , Html.div [ class "page-text-center" ]
                             [ Html.text
                                 "Need to make an account?"
                             ]
-                        , Html.h1 [] [ Html.a [ Attr.href auth0LoginUrl ] [ Html.text "sign up" ] ]
+                        , Html.h2 [] [ Html.a [ Attr.href auth0LoginUrl ] [ Html.text "sign up" ] ]
                         ]
                     ]
         ]
