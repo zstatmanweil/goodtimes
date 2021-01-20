@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import datetime
-from typing import Optional
 
 from dataclasses_json import dataclass_json
 import sqlalchemy as sa
@@ -33,6 +32,7 @@ class User:
     last_name: str
     full_name: str
     email: str
+    created: datetime = datetime.utcnow()
     picture: str = None
-    created: datetime = field(init=False)
+
 

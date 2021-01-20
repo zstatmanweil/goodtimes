@@ -3,7 +3,6 @@ This script is for creating a test user in the database.
 """
 import pathlib
 import sys
-from datetime import datetime
 
 from pyhocon import ConfigFactory
 import sqlalchemy as sa
@@ -27,13 +26,13 @@ def add_users():
         last_name='strick',
         full_name='aaron strick')
 
-    # third_user = User(
-    #     auth0_sub='123',
-    #     email='jakejhanft@gmail.com',
-    #     first_name='jake',
-    #     last_name='hanft',
-    #     full_name='jake hanft'
-    # )
+    third_user = User(
+        auth0_sub='123',
+        email='jakejhanft@gmail.com',
+        first_name='jake',
+        last_name='hanft',
+        full_name='jake hanft'
+    )
 
     fourth_user = User(
         auth0_sub='123',
@@ -45,7 +44,7 @@ def add_users():
 
     session = Session()
     session.add(second_user)
-    # session.add(third_user)
+    session.add(third_user)
     session.add(fourth_user)
     print("testing")
     session.commit()
