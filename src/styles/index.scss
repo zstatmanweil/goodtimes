@@ -129,6 +129,7 @@
     }
 
     .media-existing-status-not-btn {
+      display: absolute;
       background-color: theme.color('scale', 'light');
       color: theme.color('primary', 'base');
       font-weight: bold;

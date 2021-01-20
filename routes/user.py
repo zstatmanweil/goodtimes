@@ -185,18 +185,16 @@ def get_consumed_media_by_media_type(user_id, media_type):
     return jsonify(result), 200
 
 
-@user.route("/media/<media_type>/recommendation/", methods=["POST"])
+@user.route("/media/<media_type>/recommendation", methods=["POST"])
 def add_recommended_media(media_type):
     """
     Endpoint for adding a recommendation for a given media type. Post body:
     {
         "recommender_user_id": int
         "recommended_user_id": int
-        "media_id": int
         "source_id": string
         "status": string
     }
-    :param user_id:
     :param media_type: book, movie or tv
     :return:
     """
