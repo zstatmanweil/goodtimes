@@ -2,6 +2,7 @@ module Page.UserProfile exposing (..)
 
 import Book exposing (Book)
 import Consumption exposing (Consumption, Status(..))
+import GoodtimesAPI exposing (goodTimesRequest)
 import Html exposing (Attribute, Html)
 import Html.Attributes as Attr exposing (class, id)
 import Html.Events
@@ -239,7 +240,7 @@ update loggedInUser msg model =
             )
 
         AddMediaToProfile mediaType status ->
-            ( model, addMediaToProfile mediaType status loggedInUser )
+            ( model, addMediaToProfile loggedInUser mediaType status )
 
         MediaAddedToProfile result ->
             case result of
@@ -570,33 +571,42 @@ recommendMedia recommenderUser recommendedUserID mediaType recommendation =
 
 getOverlappingMedia : String -> LoggedInUser -> Int -> Cmd Msg
 getOverlappingMedia mediaType loggedInUser friendUserId =
-    Http.get
-        { url = "http://localhost:5000/overlaps/" ++ mediaType ++ "/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/" ++ String.fromInt friendUserId
+    goodTimesRequest
+        { loggedInUser = loggedInUser
+        , method = "GET"
+        , url = "/overlaps/" ++ mediaType ++ "/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/" ++ String.fromInt friendUserId
+        , body = Nothing
         , expect = Http.expectJson OverlapResponse (Decode.list Overlap.overlapMediaDecoder)
         }
 
 
-addMediaToProfile : MediaType -> Consumption.Status -> LoggedInUser -> Cmd Msg
-addMediaToProfile mediaType status loggedInUser =
+addMediaToProfile : LoggedInUser -> MediaType -> Consumption.Status -> Cmd Msg
+addMediaToProfile loggedInUser mediaType status =
     case mediaType of
         BookType book ->
-            Http.post
-                { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/book"
-                , body = Http.jsonBody (Book.encoderWithStatus book status)
+            goodTimesRequest
+                { loggedInUser = loggedInUser
+                , method = "POST"
+                , url = "/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/book"
+                , body = Just <| Http.jsonBody (Book.encoderWithStatus book status)
                 , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
                 }
 
         MovieType movie ->
-            Http.post
-                { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/movie"
-                , body = Http.jsonBody (Movie.encoderWithStatus movie status)
+            goodTimesRequest
+                { loggedInUser = loggedInUser
+                , method = "POST"
+                , url = "/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/movie"
+                , body = Just <| Http.jsonBody (Movie.encoderWithStatus movie status)
                 , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
                 }
 
         TVType tv ->
-            Http.post
-                { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/tv"
-                , body = Http.jsonBody (TV.encoderWithStatus tv status)
+            goodTimesRequest
+                { loggedInUser = loggedInUser
+                , method = "POST"
+                , url = "/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/tv"
+                , body = Just <| Http.jsonBody (TV.encoderWithStatus tv status)
                 , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
                 }
 
@@ -634,7 +644,7 @@ body loggedInUser model =
                     , viewMediaTabRow model
                     , viewConsumptionTabRow model
                     , Html.div [ class "results" ]
-                        [ viewTabContent model (Success loggedInUser.userInfo) ]
+                        [ viewTabContent model ]
                     ]
                 ]
 
@@ -652,7 +662,7 @@ body loggedInUser model =
                     , viewMediaTabRow model
                     , viewConsumptionTabRow model
                     , Html.div [ class "results" ]
-                        [ viewTabContent model model.profileUser ]
+                        [ viewTabContent model ]
                     ]
                 ]
 
@@ -688,14 +698,14 @@ viewFriendButton user =
                 ]
 
 
-viewTabContent : Model -> WebData UserInfo -> Html Msg
-viewTabContent model profileUserInfo =
+viewTabContent : Model -> Html Msg
+viewTabContent model =
     case model.firstSelectedTab of
         RecommendationTab ->
             viewRecommendations model.recommendedResults
 
         MediaTab ->
-            viewMedias model.filteredMediaResults model.loggedInUserFriends profileUserInfo model.profileType
+            viewMedias model.filteredMediaResults model.loggedInUserFriends model.profileType
 
         FriendsTab ->
             case ( model.profileType, model.friendshipSelectedTab ) of
@@ -854,8 +864,8 @@ viewAcceptFriendButton user =
         ]
 
 
-viewMedias : WebData (List MediaType) -> WebData (List UserInfo) -> WebData UserInfo -> Profile -> Html Msg
-viewMedias receivedMedia friends userInfo profileType =
+viewMedias : WebData (List MediaType) -> WebData (List UserInfo) -> Profile -> Html Msg
+viewMedias receivedMedia friends profileType =
     case receivedMedia of
         NotAsked ->
             Html.div [ class "page-text" ] [ Html.text "select a media type" ]

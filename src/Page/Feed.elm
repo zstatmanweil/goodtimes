@@ -3,6 +3,7 @@ module Page.Feed exposing (..)
 import Book exposing (Book)
 import Consumption exposing (Status(..))
 import Event exposing (..)
+import GoodtimesAPI exposing (goodTimesRequest)
 import Html exposing (Html)
 import Html.Attributes as Attr exposing (class, id)
 import Http
@@ -63,8 +64,11 @@ update msg model =
 
 getUserAndFriendEvents : LoggedInUser -> Cmd Msg
 getUserAndFriendEvents loggedInUser =
-    Http.get
-        { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/friend/events"
+    goodTimesRequest
+        { loggedInUser = loggedInUser
+        , method = "GET"
+        , url = "/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/friend/events"
+        , body = Nothing
         , expect = Http.expectJson EventResponse (Decode.list Event.decoder)
         }
 

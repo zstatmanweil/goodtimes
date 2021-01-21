@@ -4,14 +4,23 @@ import Http exposing (..)
 import User exposing (LoggedInUser)
 
 
-goodTimesRequest : LoggedInUser -> String -> String -> Maybe Body -> Expect msg -> Cmd msg
-goodTimesRequest loggedInUser method url body expect =
+type alias GoodTimesRequestInfo msg =
+    { loggedInUser : LoggedInUser
+    , method : String
+    , url : String
+    , body : Maybe Body
+    , expect : Expect msg
+    }
+
+
+goodTimesRequest : GoodTimesRequestInfo msg -> Cmd msg
+goodTimesRequest requsetInfo =
     Http.request
-        { method = method
-        , headers = [ header "Authorization" ("Bearer " ++ loggedInUser.token) ]
-        , url = "http://localhost:5000" ++ url
-        , body = Maybe.withDefault emptyBody body
-        , expect = expect
+        { method = requsetInfo.method
+        , headers = [ header "Authorization" ("Bearer " ++ requsetInfo.loggedInUser.token) ]
+        , url = "http://localhost:5000" ++ requsetInfo.url
+        , body = Maybe.withDefault emptyBody requsetInfo.body
+        , expect = requsetInfo.expect
         , timeout = Nothing
         , tracker = Nothing
         }

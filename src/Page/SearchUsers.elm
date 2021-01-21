@@ -78,25 +78,23 @@ update loggedInUser msg model =
 searchUsers : LoggedInUser -> String -> Cmd Msg
 searchUsers loggedInUser emailString =
     goodTimesRequest
-        loggedInUser
-        "GET"
-        ("/users?email=" ++ emailString ++ "&user_id=" ++ String.fromInt loggedInUser.userInfo.goodTimesId)
-        Nothing
-        (Http.expectJson UserWithFriendStatusResponse (Decode.list User.userWithStatusDecoder))
+        { loggedInUser = loggedInUser
+        , method = "GET"
+        , url = "/users?email=" ++ emailString ++ "&user_id=" ++ String.fromInt loggedInUser.userInfo.goodTimesId
+        , body = Nothing
+        , expect = Http.expectJson UserWithFriendStatusResponse (Decode.list User.userWithStatusDecoder)
+        }
 
 
 addFriendLink : LoggedInUser -> UserWithFriendStatus -> FriendStatus -> Cmd Msg
 addFriendLink loggedInUser user status =
     goodTimesRequest
-        loggedInUser
-        "POST"
-        "/friend"
-        (Just
-            (Http.jsonBody
-                (friendLinkEncoder loggedInUser.userInfo.goodTimesId user.goodTimesId status)
-            )
-        )
-        (Http.expectJson FriendLinkAdded friendLinkDecoder)
+        { loggedInUser = loggedInUser
+        , method = "POST"
+        , url = "/friend"
+        , body = Just (Http.jsonBody (friendLinkEncoder loggedInUser.userInfo.goodTimesId user.goodTimesId status))
+        , expect = Http.expectJson FriendLinkAdded friendLinkDecoder
+        }
 
 
 view : Model -> Skeleton.Details Msg
