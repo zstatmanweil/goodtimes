@@ -1,5 +1,6 @@
 module Page.SearchUsers exposing (..)
 
+import GoodtimesAPI exposing (goodTimesRequest)
 import Html exposing (Attribute, Html)
 import Html.Attributes as Attr exposing (class, id, placeholder)
 import Html.Events
@@ -46,7 +47,7 @@ update : LoggedInUser -> Msg -> Model -> ( Model, Cmd Msg )
 update loggedInUser msg model =
     case msg of
         SearchUsers ->
-            ( model, searchUsers loggedInUser.userInfo.goodTimesId model.query )
+            ( model, searchUsers loggedInUser model.query )
 
         UpdateQuery newString ->
             ( { model | query = newString }, Cmd.none )
@@ -64,7 +65,7 @@ update loggedInUser msg model =
         FriendLinkAdded result ->
             case result of
                 Ok _ ->
-                    ( model, searchUsers loggedInUser.userInfo.goodTimesId model.query )
+                    ( model, searchUsers loggedInUser model.query )
 
                 Err httpError ->
                     -- TODO handle error!
@@ -74,21 +75,28 @@ update loggedInUser msg model =
             ( model, Cmd.none )
 
 
-searchUsers : Int -> String -> Cmd Msg
-searchUsers userId emailString =
-    Http.get
-        { url = "http://localhost:5000/users?email=" ++ emailString ++ "&user_id=" ++ String.fromInt userId
-        , expect = Http.expectJson UserWithFriendStatusResponse (Decode.list User.userWithStatusDecoder)
-        }
+searchUsers : LoggedInUser -> String -> Cmd Msg
+searchUsers loggedInUser emailString =
+    goodTimesRequest
+        loggedInUser
+        "GET"
+        ("/users?email=" ++ emailString ++ "&user_id=" ++ String.fromInt loggedInUser.userInfo.goodTimesId)
+        Nothing
+        (Http.expectJson UserWithFriendStatusResponse (Decode.list User.userWithStatusDecoder))
 
 
 addFriendLink : LoggedInUser -> UserWithFriendStatus -> FriendStatus -> Cmd Msg
 addFriendLink loggedInUser user status =
-    Http.post
-        { url = "http://localhost:5000/friend"
-        , body = Http.jsonBody (friendLinkEncoder loggedInUser.userInfo.goodTimesId user.goodTimesId status)
-        , expect = Http.expectJson FriendLinkAdded friendLinkDecoder
-        }
+    goodTimesRequest
+        loggedInUser
+        "POST"
+        "/friend"
+        (Just
+            (Http.jsonBody
+                (friendLinkEncoder loggedInUser.userInfo.goodTimesId user.goodTimesId status)
+            )
+        )
+        (Http.expectJson FriendLinkAdded friendLinkDecoder)
 
 
 view : Model -> Skeleton.Details Msg
