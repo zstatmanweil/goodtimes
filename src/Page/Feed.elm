@@ -65,7 +65,7 @@ update msg model =
 getUserAndFriendEvents : LoggedInUser -> Cmd Msg
 getUserAndFriendEvents loggedInUser =
     goodTimesRequest
-        { loggedInUser = loggedInUser
+        { token = loggedInUser.token
         , method = "GET"
         , url = "/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/friend/events"
         , body = Nothing

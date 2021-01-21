@@ -121,7 +121,7 @@ update loggedInUser msg model =
 searchBooks : LoggedInUser -> String -> Cmd Msg
 searchBooks loggedInUser titleString =
     goodTimesRequest
-        { loggedInUser = loggedInUser
+        { token = loggedInUser.token
         , method = "GET"
         , url = "/books?title=" ++ titleString
         , body = Nothing
@@ -132,7 +132,7 @@ searchBooks loggedInUser titleString =
 searchMovies : LoggedInUser -> String -> Cmd Msg
 searchMovies loggedInUser titleString =
     goodTimesRequest
-        { loggedInUser = loggedInUser
+        { token = loggedInUser.token
         , method = "GET"
         , url = "/movies?title=" ++ titleString
         , body = Nothing
@@ -143,7 +143,7 @@ searchMovies loggedInUser titleString =
 searchTV : LoggedInUser -> String -> Cmd Msg
 searchTV loggedInUser titleString =
     goodTimesRequest
-        { loggedInUser = loggedInUser
+        { token = loggedInUser.token
         , method = "GET"
         , url = "/tv?title=" ++ titleString
         , body = Nothing
@@ -156,7 +156,7 @@ addMediaToProfile loggedInUser mediaType status =
     case mediaType of
         BookType book ->
             goodTimesRequest
-                { loggedInUser = loggedInUser
+                { token = loggedInUser.token
                 , method = "POST"
                 , url = "/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/book"
                 , body = Just <| Http.jsonBody (Book.encoderWithStatus book status)
@@ -165,7 +165,7 @@ addMediaToProfile loggedInUser mediaType status =
 
         MovieType movie ->
             goodTimesRequest
-                { loggedInUser = loggedInUser
+                { token = loggedInUser.token
                 , method = "POST"
                 , url = "/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/movie"
                 , body = Just <| Http.jsonBody (Movie.encoderWithStatus movie status)
@@ -174,7 +174,7 @@ addMediaToProfile loggedInUser mediaType status =
 
         TVType tv ->
             goodTimesRequest
-                { loggedInUser = loggedInUser
+                { token = loggedInUser.token
                 , method = "POST"
                 , url = "/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/tv"
                 , body = Just <| Http.jsonBody (TV.encoderWithStatus tv status)

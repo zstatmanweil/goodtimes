@@ -62,8 +62,8 @@ type Msg
     | UserWithFriendStatusResponse (Result Http.Error (List UserWithFriendStatus))
 
 
-init : Int -> ( Model, Cmd Msg )
-init profileUserId =
+init : LoggedInUser -> Int -> ( Model, Cmd Msg )
+init loggedInUser profileUserId =
     ( { profileUser = NotAsked
       , profileType = NoProfile
       , loggedInUserFriends = NotAsked
@@ -79,7 +79,7 @@ init profileUserId =
       , recommendationSelectedTab = NoRecommendationTab
       , friendshipSelectedTab = NoFriendshipTab
       }
-    , getUser profileUserId
+    , getUser loggedInUser profileUserId
     )
 
 
@@ -354,7 +354,7 @@ update loggedInUser msg model =
                         ( { model
                             | profileUser = Success user
                           }
-                        , searchUsers loggedInUser.userInfo.goodTimesId user.email
+                        , searchUsers loggedInUser user.email
                         )
 
                 -- TODO: handle error
@@ -414,7 +414,7 @@ update loggedInUser msg model =
                             ( model, getFriendRequests loggedInUser )
 
                         _ ->
-                            ( model, searchUsers loggedInUser.userInfo.goodTimesId (getUserEmail model.profileUser) )
+                            ( model, searchUsers loggedInUser (getUserEmail model.profileUser) )
 
                 Err httpError ->
                     -- TODO handle error!
@@ -481,90 +481,121 @@ update loggedInUser msg model =
 
 searchUserBooks : LoggedInUser -> Int -> Cmd Msg
 searchUserBooks loggedInUser userId =
-    Http.get
-        { url = "http://localhost:5000/user/" ++ String.fromInt userId ++ "/media/book"
+    goodTimesRequest
+        { token = loggedInUser.token
+        , method = "GET"
+        , url = "/user/" ++ String.fromInt userId ++ "/media/book"
+        , body = Nothing
         , expect = Http.expectJson MediaResponse (Decode.list (Media.bookToMediaDecoder Book.decoder))
         }
 
 
 searchUserMovies : LoggedInUser -> Int -> Cmd Msg
 searchUserMovies loggedInUser userId =
-    Http.get
-        { url = "http://localhost:5000/user/" ++ String.fromInt userId ++ "/media/movie"
+    goodTimesRequest
+        { token = loggedInUser.token
+        , method = "GET"
+        , url = "/user/" ++ String.fromInt userId ++ "/media/movie"
+        , body = Nothing
         , expect = Http.expectJson MediaResponse (Decode.list (Media.movieToMediaDecoder Movie.decoder))
         }
 
 
 searchUserTV : LoggedInUser -> Int -> Cmd Msg
 searchUserTV loggedInUser userId =
-    Http.get
-        { url = "http://localhost:5000/user/" ++ String.fromInt userId ++ "/media/tv"
+    goodTimesRequest
+        { token = loggedInUser.token
+        , method = "GET"
+        , url = "/user/" ++ String.fromInt userId ++ "/media/tv"
+        , body = Nothing
         , expect = Http.expectJson MediaResponse (Decode.list (Media.tvToMediaDecoder TV.decoder))
         }
 
 
-getUser : Int -> Cmd Msg
-getUser userID =
-    Http.get
-        { url = "http://localhost:5000/user/" ++ String.fromInt userID
+getUser : LoggedInUser -> Int -> Cmd Msg
+getUser loggedInUser profileUserID =
+    goodTimesRequest
+        { token = loggedInUser.token
+        , method = "GET"
+        , url = "/user/" ++ String.fromInt profileUserID
+        , body = Nothing
         , expect = Http.expectJson UserResponse userInfoDecoder
         }
 
 
 getExistingFriends : LoggedInUser -> Int -> Cmd Msg
 getExistingFriends loggedInUser userId =
-    Http.get
-        { url = "http://localhost:5000/user/" ++ String.fromInt userId ++ "/friends"
+    goodTimesRequest
+        { token = loggedInUser.token
+        , method = "GET"
+        , url = "/user/" ++ String.fromInt userId ++ "/friends"
+        , body = Nothing
         , expect = Http.expectJson FriendResponse (Decode.list userInfoDecoder)
         }
 
 
 getFriendRequests : LoggedInUser -> Cmd Msg
 getFriendRequests loggedInUser =
-    Http.get
-        { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/requests"
+    goodTimesRequest
+        { token = loggedInUser.token
+        , method = "GET"
+        , url = "/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/requests"
+        , body = Nothing
         , expect = Http.expectJson FriendResponse (Decode.list userInfoDecoder)
         }
 
 
 addFriendLink : LoggedInUser -> Int -> FriendStatus -> Cmd Msg
 addFriendLink loggedInUser currentUserId status =
-    Http.post
-        { url = "http://localhost:5000/friend"
-        , body = Http.jsonBody (friendLinkEncoder loggedInUser.userInfo.goodTimesId currentUserId status)
+    goodTimesRequest
+        { token = loggedInUser.token
+        , method = "POST"
+        , url = "/friend"
+        , body = Just (Http.jsonBody (friendLinkEncoder loggedInUser.userInfo.goodTimesId currentUserId status))
         , expect = Http.expectJson FriendLinkAdded friendLinkDecoder
         }
 
 
-searchUsers : Int -> String -> Cmd Msg
-searchUsers userId emailString =
-    Http.get
-        { url = "http://localhost:5000/users?email=" ++ emailString ++ "&user_id=" ++ String.fromInt userId
+searchUsers : LoggedInUser -> String -> Cmd Msg
+searchUsers loggedInUser emailString =
+    goodTimesRequest
+        { token = loggedInUser.token
+        , method = "GET"
+        , url = "/users?email=" ++ emailString ++ "&user_id=" ++ String.fromInt loggedInUser.userInfo.goodTimesId
+        , body = Nothing
         , expect = Http.expectJson UserWithFriendStatusResponse (Decode.list User.userWithStatusDecoder)
         }
 
 
 getRecommendedToUserMedia : LoggedInUser -> String -> Cmd Msg
 getRecommendedToUserMedia loggedInUser mediaType =
-    Http.get
-        { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/recommendations/" ++ mediaType
+    goodTimesRequest
+        { token = loggedInUser.token
+        , method = "GET"
+        , url = "/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/recommendations/" ++ mediaType
+        , body = Nothing
         , expect = Http.expectJson RecommendedMediaResponse (Decode.list (recToUserToRecTypeDecoder recommendedToUserMediaDecoder))
         }
 
 
 getRecommendedByUserMedia : LoggedInUser -> String -> Cmd Msg
 getRecommendedByUserMedia loggedInUser mediaType =
-    Http.get
-        { url = "http://localhost:5000/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/recommended/" ++ mediaType
+    goodTimesRequest
+        { token = loggedInUser.token
+        , method = "GET"
+        , url = "/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/recommended/" ++ mediaType
+        , body = Nothing
         , expect = Http.expectJson RecommendedMediaResponse (Decode.list (recByUserToRecTypeDecoder recommendedByUserMediaDecoder))
         }
 
 
 recommendMedia : LoggedInUser -> Int -> MediaType -> Recommendation.Status -> Cmd Msg
 recommendMedia recommenderUser recommendedUserID mediaType recommendation =
-    Http.post
-        { url = "http://localhost:5000/media/" ++ Media.getMediaTypeAsString mediaType ++ "/recommendation"
-        , body = Http.jsonBody (Recommendation.encoder mediaType recommenderUser.userInfo.goodTimesId recommendedUserID recommendation)
+    goodTimesRequest
+        { token = recommenderUser.token
+        , method = "POST"
+        , url = "/media/" ++ Media.getMediaTypeAsString mediaType ++ "/recommendation"
+        , body = Just (Http.jsonBody (Recommendation.encoder mediaType recommenderUser.userInfo.goodTimesId recommendedUserID recommendation))
         , expect = Http.expectJson RecommendationResponse Recommendation.decoder
         }
 
@@ -572,7 +603,7 @@ recommendMedia recommenderUser recommendedUserID mediaType recommendation =
 getOverlappingMedia : String -> LoggedInUser -> Int -> Cmd Msg
 getOverlappingMedia mediaType loggedInUser friendUserId =
     goodTimesRequest
-        { loggedInUser = loggedInUser
+        { token = loggedInUser.token
         , method = "GET"
         , url = "/overlaps/" ++ mediaType ++ "/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/" ++ String.fromInt friendUserId
         , body = Nothing
@@ -585,7 +616,7 @@ addMediaToProfile loggedInUser mediaType status =
     case mediaType of
         BookType book ->
             goodTimesRequest
-                { loggedInUser = loggedInUser
+                { token = loggedInUser.token
                 , method = "POST"
                 , url = "/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/book"
                 , body = Just <| Http.jsonBody (Book.encoderWithStatus book status)
@@ -594,7 +625,7 @@ addMediaToProfile loggedInUser mediaType status =
 
         MovieType movie ->
             goodTimesRequest
-                { loggedInUser = loggedInUser
+                { token = loggedInUser.token
                 , method = "POST"
                 , url = "/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/movie"
                 , body = Just <| Http.jsonBody (Movie.encoderWithStatus movie status)
@@ -603,7 +634,7 @@ addMediaToProfile loggedInUser mediaType status =
 
         TVType tv ->
             goodTimesRequest
-                { loggedInUser = loggedInUser
+                { token = loggedInUser.token
                 , method = "POST"
                 , url = "/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/tv"
                 , body = Just <| Http.jsonBody (TV.encoderWithStatus tv status)

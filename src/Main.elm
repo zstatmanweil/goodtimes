@@ -3,6 +3,7 @@ module Main exposing (..)
 import Browser exposing (..)
 import Browser.Navigation as Nav
 import Dict
+import GoodtimesAPI exposing (goodTimesRequest)
 import GoodtimesAuth0 exposing (auth0Endpoint)
 import Html exposing (Html)
 import Html.Attributes as Attr
@@ -94,9 +95,11 @@ init isAuthenticated url key =
 
 verifyUser : String -> UnverifiedUser -> Cmd Msg
 verifyUser token unVerifiedUser =
-    Http.post
-        { url = "http://localhost:5000/user"
-        , body = Http.jsonBody (unverifiedUserEncoder unVerifiedUser)
+    goodTimesRequest
+        { token = token
+        , method = "POST"
+        , url = "/user"
+        , body = Just (Http.jsonBody (unverifiedUserEncoder unVerifiedUser))
         , expect = Http.expectJson (VerifiedUser token) userInfoDecoder
         }
 
@@ -372,7 +375,7 @@ stepUrl url model =
                         Routes.User profileUserId ->
                             let
                                 ( userProfileModel, userProfileCommand ) =
-                                    UserProfile.init profileUserId
+                                    UserProfile.init loggedInUser profileUserId
                             in
                             ( { model | page = LoggedIn loggedInUser (UserProfile userProfileModel) }
                             , Cmd.map UserProfileMsg userProfileCommand

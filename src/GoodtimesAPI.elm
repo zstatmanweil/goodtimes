@@ -5,7 +5,7 @@ import User exposing (LoggedInUser)
 
 
 type alias GoodTimesRequestInfo msg =
-    { loggedInUser : LoggedInUser
+    { token : String
     , method : String
     , url : String
     , body : Maybe Body
@@ -14,13 +14,13 @@ type alias GoodTimesRequestInfo msg =
 
 
 goodTimesRequest : GoodTimesRequestInfo msg -> Cmd msg
-goodTimesRequest requsetInfo =
+goodTimesRequest requestInfo =
     Http.request
-        { method = requsetInfo.method
-        , headers = [ header "Authorization" ("Bearer " ++ requsetInfo.loggedInUser.token) ]
-        , url = "http://localhost:5000" ++ requsetInfo.url
-        , body = Maybe.withDefault emptyBody requsetInfo.body
-        , expect = requsetInfo.expect
+        { method = requestInfo.method
+        , headers = [ header "Authorization" ("Bearer " ++ requestInfo.token) ]
+        , url = "http://localhost:5000" ++ requestInfo.url
+        , body = Maybe.withDefault emptyBody requestInfo.body
+        , expect = requestInfo.expect
         , timeout = Nothing
         , tracker = Nothing
         }

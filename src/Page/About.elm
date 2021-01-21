@@ -32,7 +32,7 @@ body loggedInUser =
                     , Html.div [ class "about-box" ]
                         [ Html.h1 [] [ Html.text "about good times" ]
                         , viewAboutText
-                        , Html.h2 [] [ Html.a [ Attr.href ("/user/" ++ String.fromInt user.userInfo.goodTimesId) ] [ Html.text "get started" ] ]
+                        , Html.h2 [] [ Html.a [ Attr.href ("/user/" ++ String.fromInt user.userInfo.goodTimesId) ] [ Html.text "your profile" ] ]
                         ]
                     ]
 

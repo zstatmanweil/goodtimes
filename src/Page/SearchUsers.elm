@@ -78,7 +78,7 @@ update loggedInUser msg model =
 searchUsers : LoggedInUser -> String -> Cmd Msg
 searchUsers loggedInUser emailString =
     goodTimesRequest
-        { loggedInUser = loggedInUser
+        { token = loggedInUser.token
         , method = "GET"
         , url = "/users?email=" ++ emailString ++ "&user_id=" ++ String.fromInt loggedInUser.userInfo.goodTimesId
         , body = Nothing
@@ -89,7 +89,7 @@ searchUsers loggedInUser emailString =
 addFriendLink : LoggedInUser -> UserWithFriendStatus -> FriendStatus -> Cmd Msg
 addFriendLink loggedInUser user status =
     goodTimesRequest
-        { loggedInUser = loggedInUser
+        { token = loggedInUser.token
         , method = "POST"
         , url = "/friend"
         , body = Just (Http.jsonBody (friendLinkEncoder loggedInUser.userInfo.goodTimesId user.goodTimesId status))
