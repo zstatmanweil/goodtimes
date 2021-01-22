@@ -1125,17 +1125,17 @@ viewFriendMediaStatus mediaType =
         case mediaType of
             BookType book ->
                 [ Html.button [ class "friend-media-existing-status-not-btn" ]
-                    [ Html.text ("friend's status: " ++ Book.maybeStatusAsString book.status ++ " " ++ String.fromChar (Char.fromCode 187)) ]
+                    [ Html.text ("friend's status: " ++ Book.maybeStatusAsString book.status) ]
                 ]
 
             MovieType movie ->
                 [ Html.button [ class "friend-media-existing-status-not-btn" ]
-                    [ Html.text ("friend's status: " ++ Movie.maybeStatusAsString movie.status ++ " " ++ String.fromChar (Char.fromCode 187)) ]
+                    [ Html.text ("friend's status: " ++ Movie.maybeStatusAsString movie.status) ]
                 ]
 
             TVType tv ->
                 [ Html.button [ class "friend-media-existing-status-not-btn" ]
-                    [ Html.text ("friend's status: " ++ TV.maybeStatusAsString tv.status ++ " " ++ String.fromChar (Char.fromCode 187)) ]
+                    [ Html.text ("friend's status: " ++ TV.maybeStatusAsString tv.status) ]
                 ]
 
 
