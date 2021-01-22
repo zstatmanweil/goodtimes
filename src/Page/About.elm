@@ -78,7 +78,7 @@ viewAboutText =
             Aaron and Zoe met when they were 14, learned to code  in their mid-20s, attended """
             , Html.a [ Attr.href "https://www.recurse.com/" ] [ Html.text "Recurse Center" ]
             , Html.text <|
-                """ enthusiastically but separately in 2018/19, and paired up starting in fall 2019 to tackle Good Times one
+                """ enthusiastically but separately in 2018/19, and paired up starting in Fall 2020 to tackle Good Times one
             virtual coding session at a time."""
             ]
         ]

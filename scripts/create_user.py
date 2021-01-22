@@ -42,6 +42,14 @@ def add_users():
         full_name='lucy rose taylor'
     )
 
+    fifth_user = User(
+        auth0_sub='123',
+        email='emd@gmail.com',
+        first_name='ella',
+        last_name='milliken detro',
+        full_name='ella milliken detro'
+    )
+
     session = Session()
     session.add(second_user)
     session.add(third_user)
