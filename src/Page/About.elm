@@ -73,7 +73,7 @@ viewAboutText =
         , Html.br [] []
         , Html.div []
             [ Html.text <|
-                """This website was also a product of the pandemic quarantine in another significant way. It gave its
+                """This website was born from the pandemic quarantine in another significant way as it gave its
             creators, Aaron Strick and Zoe Statman-Weil, a productive outlet when they got tired of reading and watching movies and TV.
             Aaron and Zoe met when they were 14, learned to code  in their mid-20s, attended """
             , Html.a [ Attr.href "https://www.recurse.com/" ] [ Html.text "Recurse Center" ]

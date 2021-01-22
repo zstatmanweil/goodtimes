@@ -44,16 +44,17 @@ def add_users():
 
     fifth_user = User(
         auth0_sub='123',
-        email='emd@gmail.com',
-        first_name='ella',
-        last_name='milliken detro',
-        full_name='ella milliken detro'
+        email='alexfakeemail@gmail.com',
+        first_name='alex',
+        last_name='mcdermott',
+        full_name='alex mcdermott'
     )
 
     session = Session()
-    session.add(second_user)
-    session.add(third_user)
-    session.add(fourth_user)
+    # session.add(second_user)
+    # session.add(third_user)
+    # session.add(fourth_user)
+    session.add(fifth_user)
     print("testing")
     session.commit()
     session.close()
