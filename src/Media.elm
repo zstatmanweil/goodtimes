@@ -70,6 +70,19 @@ getMediaStatus mediaType =
             tv.status
 
 
+getMediaSourceId : MediaType -> String
+getMediaSourceId mediaType =
+    case mediaType of
+        BookType book ->
+            book.sourceId
+
+        MovieType movie ->
+            movie.sourceId
+
+        TVType tv ->
+            tv.sourceId
+
+
 getSourceId : MediaType -> String
 getSourceId mediaType =
     case mediaType of

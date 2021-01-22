@@ -120,17 +120,26 @@ update loggedInUser msg model =
                             case mediaTabSelection of
                                 BookTab ->
                                     ( new_model
-                                    , searchUserBooks loggedInUser loggedInUser.userInfo.goodTimesId
+                                    , Cmd.batch
+                                        [ searchUserBooks loggedInUser loggedInUser.userInfo.goodTimesId
+                                        , getRecommendedByUserMedia loggedInUser (mediaTabSelectionToString mediaTabSelection)
+                                        ]
                                     )
 
                                 MovieTab ->
                                     ( new_model
-                                    , searchUserMovies loggedInUser loggedInUser.userInfo.goodTimesId
+                                    , Cmd.batch
+                                        [ searchUserMovies loggedInUser loggedInUser.userInfo.goodTimesId
+                                        , getRecommendedByUserMedia loggedInUser (mediaTabSelectionToString mediaTabSelection)
+                                        ]
                                     )
 
                                 TVTab ->
                                     ( new_model
-                                    , searchUserTV loggedInUser loggedInUser.userInfo.goodTimesId
+                                    , Cmd.batch
+                                        [ searchUserTV loggedInUser loggedInUser.userInfo.goodTimesId
+                                        , getRecommendedByUserMedia loggedInUser (mediaTabSelectionToString mediaTabSelection)
+                                        ]
                                     )
 
                                 _ ->
@@ -247,13 +256,28 @@ update loggedInUser msg model =
                 Ok _ ->
                     case ( model.firstSelectedTab, model.profileType, model.mediaSelectedTab ) of
                         ( MediaTab, LoggedInUserProfile, BookTab ) ->
-                            ( model, searchUserBooks loggedInUser loggedInUser.userInfo.goodTimesId )
+                            ( model
+                            , Cmd.batch
+                                [ searchUserBooks loggedInUser loggedInUser.userInfo.goodTimesId
+                                , getRecommendedByUserMedia loggedInUser (mediaTabSelectionToString model.mediaSelectedTab)
+                                ]
+                            )
 
                         ( MediaTab, LoggedInUserProfile, MovieTab ) ->
-                            ( model, searchUserMovies loggedInUser loggedInUser.userInfo.goodTimesId )
+                            ( model
+                            , Cmd.batch
+                                [ searchUserBooks loggedInUser loggedInUser.userInfo.goodTimesId
+                                , getRecommendedByUserMedia loggedInUser (mediaTabSelectionToString model.mediaSelectedTab)
+                                ]
+                            )
 
                         ( MediaTab, LoggedInUserProfile, TVTab ) ->
-                            ( model, searchUserTV loggedInUser loggedInUser.userInfo.goodTimesId )
+                            ( model
+                            , Cmd.batch
+                                [ searchUserBooks loggedInUser loggedInUser.userInfo.goodTimesId
+                                , getRecommendedByUserMedia loggedInUser (mediaTabSelectionToString model.mediaSelectedTab)
+                                ]
+                            )
 
                         ( MediaTab, FriendProfile, BookTab ) ->
                             ( model, searchUserBooks loggedInUser (getUserId model.profileUser) )
@@ -447,10 +471,9 @@ update loggedInUser msg model =
             ( model, recommendMedia loggedInUser friend.goodTimesId mediaType Recommendation.Pending )
 
         RecommendationResponse rec ->
-            -- TODO: what do do with this response?
             case rec of
                 Ok _ ->
-                    ( model, Cmd.none )
+                    ( model, getRecommendedByUserMedia loggedInUser (mediaTabSelectionToString model.mediaSelectedTab) )
 
                 -- TODO: handle error
                 Err resp ->
@@ -720,7 +743,7 @@ viewFriendButton user =
                     [ class "user-button"
                     , Html.Events.onClick (AddFriendLink user.goodTimesId Requested)
                     ]
-                    [ Html.text "Add Friend >>" ]
+                    [ Html.text ("Add Friend " ++ String.fromChar (Char.fromCode 187)) ]
                 ]
 
             Just status ->
@@ -736,7 +759,7 @@ viewTabContent model =
             viewRecommendations model.recommendedResults
 
         MediaTab ->
-            viewMedias model.filteredMediaResults model.loggedInUserFriends model.profileType
+            viewMedias model.filteredMediaResults model.loggedInUserFriends model.recommendedResults model.profileType
 
         FriendsTab ->
             case ( model.profileType, model.friendshipSelectedTab ) of
@@ -891,12 +914,12 @@ viewAcceptFriendButton user =
             [ class "user-button"
             , Html.Events.onClick (AddFriendLink user.goodTimesId Accepted)
             ]
-            [ Html.text "Accept Friend >>" ]
+            [ Html.text ("Accept Friend " ++ String.fromChar (Char.fromCode 187)) ]
         ]
 
 
-viewMedias : WebData (List MediaType) -> WebData (List UserInfo) -> Profile -> Html Msg
-viewMedias receivedMedia friends profileType =
+viewMedias : WebData (List MediaType) -> WebData (List UserInfo) -> WebData (List RecommendationType) -> Profile -> Html Msg
+viewMedias receivedMedia friends recommendations profileType =
     case receivedMedia of
         NotAsked ->
             Html.div [ class "page-text" ] [ Html.text "select a media type" ]
@@ -914,11 +937,11 @@ viewMedias receivedMedia friends profileType =
 
             else
                 Html.ul [ class "book-list" ]
-                    (List.map (viewMediaType friends profileType) (List.sortBy Media.getTitle media))
+                    (List.map (viewMediaType friends recommendations profileType) (List.sortBy Media.getTitle media))
 
 
-viewMediaType : WebData (List UserInfo) -> Profile -> MediaType -> Html Msg
-viewMediaType friends profileType mediaType =
+viewMediaType : WebData (List UserInfo) -> WebData (List RecommendationType) -> Profile -> MediaType -> Html Msg
+viewMediaType friends recommendations profileType mediaType =
     case mediaType of
         BookType book ->
             Html.li []
@@ -929,7 +952,7 @@ viewMediaType friends profileType mediaType =
                         , Html.div [ class "media-buttons" ]
                             [ viewMediaStatus profileType (BookType book)
                             , Html.div [ class "media-status" ]
-                                [ viewFriendsToRecommendDropdown profileType (BookType book) friends ]
+                                [ viewFriendsToRecommendDropdown profileType (BookType book) recommendations friends ]
                             ]
                         ]
                     ]
@@ -944,7 +967,7 @@ viewMediaType friends profileType mediaType =
                         , Html.div [ class "media-buttons" ]
                             [ viewMediaStatus profileType (MovieType movie)
                             , Html.div [ class "media-status" ]
-                                [ viewFriendsToRecommendDropdown profileType (MovieType movie) friends ]
+                                [ viewFriendsToRecommendDropdown profileType (MovieType movie) recommendations friends ]
                             ]
                         ]
                     ]
@@ -959,7 +982,7 @@ viewMediaType friends profileType mediaType =
                         , Html.div [ class "media-buttons" ]
                             [ viewMediaStatus profileType (TVType tv)
                             , Html.div [ class "media-status" ]
-                                [ viewFriendsToRecommendDropdown profileType (TVType tv) friends ]
+                                [ viewFriendsToRecommendDropdown profileType (TVType tv) recommendations friends ]
                             ]
                         ]
                     ]
@@ -1080,17 +1103,17 @@ viewMediaStatusDropdown mediaType =
         [ Html.div [ class "dropdown" ] <|
             case mediaType of
                 BookType book ->
-                    [ Html.button [ class "dropbtn-existing-status" ] [ Html.text (Book.maybeStatusAsString book.status ++ " >>") ]
+                    [ Html.button [ class "dropbtn-existing-status" ] [ Html.text (Book.maybeStatusAsString book.status ++ " " ++ String.fromChar (Char.fromCode 187)) ]
                     , viewDropdownContent (BookType book) "to read" "reading" "read" "abandon"
                     ]
 
                 MovieType movie ->
-                    [ Html.button [ class "dropbtn-existing-status" ] [ Html.text (Movie.maybeStatusAsString movie.status ++ " >>") ]
+                    [ Html.button [ class "dropbtn-existing-status" ] [ Html.text (Movie.maybeStatusAsString movie.status ++ " " ++ String.fromChar (Char.fromCode 187)) ]
                     , viewDropdownContent (MovieType movie) "to watch" "watching" "watched" "abandon"
                     ]
 
                 TVType tv ->
-                    [ Html.button [ class "dropbtn-existing-status" ] [ Html.text (TV.maybeStatusAsString tv.status ++ " >>") ]
+                    [ Html.button [ class "dropbtn-existing-status" ] [ Html.text (TV.maybeStatusAsString tv.status ++ " " ++ String.fromChar (Char.fromCode 187)) ]
                     , viewDropdownContent (TVType tv) "to watch" "watching" "watched" "abandon"
                     ]
         ]
@@ -1102,17 +1125,17 @@ viewFriendMediaStatus mediaType =
         case mediaType of
             BookType book ->
                 [ Html.button [ class "friend-media-existing-status-not-btn" ]
-                    [ Html.text ("friend's status: " ++ Book.maybeStatusAsString book.status ++ " >>") ]
+                    [ Html.text ("friend's status: " ++ Book.maybeStatusAsString book.status ++ " " ++ String.fromChar (Char.fromCode 187)) ]
                 ]
 
             MovieType movie ->
                 [ Html.button [ class "friend-media-existing-status-not-btn" ]
-                    [ Html.text ("friend's status: " ++ Movie.maybeStatusAsString movie.status ++ " >>") ]
+                    [ Html.text ("friend's status: " ++ Movie.maybeStatusAsString movie.status ++ " " ++ String.fromChar (Char.fromCode 187)) ]
                 ]
 
             TVType tv ->
                 [ Html.button [ class "friend-media-existing-status-not-btn" ]
-                    [ Html.text ("friend's status: " ++ TV.maybeStatusAsString tv.status ++ " >>") ]
+                    [ Html.text ("friend's status: " ++ TV.maybeStatusAsString tv.status ++ " " ++ String.fromChar (Char.fromCode 187)) ]
                 ]
 
 
@@ -1124,7 +1147,7 @@ viewOverlappingMediaStatus mediaType otherUserStatus =
                 [ Html.div [ class "media-status" ]
                     [ Html.div [ class "dropdown" ]
                         [ Html.div [ class "dropbtn-existing-status" ]
-                            [ Html.text ("your status: " ++ Book.maybeStatusAsString book.status ++ " >>") ]
+                            [ Html.text ("your status: " ++ Book.maybeStatusAsString book.status ++ " " ++ String.fromChar (Char.fromCode 187)) ]
                         , viewDropdownContent (BookType book) "to read" "reading" "read" "abandon"
                         ]
                     ]
@@ -1138,7 +1161,7 @@ viewOverlappingMediaStatus mediaType otherUserStatus =
                 [ Html.div [ class "media-status" ]
                     [ Html.div [ class "dropdown" ]
                         [ Html.div [ class "dropbtn-existing-status" ]
-                            [ Html.text ("your status: " ++ Movie.maybeStatusAsString movie.status ++ " >>") ]
+                            [ Html.text ("your status: " ++ Movie.maybeStatusAsString movie.status ++ " " ++ String.fromChar (Char.fromCode 187)) ]
                         , viewDropdownContent (MovieType movie) "to watch" "watching" "watched" "abandon"
                         ]
                     ]
@@ -1152,7 +1175,7 @@ viewOverlappingMediaStatus mediaType otherUserStatus =
                 [ Html.div [ class "media-status" ]
                     [ Html.div [ class "dropdown" ]
                         [ Html.div [ class "dropbtn-existing-status" ]
-                            [ Html.text ("your status: " ++ TV.maybeStatusAsString tv.status ++ " >>") ]
+                            [ Html.text ("your status: " ++ TV.maybeStatusAsString tv.status ++ " " ++ String.fromChar (Char.fromCode 187)) ]
                         , viewDropdownContent (TVType tv) "to watch" "watching" "watched" "abandon"
                         ]
                     ]
@@ -1172,8 +1195,8 @@ viewDropdownContent mediaType wantToConsume consuming finished abandoned =
         ]
 
 
-viewFriendsToRecommendDropdown : Profile -> MediaType -> WebData (List UserInfo) -> Html Msg
-viewFriendsToRecommendDropdown profileType mediaType userFriends =
+viewFriendsToRecommendDropdown : Profile -> MediaType -> WebData (List RecommendationType) -> WebData (List UserInfo) -> Html Msg
+viewFriendsToRecommendDropdown profileType mediaType recommendations userFriends =
     case userFriends of
         NotAsked ->
             Html.text ""
@@ -1190,7 +1213,7 @@ viewFriendsToRecommendDropdown profileType mediaType userFriends =
                 LoggedInUserProfile ->
                     if List.isEmpty friends then
                         Html.div [ class "dropdown" ] <|
-                            [ Html.button [ class "dropbtn" ] [ Html.text "recommend >>" ]
+                            [ Html.button [ class "dropbtn" ] [ Html.text ("recommend " ++ String.fromChar (Char.fromCode 187)) ]
                             , Html.div [ class "dropdown-content" ]
                                 --TODO: make this onClick Event
                                 [ Html.a [ Attr.href "/search/users" ] [ Html.text "find friends to recommend!" ] ]
@@ -1198,18 +1221,55 @@ viewFriendsToRecommendDropdown profileType mediaType userFriends =
 
                     else
                         Html.div [ class "dropdown" ] <|
-                            [ Html.button [ class "dropbtn" ] [ Html.text "recommend >>" ]
+                            [ Html.button [ class "dropbtn" ] [ Html.text ("recommend " ++ String.fromChar (Char.fromCode 187)) ]
                             , Html.div [ class "dropdown-content" ]
-                                (List.map (viewFriendFullName mediaType) (List.sortBy .fullName friends))
+                                (List.map (viewFriendFullName mediaType recommendations) (List.sortBy .fullName friends))
                             ]
 
                 _ ->
                     Html.div [] []
 
 
-viewFriendFullName : MediaType -> UserInfo -> Html Msg
-viewFriendFullName mediaType friend =
-    Html.p [ Html.Events.onClick (Recommend mediaType friend) ] [ Html.text friend.fullName ]
+viewFriendFullName : MediaType -> WebData (List RecommendationType) -> UserInfo -> Html Msg
+viewFriendFullName mediaType recommendations friend =
+    case recommendations of
+        NotAsked ->
+            Html.text "find your friends you have made recommendations to"
+
+        Loading ->
+            Html.text "finding recommendation data"
+
+        Failure error ->
+            -- TODO show better error!
+            Html.text "something went wrong"
+
+        Success recs ->
+            let
+                recExists =
+                    List.filter (checkMediaTypeAndFriendIdInRec mediaType friend.goodTimesId) <| recs
+            in
+            if List.isEmpty recExists then
+                Html.p [ Html.Events.onClick (Recommend mediaType friend) ] [ Html.text friend.fullName ]
+
+            else
+                Html.p [ Html.Events.onClick (Recommend mediaType friend) ] [ Html.text (friend.fullName ++ " "), Html.div [ class "dropbtn-check" ] [ Html.text (String.fromChar (Char.fromCode 0x2714)) ] ]
+
+
+checkMediaTypeAndFriendIdInRec : MediaType -> Int -> RecommendationType -> Bool
+checkMediaTypeAndFriendIdInRec mediaType friendId recommendationType =
+    case recommendationType of
+        RecByUserType recByUserMedia ->
+            if
+                (getMediaSourceId recByUserMedia.media == getMediaSourceId mediaType)
+                    && (recByUserMedia.recommendedId == friendId)
+            then
+                True
+
+            else
+                False
+
+        RecToUserType _ ->
+            False
 
 
 viewMediaCover : Maybe String -> Html Msg
@@ -1336,7 +1396,7 @@ viewRecommendedMediaDropdown mediaType =
             BookType book ->
                 case book.status of
                     Nothing ->
-                        [ Html.button [ class "dropbtn" ] [ Html.text "Add Book >>" ]
+                        [ Html.button [ class "dropbtn" ] [ Html.text ("Add Book " ++ String.fromChar (Char.fromCode 187)) ]
                         , viewDropdownContent (BookType book) "to read" "reading" "read" "abandon"
                         ]
 
@@ -1350,7 +1410,7 @@ viewRecommendedMediaDropdown mediaType =
             MovieType movie ->
                 case movie.status of
                     Nothing ->
-                        [ Html.button [ class "dropbtn" ] [ Html.text "Add Movie >>" ]
+                        [ Html.button [ class "dropbtn" ] [ Html.text ("Add Movie " ++ String.fromChar (Char.fromCode 187)) ]
                         , viewDropdownContent (MovieType movie) "to watch" "watching" "watched" "abandon"
                         ]
 
@@ -1364,7 +1424,7 @@ viewRecommendedMediaDropdown mediaType =
             TVType tv ->
                 case tv.status of
                     Nothing ->
-                        [ Html.button [ class "dropbtn" ] [ Html.text "Add TV Show >>" ]
+                        [ Html.button [ class "dropbtn" ] [ Html.text ("Add TV Show " ++ String.fromChar (Char.fromCode 187)) ]
                         , viewDropdownContent (TVType tv) "to watch" "watching" "watched" "abandon"
                         ]
 
