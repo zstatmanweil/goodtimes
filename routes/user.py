@@ -78,9 +78,10 @@ def get_user_and_status_by_email():
 
     final = []
     for user, status in user_results:
-        u = user.to_dict()
-        u['status'] = status
-        final.append(u)
+        record = dict()
+        record['user'] = user.to_dict()
+        record['status'] = status
+        final.append(record)
     session.close()
 
     return jsonify(final)

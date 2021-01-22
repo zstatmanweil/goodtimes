@@ -158,7 +158,34 @@
     border: 1px solid theme.color('accent', 'light');
     padding: 8px;
     height: 60px;
+
+    .user-image {
+        width: 40px;
+
+        img {
+          border-radius: 50%;
+        }
+
+        .no-user-image {
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            border-radius: 50%;
+            background-color: theme.color('accent', 'light');
+        }
+
+        .no-user-image p {
+          line-height: 1.9;
+          display: inline-block;
+          vertical-align: middle;
+          color: white;
+          font-size: 20px;
+        }
+       }
+
 }
+
+
 
 .user-info {
         display: flex;

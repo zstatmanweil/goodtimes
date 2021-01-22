@@ -2,6 +2,8 @@ module Media exposing (..)
 
 import Book exposing (Book)
 import Consumption exposing (Status)
+import Html exposing (Html)
+import Html.Attributes as Attr exposing (class)
 import Json.Decode as Decode exposing (Decoder)
 import Movie exposing (Movie)
 import TV exposing (TV)
@@ -120,3 +122,19 @@ getMediaTypeAsString mediaType =
 
         TVType _ ->
             "tv"
+
+
+
+-- SHARED VIEW FUNCTIONS
+
+
+viewMediaCover : Maybe String -> Html msg
+viewMediaCover maybeCoverUrl =
+    case maybeCoverUrl of
+        Just srcUrl ->
+            Html.img
+                [ Attr.src srcUrl ]
+                []
+
+        Nothing ->
+            Html.div [ class "no-media" ] []

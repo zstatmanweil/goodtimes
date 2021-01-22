@@ -392,20 +392,8 @@ viewDropdownContent mediaType wantToConsume consuming finished =
         ]
 
 
-viewMediaCover : Maybe String -> Html Msg
-viewMediaCover maybeCoverUrl =
-    case maybeCoverUrl of
-        Just srcUrl ->
-            Html.img
-                [ Attr.src srcUrl ]
-                []
-
-        Nothing ->
-            Html.div [ class "no-media" ] []
-
-
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.none
 
 
@@ -419,13 +407,3 @@ onSubmit : msg -> Attribute msg
 onSubmit msg =
     Html.Events.preventDefaultOn "submit"
         (Decode.map (\a -> ( a, True )) (Decode.succeed msg))
-
-
-isJust : Maybe a -> Bool
-isJust maybe =
-    case maybe of
-        Just _ ->
-            True
-
-        Nothing ->
-            False

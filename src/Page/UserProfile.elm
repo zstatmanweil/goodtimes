@@ -11,11 +11,11 @@ import Json.Decode as Decode
 import Media exposing (..)
 import Movie exposing (Movie)
 import Overlap exposing (OverlapMedia)
-import Recommendation exposing (RecommendationType(..), RecommendedByUserMedia, RecommendedToUserMedia, recByUserToRecTypeDecoder, recToUserToRecTypeDecoder, recommendedByUserMediaDecoder, recommendedToUserMediaDecoder)
+import Recommendation exposing (..)
 import RemoteData exposing (RemoteData(..), WebData)
 import Skeleton
 import TV exposing (TV)
-import User exposing (FriendLink, FriendStatus(..), LoggedInUser, Profile(..), UserInfo, UserWithFriendStatus, friendLinkDecoder, friendLinkEncoder, getUserEmail, getUserId, userInfoDecoder)
+import User exposing (..)
 
 
 
@@ -741,7 +741,7 @@ viewFriendButton user =
             Nothing ->
                 [ Html.button
                     [ class "user-button"
-                    , Html.Events.onClick (AddFriendLink user.goodTimesId Requested)
+                    , Html.Events.onClick (AddFriendLink user.userInfo.goodTimesId Requested)
                     ]
                     [ Html.text ("Add Friend " ++ String.fromChar (Char.fromCode 187)) ]
                 ]
@@ -864,7 +864,8 @@ viewFriend : UserInfo -> Html Msg
 viewFriend user =
     Html.li []
         [ Html.div [ class "user-card" ]
-            [ Html.div [ class "user-info" ]
+            [ Html.div [ class "user-image" ] [ viewUserPicture user ]
+            , Html.div [ class "user-info" ]
                 [ Html.a [ Attr.href (String.fromInt user.goodTimesId) ] [ Html.text (String.toLower (user.firstName ++ " " ++ user.lastName)) ]
                 , Html.text user.email
                 ]
@@ -1270,18 +1271,6 @@ checkMediaTypeAndFriendIdInRec mediaType friendId recommendationType =
 
         RecToUserType _ ->
             False
-
-
-viewMediaCover : Maybe String -> Html Msg
-viewMediaCover maybeCoverUrl =
-    case maybeCoverUrl of
-        Just srcUrl ->
-            Html.img
-                [ Attr.src srcUrl ]
-                []
-
-        Nothing ->
-            Html.div [ class "no-media" ] []
 
 
 viewRecommendations : WebData (List RecommendationType) -> Html Msg

@@ -8,7 +8,7 @@ import Http
 import Json.Decode as Decode
 import RemoteData exposing (RemoteData(..), WebData)
 import Skeleton
-import User exposing (FriendLink, FriendStatus(..), LoggedInUser, UserWithFriendStatus, friendLinkDecoder, friendLinkEncoder)
+import User exposing (FriendLink, FriendStatus(..), LoggedInUser, UserWithFriendStatus, friendLinkDecoder, friendLinkEncoder, viewUserPicture)
 
 
 
@@ -92,7 +92,15 @@ addFriendLink loggedInUser user status =
         { token = loggedInUser.token
         , method = "POST"
         , url = "/friend"
-        , body = Just (Http.jsonBody (friendLinkEncoder loggedInUser.userInfo.goodTimesId user.goodTimesId status))
+        , body =
+            Just
+                (Http.jsonBody
+                    (friendLinkEncoder
+                        loggedInUser.userInfo.goodTimesId
+                        user.userInfo.goodTimesId
+                        status
+                    )
+                )
         , expect = Http.expectJson FriendLinkAdded friendLinkDecoder
         }
 
@@ -137,18 +145,18 @@ viewUsers : WebData (List UserWithFriendStatus) -> Html Msg
 viewUsers foundUsers =
     case foundUsers of
         NotAsked ->
-            Html.text "search for a friend by typing their email!"
+            Html.div [ class "page-text" ] [ Html.text "search for a friend by typing their email!" ]
 
         Loading ->
-            Html.text "entering the database!"
+            Html.div [ class "page-text" ] [ Html.text "entering the database!" ]
 
         Failure error ->
             -- TODO show better error!
-            Html.text "something went wrong"
+            Html.div [ class "page-text" ] [ Html.text "something went wrong" ]
 
         Success users ->
             if List.isEmpty users then
-                Html.text "no results..."
+                Html.div [ class "page-text" ] [ Html.text "no results..." ]
 
             else
                 Html.ul []
@@ -159,9 +167,10 @@ viewUser : UserWithFriendStatus -> Html Msg
 viewUser user =
     Html.li []
         [ Html.div [ class "user-card" ]
-            [ Html.div [ class "user-info" ]
-                [ Html.a [ Attr.href ("/user/" ++ String.fromInt user.goodTimesId) ] [ Html.text (user.firstName ++ " " ++ user.lastName) ]
-                , Html.text user.email
+            [ Html.div [ class "user-image" ] [ viewUserPicture user.userInfo ]
+            , Html.div [ class "user-info" ]
+                [ Html.a [ Attr.href ("/user/" ++ String.fromInt user.userInfo.goodTimesId) ] [ Html.text (user.userInfo.firstName ++ " " ++ user.userInfo.lastName) ]
+                , Html.text user.userInfo.email
                 ]
             , viewFriendButton user
             ]

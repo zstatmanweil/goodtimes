@@ -1,5 +1,7 @@
 module User exposing (..)
 
+import Html exposing (Html)
+import Html.Attributes as Attr exposing (class)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (..)
 import Json.Encode.Extra exposing (maybe)
@@ -245,23 +247,15 @@ friendStatusAsString status =
 
 
 type alias UserWithFriendStatus =
-    { goodTimesId : Int
-    , fullName : String
-    , firstName : String
-    , lastName : String
-    , email : String
+    { userInfo : UserInfo
     , status : Maybe FriendStatus
     }
 
 
 userWithStatusDecoder : Decoder UserWithFriendStatus
 userWithStatusDecoder =
-    Decode.map6 UserWithFriendStatus
-        (Decode.field "id" Decode.int)
-        (Decode.field "full_name" Decode.string)
-        (Decode.field "first_name" Decode.string)
-        (Decode.field "last_name" Decode.string)
-        (Decode.field "email" Decode.string)
+    Decode.map2 UserWithFriendStatus
+        (Decode.field "user" userInfoDecoder)
         (Decode.maybe (Decode.field "status" friendStatusDecoder))
 
 
@@ -270,3 +264,19 @@ type Profile
     | LoggedInUserProfile
     | FriendProfile
     | StrangerProfile UserWithFriendStatus
+
+
+
+-- SHARED VIEW FUNCTIONS
+
+
+viewUserPicture : UserInfo -> Html msg
+viewUserPicture user =
+    case user.picture of
+        Just srcUrl ->
+            Html.img
+                [ Attr.src srcUrl ]
+                []
+
+        Nothing ->
+            Html.div [ class "no-user-image" ] [ Html.p [] [ Html.text (String.left 1 user.firstName ++ String.left 1 user.lastName) ] ]
