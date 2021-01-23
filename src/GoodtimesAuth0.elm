@@ -29,7 +29,7 @@ auth0AuthorizeURL auth0Config responseType redirectURL scopes maybeConn =
         ++ connectionParam
         ++ ("&redirect_uri=" ++ redirectURL)
         ++ ("&scope=" ++ scopeParam)
-        ++ ("&audience=" ++ "https://goodtimes-staging.us.auth0.com/api/v2/")
+        ++ ("&audience=" ++ auth0Endpoint ++ "/api/v2/")
 
 
 auth0LoginUrl : String

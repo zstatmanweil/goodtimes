@@ -1,7 +1,6 @@
 module GoodtimesAPI exposing (..)
 
 import Http exposing (..)
-import User exposing (LoggedInUser)
 
 
 type alias GoodTimesRequestInfo msg =
