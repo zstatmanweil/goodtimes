@@ -54,6 +54,10 @@ init _ =
 
 update : LoggedInUser -> Msg -> Model -> ( Model, Cmd Msg )
 update loggedInUser msg model =
+    let
+        _ =
+            Debug.log loggedInUser.token 0
+    in
     case msg of
         SearchMedia ->
             if model.selectedMediaType == BookSelection then

@@ -6,3 +6,5 @@ pyhocon-0.3.57
 requests==2.24.0
 SQLAlchemy==1.4.0b1
 Flask-Cors==3.0.9
+python-dotenv==0.15.0
+python-jose==3.2.0

@@ -64,6 +64,10 @@ update msg model =
 
 getUserAndFriendEvents : LoggedInUser -> Cmd Msg
 getUserAndFriendEvents loggedInUser =
+    let
+        _ =
+            Debug.log loggedInUser.token 0
+    in
     goodTimesRequest
         { token = loggedInUser.token
         , method = "GET"

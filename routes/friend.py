@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from flask_cors import cross_origin
 from pyhocon import ConfigFactory
 
 from flask import jsonify, request, Blueprint
@@ -9,6 +10,7 @@ from sqlalchemy.orm import sessionmaker
 from db.helpers import get_user_friends, get_user_friend_requests
 from models.friend import Friend, FriendStatus
 from models.user import User
+from server import requires_auth
 
 config = ConfigFactory.parse_file('config/config')
 friend = Blueprint("friend", __name__)
@@ -18,6 +20,8 @@ Session = sessionmaker(bind=engine)
 
 
 @friend.route("/friend", methods=["POST"])
+@cross_origin(headers=["Content-Type", "Authorization"])
+@requires_auth
 def add_friend_link():
     """
     Endpoint for adding friend link. Posted body:
@@ -55,6 +59,8 @@ def add_friend_link():
     return friend_json, 200
 
 
+@cross_origin(headers=["Content-Type", "Authorization"])
+@requires_auth
 @friend.route("/user/<int:user_id>/friends", methods=["GET"])
 def get_friends(user_id):
     """
@@ -69,6 +75,8 @@ def get_friends(user_id):
 
 
 @friend.route("/user/<int:user_id>/requests", methods=["GET"])
+@cross_origin(headers=["Content-Type", "Authorization"])
+@requires_auth
 def get_friend_requests(user_id):
     """
     Get all a user's friends.

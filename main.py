@@ -1,14 +1,22 @@
 import json
 
 from werkzeug.exceptions import HTTPException
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
+import json
+from six.moves.urllib.request import urlopen
+from functools import wraps
+
+from flask import Flask, request, jsonify, _request_ctx_stack
+from flask_cors import cross_origin
+from jose import jwt
 
 from routes.books import books
 from routes.movies import movies
 from routes.tv import tv
 from routes.user import user
 from routes.friend import friend
+from server import auth
 
 app = Flask(__name__)
 app.secret_key = 'very secret key'  # Fix this later!
@@ -16,6 +24,7 @@ app.secret_key = 'very secret key'  # Fix this later!
 CORS(app, resources={r"*": {"origins": "*"}})
 
 
+app.register_blueprint(auth)
 app.register_blueprint(books)
 app.register_blueprint(movies)
 app.register_blueprint(tv)

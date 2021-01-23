@@ -1,3 +1,4 @@
+from flask_cors import cross_origin
 from pyhocon import ConfigFactory
 from datetime import datetime
 
@@ -12,6 +13,7 @@ from models.user import User
 from db.helpers import MEDIAS, get_consumption_records, get_users_and_friend_statuses, \
     get_records_recommended_by_user, get_records_recommended_to_user, get_overlapping_records, get_friend_event_records
 from routes.helpers import get_time_diff_hrs
+from server import requires_auth
 
 config = ConfigFactory.parse_file('config/config')
 user = Blueprint("user", __name__)
@@ -21,6 +23,8 @@ Session = sessionmaker(bind=engine)
 
 
 @user.route("/user", methods=["POST"])
+@cross_origin(headers=["Content-Type", "Authorization"])
+@requires_auth
 def verify_user():
     """ post body
     {
@@ -58,6 +62,8 @@ def verify_user():
 
 
 @user.route("/user/<int:user_id>", methods=["GET"])
+@cross_origin(headers=["Content-Type", "Authorization"])
+@requires_auth
 def get_user(user_id):
     session = Session()
     user_result = session.query(User).filter_by(id=user_id).first()
@@ -68,6 +74,8 @@ def get_user(user_id):
 
 
 @user.route("/users", methods=["GET"])
+@cross_origin(headers=["Content-Type", "Authorization"])
+@requires_auth
 def get_user_and_status_by_email():
     args = request.args
     email_substring = args.get('email', '')
@@ -88,6 +96,8 @@ def get_user_and_status_by_email():
 
 
 @user.route("/user/<int:user_id>/media/<media_type>", methods=["POST"])
+@cross_origin(headers=["Content-Type", "Authorization"])
+@requires_auth
 def add_media_to_profile(user_id, media_type):
     """
     Endpoint for adding media to consumption table under given user id. Posted body is media object + status, e.g.:
@@ -152,6 +162,8 @@ def add_media_to_profile(user_id, media_type):
 
 
 @user.route("/user/<int:user_id>/media/<media_type>", methods=["GET"])
+@cross_origin(headers=["Content-Type", "Authorization"])
+@requires_auth
 def get_consumed_media_by_media_type(user_id, media_type):
     """
     Endpoint for getting all media associated with a given user.
@@ -187,6 +199,8 @@ def get_consumed_media_by_media_type(user_id, media_type):
 
 
 @user.route("/media/<media_type>/recommendation", methods=["POST"])
+@cross_origin(headers=["Content-Type", "Authorization"])
+@requires_auth
 def add_recommended_media(media_type):
     """
     Endpoint for adding a recommendation for a given media type. Post body:
@@ -230,6 +244,8 @@ def add_recommended_media(media_type):
 
 
 @user.route("/user/<int:user_id>/recommendations/<media_type>", methods=["GET"])
+@cross_origin(headers=["Content-Type", "Authorization"])
+@requires_auth
 def get_media_recommended_to_user(user_id, media_type):
     """
     Endpoint for getting specific media recommended to a user and that user's consumption status.
@@ -271,6 +287,8 @@ def get_media_recommended_to_user(user_id, media_type):
 
 
 @user.route("/user/<int:user_id>/recommended/<media_type>", methods=["GET"])
+@cross_origin(headers=["Content-Type", "Authorization"])
+@requires_auth
 def get_media_recommended_by_user(user_id, media_type):
     """
     Endpoint for getting specific media recommended by a user.
@@ -310,6 +328,8 @@ def get_media_recommended_by_user(user_id, media_type):
 
 
 @user.route("/overlaps/<media_type>/<int:primary_user_id>/<int:other_user_id>", methods=["GET"])
+@cross_origin(headers=["Content-Type", "Authorization"])
+@requires_auth
 def get_overlapping_media(media_type, primary_user_id, other_user_id):
     """
     Endpoint for getting overlapping media. Args:
@@ -358,6 +378,8 @@ def get_overlapping_media(media_type, primary_user_id, other_user_id):
 
 
 @user.route("/user/<int:user_id>/friend/events", methods=["GET"])
+@cross_origin(headers=["Content-Type", "Authorization"])
+@requires_auth
 def get_friend_events(user_id):
     """
     Endpoint for getting all events associated with a userr's friends.

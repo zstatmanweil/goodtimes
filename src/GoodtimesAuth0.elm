@@ -3,6 +3,7 @@ module GoodtimesAuth0 exposing (..)
 import Auth0
 import Http
 import Json.Encode as Encode
+import Url
 import User
 
 
@@ -11,9 +12,29 @@ auth0Endpoint =
     "https://goodtimes-staging.us.auth0.com"
 
 
+auth0AuthorizeURL auth0Config responseType redirectURL scopes maybeConn =
+    let
+        connectionParam =
+            maybeConn
+                |> Maybe.map (\c -> "&connection=" ++ c)
+                |> Maybe.withDefault ""
+
+        scopeParam =
+            scopes |> String.join " " |> Url.percentEncode
+    in
+    auth0Config.endpoint
+        ++ "/authorize"
+        ++ ("?response_type=" ++ responseType)
+        ++ ("&client_id=" ++ auth0Config.clientId)
+        ++ connectionParam
+        ++ ("&redirect_uri=" ++ redirectURL)
+        ++ ("&scope=" ++ scopeParam)
+        ++ ("&audience=" ++ "https://goodtimes-staging.us.auth0.com/api/v2/")
+
+
 auth0LoginUrl : String
 auth0LoginUrl =
-    Auth0.auth0AuthorizeURL
+    auth0AuthorizeURL
         (Auth0.Auth0Config auth0Endpoint "68MpVR1fV03q6to9Al7JbNAYLTi2lRGT")
         "token"
         "http://localhost:1234/authorized"

@@ -1,14 +1,18 @@
 from datetime import date
 
 from flask import request, Blueprint
+from flask_cors import cross_origin
 
 from models.tv import TV
+from server import requires_auth
 from wrappers.tmdb import TMDB
 
 tv = Blueprint("tv", __name__)
 
 
 @tv.route("/tv", methods=["GET"])
+@cross_origin(headers=["Content-Type", "Authorization"])
+@requires_auth
 def search_tv():
     args = request.args
     title = args.get('title', None)

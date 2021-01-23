@@ -6,9 +6,7 @@ import Dict
 import GoodtimesAPI exposing (goodTimesRequest)
 import GoodtimesAuth0 exposing (auth0Endpoint)
 import Html exposing (Html)
-import Html.Attributes as Attr
 import Http
-import Json.Decode as Decode
 import Json.Encode as Encode
 import Maybe.Extra
 import Page.About as About
