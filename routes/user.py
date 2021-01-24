@@ -26,15 +26,16 @@ Session = sessionmaker(bind=engine)
 @cross_origin(headers=["Content-Type", "Authorization"])
 @requires_auth
 def verify_user():
-    """ post body
+    """ Checks if a user is in database, and if not, adds them. Post body:
     {
-    auth0_sub : str
-    first_name: str
-    last_name: str
-    full_name: str
-    email: str
-    picture: str
+        auth0_sub : str
+        first_name: str
+        last_name: str
+        full_name: str
+        email: str
+        picture: str
     }
+    :return: User object
     """
     request_body = request.get_json()
 
@@ -60,11 +61,15 @@ def verify_user():
     return db_resp.to_json()
 
 
-
 @user.route("/user/<int:user_id>", methods=["GET"])
 @cross_origin(headers=["Content-Type", "Authorization"])
 @requires_auth
 def get_user(user_id):
+    """
+    Get user object by id
+    :param user_id:
+    :return: User object
+    """
     session = Session()
     user_result = session.query(User).filter_by(id=user_id).first()
     session.close()
@@ -77,8 +82,26 @@ def get_user(user_id):
 @cross_origin(headers=["Content-Type", "Authorization"])
 @requires_auth
 def get_user_and_status_by_email():
+    """
+    Search for a user by email and with user ID of user conducting the search. User record and status of friendship
+    between user conducting the search and user associated with email.
+    :return: Example
+    {
+        "id": 1,
+        "auth0_sub": "123",
+        "first_name": "zoe"
+        "last_name": "fakename",
+        "full_name": "zoe fakename",
+        "email": "zoefakename@yahoo.com",
+        "created": 1611190613.837367,
+        "picture": "zoefakename.jpg",
+        "status": "pending"
+    }
+    """
     args = request.args
+    # Email search
     email_substring = args.get('email', '')
+    # User ID of user conducting the search
     user_id = args.get('user_id')
 
     session = Session()
@@ -88,6 +111,7 @@ def get_user_and_status_by_email():
     for user, status in user_results:
         record = dict()
         record['user'] = user.to_dict()
+        # Status of friendship between searching user and the user associated with the email
         record['status'] = status
         final.append(record)
     session.close()
@@ -169,8 +193,8 @@ def get_consumed_media_by_media_type(user_id, media_type):
     Endpoint for getting all media associated with a given user.
     :param user_id:
     :param media_type: book, movie or tv
-    :return: media object + status, e.g.,
-    {
+    :return: List of media object + status, e.g.,
+    [{
         "author_names": [
             "Holly Black"
         ],
@@ -181,7 +205,7 @@ def get_consumed_media_by_media_type(user_id, media_type):
         "source_id": "0123",
         "status": "finished",
         "title": "The Queen Of Nothing"
-    },
+    }]
     """
     session = Session()
     record_results = get_consumption_records(user_id, media_type, session)
@@ -211,7 +235,7 @@ def add_recommended_media(media_type):
         "status": string
     }
     :param media_type: book, movie or tv
-    :return:
+    :return: Recommendation object
     """
     session = Session()
 
@@ -248,11 +272,12 @@ def add_recommended_media(media_type):
 @requires_auth
 def get_media_recommended_to_user(user_id, media_type):
     """
-    Endpoint for getting specific media recommended to a user and that user's consumption status.
+    Endpoint for getting specific media recommended to a user and that user's consumption status associated
+    with the media.
     :param user_id:
-    :param media_type
-    :return: media object + media_type + recommender_id + recommender_full_name, e.g.,
-    {
+    :param media_type: book, movie or tv
+    :return: List of media object + media_type + recommender_id + recommender_full_name, e.g.,
+    [{
         "media": {"author_names": [
                     "Holly Black"
                     ],
@@ -266,7 +291,7 @@ def get_media_recommended_to_user(user_id, media_type):
         "media_type": "book",
         "recommender_id": 1,
         "recommender_full_name": "Aaron Strick"
-    },
+    }]
     """
     session = Session()
 
@@ -294,7 +319,7 @@ def get_media_recommended_by_user(user_id, media_type):
     Endpoint for getting specific media recommended by a user.
     :param user_id:
     :param media_type
-    :return: media object + media_type + recommended_id + recommended_full_name, e.g.,
+    :return: List of media object + media_type + recommended_id + recommended_full_name, e.g.,
     {
         "media": {"author_names": [
                     "Holly Black"
@@ -332,12 +357,13 @@ def get_media_recommended_by_user(user_id, media_type):
 @requires_auth
 def get_overlapping_media(media_type, primary_user_id, other_user_id):
     """
-    Endpoint for getting overlapping media. Args:
-    "primary_user_id": int,
-    "other_user_id": int,
-    "media_type": string
-
-    :return: media object, e,g,,
+    Endpoint for getting overlapping media - media that is is on both the primary_user_id and other_user_id's
+    media lists.
+    :param primary_user_id: ID of primary user looking for overlapping media
+    :param other_user_id: ID of user the primary user wants to find overlaps with
+    :param media_type
+    :return: Returns list of media object with other user ID and other user's consumption status of
+    overlapping media, e,g,,
      {
         "media": { "author_names": [
                     "Holly Black"
@@ -382,7 +408,7 @@ def get_overlapping_media(media_type, primary_user_id, other_user_id):
 @requires_auth
 def get_friend_events(user_id):
     """
-    Endpoint for getting all events associated with a userr's friends.
+    Endpoint for getting all events associated with a user's friends.
     :param user_id:
     :return: media object + status, e.g.,
     {
