@@ -1,4 +1,4 @@
-module Main exposing (..)
+port module Main exposing (..)
 
 import Browser exposing (..)
 import Browser.Navigation as Nav
@@ -34,11 +34,18 @@ main =
 
 
 
+-- PORTS
+
+
+port saveAccessToken : String -> Cmd msg
+
+
+
 -- MODEL
 
 
 type alias Flags =
-    Bool
+    { maybeAccessToken : Maybe String }
 
 
 type alias Model =
@@ -77,13 +84,19 @@ type LoggedInPage
 
 
 init : Flags -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
-init isAuthenticated url key =
+init { maybeAccessToken } url key =
     stepUrl url
         { url = url
         , key = key
         , page = About
         , isOpenMenu = False
-        , auth = NotAuthed
+        , auth =
+            case maybeAccessToken of
+                Just token ->
+                    HasToken token
+
+                Nothing ->
+                    NotAuthed
         }
 
 
@@ -184,7 +197,7 @@ update msg model =
             case result of
                 Ok profile ->
                     ( { model | auth = Authenticated (LoggedInUser token profile) }
-                    , Nav.pushUrl model.key "about"
+                    , Cmd.batch [ Nav.pushUrl model.key "about", saveAccessToken token ]
                     )
 
                 Err err ->

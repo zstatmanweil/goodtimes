@@ -32,8 +32,15 @@ import 'regenerator-runtime/runtime'
 //   }
 
 //   console.log(isAuthenticated)
-Elm.Main.init({
+
+const startingAccessToken = localStorage.getItem('accessToken')
+
+const app = Elm.Main.init({
   node: document.getElementById('mount'),
-  flags: false
+  flags: { maybeAccessToken: startingAccessToken }
 })
+
+app.ports.saveAccessToken.subscribe( function(accessToken) {
+    localStorage.setItem('accessToken', accessToken);
+});
 
