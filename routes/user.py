@@ -1,6 +1,6 @@
 from flask_cors import cross_origin
 from pyhocon import ConfigFactory
-from datetime import datetime
+from datetime import datetime, date
 
 from flask import current_app, jsonify, request, Blueprint
 import sqlalchemy as sa
@@ -390,7 +390,9 @@ def get_overlapping_media(media_type, primary_user_id, other_user_id):
 
     final = []
     for record in record_results:
+        print(record)
         record_dict = dict(record)
+        record_dict['first_air_date'] = date.isoformat(record_dict['first_air_date'])
         record_dict['status'] = record_dict.pop("primary_user_status")
         other_user_status = record_dict.pop("other_user_status")
         m = {"media": record_dict,
