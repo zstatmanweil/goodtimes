@@ -266,7 +266,7 @@ update loggedInUser msg model =
                         ( MediaTab, LoggedInUserProfile, MovieTab ) ->
                             ( model
                             , Cmd.batch
-                                [ searchUserBooks loggedInUser loggedInUser.userInfo.goodTimesId
+                                [ searchUserMovies loggedInUser loggedInUser.userInfo.goodTimesId
                                 , getRecommendedByUserMedia loggedInUser (mediaTabSelectionToString model.mediaSelectedTab)
                                 ]
                             )
@@ -274,7 +274,7 @@ update loggedInUser msg model =
                         ( MediaTab, LoggedInUserProfile, TVTab ) ->
                             ( model
                             , Cmd.batch
-                                [ searchUserBooks loggedInUser loggedInUser.userInfo.goodTimesId
+                                [ searchUserTV loggedInUser loggedInUser.userInfo.goodTimesId
                                 , getRecommendedByUserMedia loggedInUser (mediaTabSelectionToString model.mediaSelectedTab)
                                 ]
                             )
