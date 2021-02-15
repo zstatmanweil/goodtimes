@@ -1,10 +1,16 @@
 module GoodtimesAuth0 exposing (..)
 
 import Auth0
-import Http
-import Json.Encode as Encode
 import Url
-import User
+import User exposing (LoggedInUser, UnverifiedUser)
+
+
+type AuthStatus
+    = NotAuthed
+    | AuthError String
+    | HasToken String
+    | HasUnverifiedUser String UnverifiedUser
+    | Authenticated LoggedInUser
 
 
 auth0Endpoint : String

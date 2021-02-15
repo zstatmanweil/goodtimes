@@ -1,6 +1,7 @@
 module Skeleton exposing (..)
 
 import Browser exposing (Document)
+import GoodtimesAuth0 exposing (AuthStatus(..), auth0LoginUrl)
 import Html exposing (Attribute, Html)
 import Html.Attributes as Attr exposing (class, id)
 import Html.Events
@@ -22,13 +23,19 @@ type alias Details msg =
 -- VIEW
 
 
-view : Bool -> msg -> (a -> msg) -> Details a -> Document msg
-view menuOpen toggleViewMenu toMsg details =
+type alias Msgs msg =
+    { toggleViewMenu : msg
+    , logOut : msg
+    }
+
+
+view : Bool -> AuthStatus -> Msgs msg -> (a -> msg) -> Details a -> Document msg
+view menuOpen authStatus { toggleViewMenu, logOut } toMsg details =
     { title = details.title
     , body =
         [ Html.div [ class "container", id "page-container" ]
             [ header toggleViewMenu
-            , sidebar menuOpen
+            , sidebar authStatus logOut menuOpen
             , Html.map toMsg <|
                 Html.div (class "center" :: details.attrs) details.kids
             , Html.footer [ id "footer" ] [ footer ]
@@ -46,17 +53,26 @@ header toggleViewMenu =
         ]
 
 
-sidebar : Bool -> Html msg
-sidebar menuOpen =
+sidebar : AuthStatus -> msg -> Bool -> Html msg
+sidebar authStatus logOut menuOpen =
     case menuOpen of
         True ->
-            Html.div [ class "sidenav" ]
-                [ Html.a [ Attr.href "/user/1" ] [ Html.text "my profile" ]
-                , Html.a [ Attr.href "/search" ] [ Html.text "search media" ]
-                , Html.a [ Attr.href "/search/users" ] [ Html.text "find friends" ]
-                , Html.a [ Attr.href "/feed" ] [ Html.text "event feed" ]
-                , Html.a [ Attr.href "/about" ] [ Html.text "about goodtimes" ]
-                ]
+            Html.div [ class "sidenav" ] <|
+                case authStatus of
+                    Authenticated loggedInUser ->
+                        --TODO pas through UserInfo and if authenticated show below (with user id passed in) and if not authenticated just show log in and about good times
+                        [ Html.a [ Attr.href ("/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId) ] [ Html.text "my profile" ]
+                        , Html.a [ Attr.href "/search" ] [ Html.text "search media" ]
+                        , Html.a [ Attr.href "/search/users" ] [ Html.text "find friends" ]
+                        , Html.a [ Attr.href "/feed" ] [ Html.text "event feed" ]
+                        , Html.a [ Attr.href "/about" ] [ Html.text "about goodtimes" ]
+                        , Html.a [ Attr.href "#", Html.Events.onClick logOut ] [ Html.text "log out" ]
+                        ]
+
+                    _ ->
+                        [ Html.a [ Attr.href "/about" ] [ Html.text "about goodtimes" ]
+                        , Html.a [ Attr.href auth0LoginUrl ] [ Html.text "login" ]
+                        ]
 
         False ->
             Html.text ""

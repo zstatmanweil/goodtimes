@@ -44,3 +44,7 @@ app.ports.saveAccessToken.subscribe( function(accessToken) {
     localStorage.setItem('accessToken', accessToken);
 });
 
+app.ports.removeAccessToken.subscribe( function(accessToken) {
+    localStorage.removeItem('accessToken', accessToken);
+});
+

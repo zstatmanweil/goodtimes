@@ -4,7 +4,7 @@ import Browser exposing (..)
 import Browser.Navigation as Nav
 import Dict
 import GoodtimesAPI exposing (goodTimesRequest)
-import GoodtimesAuth0 exposing (auth0Endpoint)
+import GoodtimesAuth0 exposing (AuthStatus(..), auth0Endpoint)
 import Html exposing (Html)
 import Http
 import Json.Encode as Encode
@@ -40,6 +40,9 @@ main =
 port saveAccessToken : String -> Cmd msg
 
 
+port removeAccessToken : () -> Cmd msg
+
+
 
 -- MODEL
 
@@ -55,14 +58,6 @@ type alias Model =
     , isOpenMenu : Bool
     , auth : AuthStatus
     }
-
-
-type AuthStatus
-    = NotAuthed
-    | AuthError String
-    | HasToken String
-    | HasUnverifiedUser String UnverifiedUser
-    | Authenticated LoggedInUser
 
 
 type Page
@@ -117,10 +112,17 @@ verifyUser token unVerifiedUser =
 
 view : Model -> Browser.Document Msg
 view model =
+    let
+        msgs =
+            { toggleViewMenu = ToggleViewMenu
+            , logOut = LogOut
+            }
+    in
     case model.page of
         NotFound ->
             Skeleton.view model.isOpenMenu
-                ToggleViewMenu
+                model.auth
+                msgs
                 never
                 { title = "Not Found"
                 , attrs = []
@@ -128,24 +130,24 @@ view model =
                 }
 
         About ->
-            Skeleton.view model.isOpenMenu ToggleViewMenu never (About.view Nothing)
+            Skeleton.view model.isOpenMenu model.auth msgs never (About.view Nothing)
 
         LoggedIn loggedInUser loggedInPage ->
             case loggedInPage of
                 AboutLoggedIn ->
-                    Skeleton.view model.isOpenMenu ToggleViewMenu never (About.view (Just loggedInUser))
+                    Skeleton.view model.isOpenMenu model.auth msgs never (About.view (Just loggedInUser))
 
                 Feed feedModel ->
-                    Skeleton.view model.isOpenMenu ToggleViewMenu FeedMsg (Feed.view loggedInUser feedModel)
+                    Skeleton.view model.isOpenMenu model.auth msgs FeedMsg (Feed.view loggedInUser feedModel)
 
                 Search searchModel ->
-                    Skeleton.view model.isOpenMenu ToggleViewMenu SearchMsg (Search.view searchModel)
+                    Skeleton.view model.isOpenMenu model.auth msgs SearchMsg (Search.view searchModel)
 
                 SearchUsers searchUsersModel ->
-                    Skeleton.view model.isOpenMenu ToggleViewMenu SearchUsersMsg (SearchUsers.view searchUsersModel)
+                    Skeleton.view model.isOpenMenu model.auth msgs SearchUsersMsg (SearchUsers.view searchUsersModel)
 
                 UserProfile userProfileModel ->
-                    Skeleton.view model.isOpenMenu ToggleViewMenu UserProfileMsg (UserProfile.view loggedInUser userProfileModel)
+                    Skeleton.view model.isOpenMenu model.auth msgs UserProfileMsg (UserProfile.view loggedInUser userProfileModel)
 
 
 
@@ -163,6 +165,7 @@ type Msg
     | SearchUsersMsg SearchUsers.Msg
     | UserProfileMsg UserProfile.Msg
     | ToggleViewMenu
+    | LogOut
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -242,6 +245,9 @@ update msg model =
 
         ToggleViewMenu ->
             ( { model | isOpenMenu = not model.isOpenMenu }, Cmd.none )
+
+        LogOut ->
+            ( { model | auth = NotAuthed }, Cmd.batch [ Nav.pushUrl model.key "about", removeAccessToken () ] )
 
         None ->
             ( model, Cmd.none )
