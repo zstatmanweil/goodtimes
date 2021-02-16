@@ -34,7 +34,7 @@ view menuOpen authStatus { toggleViewMenu, logOut } toMsg details =
     { title = details.title
     , body =
         [ Html.div [ class "container", id "page-container" ]
-            [ header toggleViewMenu
+            [ header authStatus toggleViewMenu
             , sidebar authStatus logOut menuOpen
             , Html.map toMsg <|
                 Html.div (class "center" :: details.attrs) details.kids
@@ -44,13 +44,23 @@ view menuOpen authStatus { toggleViewMenu, logOut } toMsg details =
     }
 
 
-header : msg -> Html msg
-header toggleViewMenu =
+header : AuthStatus -> msg -> Html msg
+header authStatus toggleViewMenu =
     Html.header [ class "header" ]
         [ Html.div [ class "hamburger", Html.Events.onClick toggleViewMenu ] [ Html.div [ class "bar" ] [], Html.div [ class "bar" ] [], Html.div [ class "bar" ] [] ]
-        , Html.h1 [] [ Html.a [ Attr.href "/about" ] [ Html.text "good times" ] ]
+        , Html.h1 [] [ Html.a [ Attr.href (homeUrl authStatus) ] [ Html.text "good times" ] ]
         , Html.p [] [ Html.text "a book, movie & tv show finder - for having a good time" ]
         ]
+
+
+homeUrl : AuthStatus -> String
+homeUrl authStatus =
+    case authStatus of
+        Authenticated _ ->
+            "/feed"
+
+        _ ->
+            "/about"
 
 
 sidebar : AuthStatus -> msg -> Bool -> Html msg
@@ -66,7 +76,7 @@ sidebar authStatus logOut menuOpen =
                         , Html.a [ Attr.href "/search/users" ] [ Html.text "find friends" ]
                         , Html.a [ Attr.href "/feed" ] [ Html.text "event feed" ]
                         , Html.a [ Attr.href "/about" ] [ Html.text "about goodtimes" ]
-                        , Html.a [ Attr.href "#", Html.Events.onClick logOut ] [ Html.text "log out" ]
+                        , Html.a [ Attr.href "/", Html.Events.onClick logOut ] [ Html.text "log out" ]
                         ]
 
                     _ ->
