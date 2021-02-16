@@ -731,7 +731,7 @@ body loggedInUser model =
 
         NoProfile ->
             Html.main_ [ class "content" ]
-                [ Html.div [ id "content-wrap" ] [ Html.text "something is up" ] ]
+                [ Html.div [ id "content-wrap" ] [ Html.text "Loading profile!" ] ]
 
 
 viewFriendButton : UserWithFriendStatus -> Html Msg
