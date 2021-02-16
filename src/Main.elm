@@ -365,12 +365,9 @@ stepUrl url model =
             ( model, auth0GetUser token )
 
         HasUnverifiedUser token unverifiedUser ->
-            let
-                -- TODO actually verify!!
-                newAuth =
-                    Authenticated (LoggedInUser token (unverifiedToUserInfo unverifiedUser 1))
-            in
-            ( { model | auth = newAuth }, Nav.pushUrl model.key "feed" )
+            -- This is just an interim state, and we only expect
+            -- to pass through this through auth0GetUser
+            ( model, Cmd.none )
 
         Authenticated loggedInUser ->
             case Parser.parse Routes.routeParser url of
