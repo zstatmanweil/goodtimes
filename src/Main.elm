@@ -200,7 +200,7 @@ update msg model =
             case result of
                 Ok profile ->
                     ( { model | auth = Authenticated (LoggedInUser token profile) }
-                    , Cmd.batch [ Nav.pushUrl model.key "about", saveAccessToken token ]
+                    , Cmd.batch [ Nav.pushUrl model.key "/about", saveAccessToken token ]
                     )
 
                 Err err ->
