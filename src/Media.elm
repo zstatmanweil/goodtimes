@@ -1,7 +1,7 @@
 module Media exposing (..)
 
 import Book exposing (Book)
-import Consumption exposing (Status)
+import Consumption exposing (Status(..))
 import Html exposing (Html)
 import Html.Attributes as Attr exposing (class)
 import Json.Decode as Decode exposing (Decoder)
@@ -124,13 +124,26 @@ getMediaTypeAsString mediaType =
             "tv"
 
 
+getMediaCover : MediaType -> Maybe String
+getMediaCover mediaType =
+    case mediaType of
+        BookType book ->
+            book.coverUrl
+
+        MovieType movie ->
+            movie.posterUrl
+
+        TVType tv ->
+            tv.posterUrl
+
+
 
 -- SHARED VIEW FUNCTIONS
 
 
-viewMediaCover : Maybe String -> Html msg
-viewMediaCover maybeCoverUrl =
-    case maybeCoverUrl of
+viewMediaCover : MediaType -> Html msg
+viewMediaCover mediaType =
+    case getMediaCover mediaType of
         Just srcUrl ->
             Html.img
                 [ Attr.src srcUrl ]
@@ -138,3 +151,45 @@ viewMediaCover maybeCoverUrl =
 
         Nothing ->
             Html.div [ class "no-media" ] []
+
+
+type Person
+    = Second
+    | Third
+
+
+conjugate : Person -> Status -> MediaType -> String
+conjugate person status mediaType =
+    case ( mediaType, status, person ) of
+        ( BookType _, WantToConsume, Second ) ->
+            "want to read"
+
+        ( BookType _, WantToConsume, Third ) ->
+            "wants to read"
+
+        ( BookType _, Consuming, Second ) ->
+            "are reading"
+
+        ( BookType _, Consuming, Third ) ->
+            "is reading"
+
+        ( BookType _, Finished, _ ) ->
+            "read"
+
+        ( _, WantToConsume, Second ) ->
+            "want to watch"
+
+        ( _, WantToConsume, Third ) ->
+            "wants to watch"
+
+        ( _, Consuming, Second ) ->
+            "are watching "
+
+        ( _, Consuming, Third ) ->
+            "is watching "
+
+        ( _, Finished, _ ) ->
+            "watched"
+
+        ( _, Abandoned, _ ) ->
+            "abandoned"

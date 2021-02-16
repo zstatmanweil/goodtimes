@@ -22,3 +22,8 @@ routeParser =
         , map Search (s "search")
         , map SearchUsers (s "search" </> s "users")
         ]
+
+
+user : Int -> String
+user userId =
+    "/user/" ++ String.fromInt userId

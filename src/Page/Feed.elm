@@ -11,6 +11,7 @@ import Json.Decode as Decode
 import Media exposing (MediaType(..))
 import Movie exposing (Movie)
 import RemoteData exposing (RemoteData(..), WebData)
+import Routes
 import Skeleton
 import TV exposing (TV)
 import User exposing (LoggedInUser, UserInfo)
@@ -128,57 +129,30 @@ viewEvents loggedInUser model =
 
 viewEvent : Int -> Event -> Html Msg
 viewEvent logged_in_user_id event =
-    case event.media of
-        BookType book ->
-            Html.li []
-                [ Html.div [ class "media-card" ]
-                    [ Html.div [ class "media-image" ] [ viewMediaCover book.coverUrl book.title ]
-                    , Html.div [ class "media-info" ]
-                        [ Html.i []
-                            [ Html.text <|
-                                "("
-                                    ++ hrsToString event.timeSince
-                                    ++ ") "
-                                    ++ getMediaStatusAsString logged_in_user_id event
-                            ]
-                        , viewBookDetails book
-                        ]
-                    ]
-                ]
+    let
+        mediaDetails =
+            case event.media of
+                BookType book ->
+                    viewBookDetails book
 
-        MovieType movie ->
-            Html.li []
-                [ Html.div [ class "media-card" ]
-                    [ Html.div [ class "media-image" ] [ viewMediaCover movie.posterUrl movie.title ]
-                    , Html.div [ class "media-info" ]
-                        [ Html.i []
-                            [ Html.text <|
-                                "("
-                                    ++ hrsToString event.timeSince
-                                    ++ ") "
-                                    ++ getMediaStatusAsString logged_in_user_id event
-                            ]
-                        , viewMovieDetails movie
-                        ]
-                    ]
-                ]
+                MovieType movie ->
+                    viewMovieDetails movie
 
-        TVType tv ->
-            Html.li []
-                [ Html.div [ class "media-card" ]
-                    [ Html.div [ class "media-image" ] [ viewMediaCover tv.posterUrl tv.title ]
-                    , Html.div [ class "media-info" ]
-                        [ Html.i []
-                            [ Html.text <|
-                                "("
-                                    ++ hrsToString event.timeSince
-                                    ++ ") "
-                                    ++ getMediaStatusAsString logged_in_user_id event
-                            ]
-                        , viewTVDetails tv
-                        ]
+                TVType tv ->
+                    viewTVDetails tv
+    in
+    Html.li []
+        [ Html.div [ class "media-card" ]
+            [ Html.div [ class "media-image" ] [ Media.viewMediaCover event.media ]
+            , Html.div [ class "media-info" ]
+                [ Html.i []
+                    [ Html.text <| "(" ++ hrsToString event.timeSince ++ ")"
+                    , getMediaStatus logged_in_user_id event
                     ]
+                , mediaDetails
                 ]
+            ]
+        ]
 
 
 viewBookDetails : Book -> Html Msg
@@ -220,80 +194,23 @@ viewTVDetails tv =
         ]
 
 
-viewMediaCover : Maybe String -> String -> Html Msg
-viewMediaCover maybeCoverUrl title =
-    case maybeCoverUrl of
-        Just srcUrl ->
-            Html.img
-                [ Attr.src srcUrl, Attr.alt title ]
-                []
+getMediaStatus : Int -> Event -> Html Msg
+getMediaStatus logged_in_user_id event =
+    let
+        ( actorName, actorTense ) =
+            if event.userId == logged_in_user_id then
+                ( Html.text "you", Media.Second )
 
-        Nothing ->
-            Html.div [ class "no-media" ] []
-
-
-getMediaStatusAsString : Int -> Event -> String
-getMediaStatusAsString logged_in_user_id event =
-    case event.media of
-        BookType _ ->
-            case event.status of
-                WantToConsume ->
-                    if event.userId == logged_in_user_id then
-                        "you want to read"
-
-                    else
-                        event.fullName ++ " wants to read"
-
-                Consuming ->
-                    if event.userId == logged_in_user_id then
-                        "you are reading"
-
-                    else
-                        event.fullName ++ " reading"
-
-                Finished ->
-                    if event.userId == logged_in_user_id then
-                        "you read"
-
-                    else
-                        event.fullName ++ " read"
-
-                Abandoned ->
-                    if event.userId == logged_in_user_id then
-                        "you abandoned"
-
-                    else
-                        event.fullName ++ " abandoned"
-
-        _ ->
-            case event.status of
-                WantToConsume ->
-                    if event.userId == logged_in_user_id then
-                        "you want to watch"
-
-                    else
-                        event.fullName ++ " wants to watch"
-
-                Consuming ->
-                    if event.userId == logged_in_user_id then
-                        "you are watching"
-
-                    else
-                        event.fullName ++ " is watching"
-
-                Finished ->
-                    if event.userId == logged_in_user_id then
-                        "you watched"
-
-                    else
-                        event.fullName ++ " watched"
-
-                Abandoned ->
-                    if event.userId == logged_in_user_id then
-                        "you abandoned"
-
-                    else
-                        event.fullName ++ " abandoned"
+            else
+                ( Html.a [ Attr.href <| Routes.user event.userId ]
+                    [ Html.text event.fullName ]
+                , Media.Third
+                )
+    in
+    Html.span []
+        [ actorName
+        , Html.text <| Media.conjugate actorTense event.status event.media
+        ]
 
 
 hrsToString : Int -> String

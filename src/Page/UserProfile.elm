@@ -943,51 +943,31 @@ viewMedias receivedMedia friends recommendations profileType =
 
 viewMediaType : WebData (List UserInfo) -> WebData (List RecommendationType) -> Profile -> MediaType -> Html Msg
 viewMediaType friends recommendations profileType mediaType =
-    case mediaType of
-        BookType book ->
-            Html.li []
-                [ Html.div [ class "media-card" ]
-                    [ Html.div [ class "media-image" ] [ viewMediaCover book.coverUrl ]
-                    , Html.div [ class "media-info" ]
-                        [ viewBookDetails book
-                        , Html.div [ class "media-buttons" ]
-                            [ viewMediaStatus profileType (BookType book)
-                            , Html.div [ class "media-status" ]
-                                [ viewFriendsToRecommendDropdown profileType (BookType book) recommendations friends ]
-                            ]
-                        ]
-                    ]
-                ]
+    let
+        mediaDetails =
+            case mediaType of
+                BookType book ->
+                    viewBookDetails book
 
-        MovieType movie ->
-            Html.li []
-                [ Html.div [ class "media-card" ]
-                    [ Html.div [ class "media-image" ] [ viewMediaCover movie.posterUrl ]
-                    , Html.div [ class "media-info" ]
-                        [ viewMovieDetails movie
-                        , Html.div [ class "media-buttons" ]
-                            [ viewMediaStatus profileType (MovieType movie)
-                            , Html.div [ class "media-status" ]
-                                [ viewFriendsToRecommendDropdown profileType (MovieType movie) recommendations friends ]
-                            ]
-                        ]
-                    ]
-                ]
+                MovieType movie ->
+                    viewMovieDetails movie
 
-        TVType tv ->
-            Html.li []
-                [ Html.div [ class "media-card" ]
-                    [ Html.div [ class "media-image" ] [ viewMediaCover tv.posterUrl ]
-                    , Html.div [ class "media-info" ]
-                        [ viewTVDetails tv
-                        , Html.div [ class "media-buttons" ]
-                            [ viewMediaStatus profileType (TVType tv)
-                            , Html.div [ class "media-status" ]
-                                [ viewFriendsToRecommendDropdown profileType (TVType tv) recommendations friends ]
-                            ]
-                        ]
+                TVType tv ->
+                    viewTVDetails tv
+    in
+    Html.li []
+        [ Html.div [ class "media-card" ]
+            [ Html.div [ class "media-image" ] [ viewMediaCover mediaType ]
+            , Html.div [ class "media-info" ]
+                [ mediaDetails
+                , Html.div [ class "media-buttons" ]
+                    [ viewMediaStatus profileType mediaType
+                    , Html.div [ class "media-status" ]
+                        [ viewFriendsToRecommendDropdown profileType mediaType recommendations friends ]
                     ]
                 ]
+            ]
+        ]
 
 
 viewOverlapMedias : WebData (List OverlapMedia) -> Html Msg
@@ -1014,39 +994,27 @@ viewOverlapMedias overlapMedia =
 
 viewOverlappingMedia : OverlapMedia -> Html Msg
 viewOverlappingMedia overlapMedia =
-    case overlapMedia.media of
-        BookType book ->
-            Html.li []
-                [ Html.div [ class "media-card", class "media-card-long" ]
-                    [ Html.div [ class "media-image" ] [ viewMediaCover book.coverUrl ]
-                    , Html.div [ class "media-info" ]
-                        [ viewBookDetails book
-                        , viewOverlappingMediaStatus (BookType book) overlapMedia.otherUserStatus
-                        ]
-                    ]
-                ]
+    let
+        mediaDetails =
+            case overlapMedia.media of
+                BookType book ->
+                    viewBookDetails book
 
-        MovieType movie ->
-            Html.li []
-                [ Html.div [ class "media-card", class "media-card-long" ]
-                    [ Html.div [ class "media-image" ] [ viewMediaCover movie.posterUrl ]
-                    , Html.div [ class "media-info" ]
-                        [ viewMovieDetails movie
-                        , viewOverlappingMediaStatus (MovieType movie) overlapMedia.otherUserStatus
-                        ]
-                    ]
-                ]
+                MovieType movie ->
+                    viewMovieDetails movie
 
-        TVType tv ->
-            Html.li []
-                [ Html.div [ class "media-card", class "media-card-long" ]
-                    [ Html.div [ class "media-image" ] [ viewMediaCover tv.posterUrl ]
-                    , Html.div [ class "media-info" ]
-                        [ viewTVDetails tv
-                        , viewOverlappingMediaStatus (TVType tv) overlapMedia.otherUserStatus
-                        ]
-                    ]
+                TVType tv ->
+                    viewTVDetails tv
+    in
+    Html.li []
+        [ Html.div [ class "media-card", class "media-card-long" ]
+            [ Html.div [ class "media-image" ] [ viewMediaCover overlapMedia.media ]
+            , Html.div [ class "media-info" ]
+                [ mediaDetails
+                , viewOverlappingMediaStatus overlapMedia.media overlapMedia.otherUserStatus
                 ]
+            ]
+        ]
 
 
 viewBookDetails : Book -> Html Msg
@@ -1302,80 +1270,40 @@ viewRecommendedMedia recommendationType =
 
 viewRecommendationType : RecommendationType -> Html Msg
 viewRecommendationType recommendationType =
-    case recommendationType of
-        RecToUserType recommendedMedia ->
-            case recommendedMedia.media of
+    let
+        ( maybeShowRecommendationDropdown, recommendationText ) =
+            case recommendationType of
+                RecToUserType mediaType ->
+                    ( viewRecommendedMediaDropdown mediaType.media
+                    , "I recommended to " ++ mediaType.recommenderFullName
+                    )
+
+                RecByUserType mediaType ->
+                    ( Html.text ""
+                    , mediaType.recommendedFullName ++ " recommends..."
+                    )
+
+        mediaDetails =
+            case Recommendation.getRecommendedMedia recommendationType of
                 BookType book ->
-                    Html.li []
-                        [ Html.div [ class "media-card", class "media-card-long" ]
-                            [ Html.div [ class "media-image" ] [ viewMediaCover book.coverUrl ]
-                            , Html.div [ class "media-info" ]
-                                [ Html.i [] [ Html.text (recommendedMedia.recommenderFullName ++ " recommends...") ]
-                                , viewBookDetails book
-                                , viewRecommendedMediaDropdown (BookType book)
-                                ]
-                            ]
-                        ]
+                    viewBookDetails book
 
                 MovieType movie ->
-                    Html.li []
-                        [ Html.div [ class "media-card", class "media-card-long" ]
-                            [ Html.div [ class "media-image" ] [ viewMediaCover movie.posterUrl ]
-                            , Html.div [ class "media-info" ]
-                                [ Html.i [] [ Html.text (recommendedMedia.recommenderFullName ++ " recommends...") ]
-                                , viewMovieDetails movie
-                                , viewRecommendedMediaDropdown (MovieType movie)
-                                ]
-                            ]
-                        ]
+                    viewMovieDetails movie
 
                 TVType tv ->
-                    Html.li []
-                        [ Html.div [ class "media-card", class "media-card-long" ]
-                            [ Html.div [ class "media-image" ] [ viewMediaCover tv.posterUrl ]
-                            , Html.div [ class "media-info" ]
-                                [ Html.i [] [ Html.text (recommendedMedia.recommenderFullName ++ " recommends...") ]
-                                , viewTVDetails tv
-                                , viewRecommendedMediaDropdown (TVType tv)
-                                ]
-                            ]
-                        ]
-
-        RecByUserType recommendedMedia ->
-            case recommendedMedia.media of
-                BookType book ->
-                    Html.li []
-                        [ Html.div [ class "media-card" ]
-                            [ Html.div [ class "media-image" ] [ viewMediaCover book.coverUrl ]
-                            , Html.div [ class "media-info" ]
-                                [ Html.i []
-                                    [ Html.text ("I recommended to " ++ recommendedMedia.recommendedFullName ++ "...") ]
-                                , viewBookDetails book
-                                ]
-                            ]
-                        ]
-
-                MovieType movie ->
-                    Html.li []
-                        [ Html.div [ class "media-card" ]
-                            [ Html.div [ class "media-image" ] [ viewMediaCover movie.posterUrl ]
-                            , Html.div [ class "media-info" ]
-                                [ Html.i [] [ Html.text ("I recommended to " ++ recommendedMedia.recommendedFullName ++ "...") ]
-                                , viewMovieDetails movie
-                                ]
-                            ]
-                        ]
-
-                TVType tv ->
-                    Html.li []
-                        [ Html.div [ class "media-card" ]
-                            [ Html.div [ class "media-image" ] [ viewMediaCover tv.posterUrl ]
-                            , Html.div [ class "media-info" ]
-                                [ Html.i [] [ Html.text ("I recommended to " ++ recommendedMedia.recommendedFullName ++ "...") ]
-                                , viewTVDetails tv
-                                ]
-                            ]
-                        ]
+                    viewTVDetails tv
+    in
+    Html.li []
+        [ Html.div [ class "media-card", class "media-card-long" ]
+            [ Html.div [ class "media-image" ] [ viewMediaCover (Recommendation.getRecommendedMedia recommendationType) ]
+            , Html.div [ class "media-info" ]
+                [ Html.i [] [ Html.text recommendationText ]
+                , mediaDetails
+                , maybeShowRecommendationDropdown
+                ]
+            ]
+        ]
 
 
 viewRecommendedMediaDropdown : MediaType -> Html Msg

@@ -271,57 +271,51 @@ viewMedias receivedMedia =
 
 viewMediaType : MediaType -> Html Msg
 viewMediaType mediaType =
-    case mediaType of
-        BookType book ->
-            Html.li []
-                [ Html.div [ class "media-card" ]
-                    [ Html.div [ class "media-image" ] [ viewMediaCover book.coverUrl ]
-                    , Html.div [ class "media-info" ]
-                        [ Html.b [] [ Html.text book.title ]
-                        , Html.div []
-                            [ Html.text "by "
-                            , Html.text (String.join ", " book.authorNames)
-                            ]
-                        , case book.publishYear of
-                            Just year ->
-                                Html.text <| "(" ++ String.fromInt year ++ ")"
+    let
+        dropdown =
+            viewMediaDropdown mediaType
 
-                            Nothing ->
-                                Html.text ""
-                        , viewMediaDropdown (BookType book)
+        mediaDetails =
+            case mediaType of
+                BookType book ->
+                    [ Html.b [] [ Html.text book.title ]
+                    , Html.div []
+                        [ Html.text "by "
+                        , Html.text (String.join ", " book.authorNames)
                         ]
-                    ]
-                ]
+                    , case book.publishYear of
+                        Just year ->
+                            Html.text <| "(" ++ String.fromInt year ++ ")"
 
-        MovieType movie ->
-            Html.li []
-                [ Html.div [ class "media-card" ]
-                    [ Html.div [ class "media-image" ] [ viewMediaCover movie.posterUrl ]
-                    , Html.div [ class "media-info" ]
-                        [ Html.b [] [ Html.text movie.title ]
-                        , Html.text <| "(" ++ movie.releaseDate ++ ")"
-                        , viewMediaDropdown (MovieType movie)
-                        ]
+                        Nothing ->
+                            Html.text ""
+                    , dropdown
                     ]
-                ]
 
-        TVType tv ->
-            Html.li []
-                [ Html.div [ class "media-card" ]
-                    [ Html.div [ class "media-image" ] [ viewMediaCover tv.posterUrl ]
-                    , Html.div [ class "media-info" ]
-                        [ Html.b [] [ Html.text tv.title ]
-                        , Html.div [] [ Html.text (String.join ", " tv.networks) ]
-                        , case tv.firstAirDate of
-                            Just date ->
-                                Html.text <| "(" ++ date ++ ")"
-
-                            Nothing ->
-                                Html.text ""
-                        , viewMediaDropdown (TVType tv)
-                        ]
+                MovieType movie ->
+                    [ Html.b [] [ Html.text movie.title ]
+                    , Html.text <| "(" ++ movie.releaseDate ++ ")"
+                    , dropdown
                     ]
-                ]
+
+                TVType tv ->
+                    [ Html.b [] [ Html.text tv.title ]
+                    , Html.div [] [ Html.text (String.join ", " tv.networks) ]
+                    , case tv.firstAirDate of
+                        Just date ->
+                            Html.text <| "(" ++ date ++ ")"
+
+                        Nothing ->
+                            Html.text ""
+                    , dropdown
+                    ]
+    in
+    Html.li []
+        [ Html.div [ class "media-card" ]
+            [ Html.div [ class "media-image" ] [ viewMediaCover mediaType ]
+            , Html.div [ class "media-info" ] mediaDetails
+            ]
+        ]
 
 
 viewMediaDropdown : MediaType -> Html Msg

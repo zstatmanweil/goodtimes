@@ -108,6 +108,16 @@ type alias RecommendedByUserMedia =
     }
 
 
+getRecommendedMedia : RecommendationType -> MediaType
+getRecommendedMedia recommendationType =
+    case recommendationType of
+        RecToUserType { media } ->
+            media
+
+        RecByUserType { media } ->
+            media
+
+
 recommendedToUserMediaDecoder : Decoder RecommendedToUserMedia
 recommendedToUserMediaDecoder =
     Decode.map4 RecommendedToUserMedia
