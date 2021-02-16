@@ -132,7 +132,7 @@ viewEvent logged_in_user_id event =
         BookType book ->
             Html.li []
                 [ Html.div [ class "media-card" ]
-                    [ Html.div [ class "media-image" ] [ viewMediaCover book.coverUrl ]
+                    [ Html.div [ class "media-image" ] [ viewMediaCover book.coverUrl book.title ]
                     , Html.div [ class "media-info" ]
                         [ Html.i []
                             [ Html.text <|
@@ -149,7 +149,7 @@ viewEvent logged_in_user_id event =
         MovieType movie ->
             Html.li []
                 [ Html.div [ class "media-card" ]
-                    [ Html.div [ class "media-image" ] [ viewMediaCover movie.posterUrl ]
+                    [ Html.div [ class "media-image" ] [ viewMediaCover movie.posterUrl movie.title ]
                     , Html.div [ class "media-info" ]
                         [ Html.i []
                             [ Html.text <|
@@ -166,7 +166,7 @@ viewEvent logged_in_user_id event =
         TVType tv ->
             Html.li []
                 [ Html.div [ class "media-card" ]
-                    [ Html.div [ class "media-image" ] [ viewMediaCover tv.posterUrl ]
+                    [ Html.div [ class "media-image" ] [ viewMediaCover tv.posterUrl tv.title ]
                     , Html.div [ class "media-info" ]
                         [ Html.i []
                             [ Html.text <|
@@ -220,12 +220,12 @@ viewTVDetails tv =
         ]
 
 
-viewMediaCover : Maybe String -> Html Msg
-viewMediaCover maybeCoverUrl =
+viewMediaCover : Maybe String -> String -> Html Msg
+viewMediaCover maybeCoverUrl title =
     case maybeCoverUrl of
         Just srcUrl ->
             Html.img
-                [ Attr.src srcUrl ]
+                [ Attr.src srcUrl, Attr.alt title ]
                 []
 
         Nothing ->
