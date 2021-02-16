@@ -200,7 +200,10 @@ update msg model =
             case result of
                 Ok profile ->
                     ( { model | auth = Authenticated (LoggedInUser token profile) }
-                    , Cmd.batch [ Nav.pushUrl model.key "/about", saveAccessToken token ]
+                    , Cmd.batch
+                        [ Nav.pushUrl model.key "/feed"
+                        , saveAccessToken token
+                        ]
                     )
 
                 Err err ->
@@ -302,12 +305,6 @@ intoTuple list =
             Nothing
 
 
-
--- access_token=sg3mNLMkW7INs0nPaA2hDQl3-uiXGf1e&scope=openid%20email&expires_in=7200&token_type=Bearer
--- string
---     |> String.split "="
-
-
 auth0GetUser token =
     Http.request
         { method = "POST"
@@ -329,7 +326,7 @@ stepUrl : Url.Url -> Model -> ( Model, Cmd Msg )
 stepUrl url model =
     case model.auth of
         NotAuthed ->
-            case Parser.parse Routes.routeParser (Debug.log "receivedURL" url) of
+            case Parser.parse Routes.routeParser url of
                 Just route ->
                     case route of
                         Routes.Authorized maybeToken ->
@@ -347,7 +344,9 @@ stepUrl url model =
                                         |> Maybe.andThen parseToken
                                         |> maybeTokenToAuth
                             in
-                            ( { model | auth = newAuth }, Nav.pushUrl model.key "feed" )
+                            ( { model | auth = newAuth }
+                            , Nav.pushUrl model.key "/feed"
+                            )
 
                         _ ->
                             ( { model | page = About }
