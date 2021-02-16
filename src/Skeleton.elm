@@ -36,8 +36,13 @@ view menuOpen authStatus { toggleViewMenu, logOut } toMsg details =
         [ Html.div [ class "container", id "page-container" ]
             [ header authStatus toggleViewMenu
             , sidebar authStatus logOut menuOpen
-            , Html.map toMsg <|
-                Html.div (class "center" :: details.attrs) details.kids
+            , if GoodtimesAuth0.isMidAuthentication authStatus then
+                -- Here's some fun options: https://projects.lukehaas.me/css-loaders/
+                Html.text "loading..."
+
+              else
+                Html.map toMsg <|
+                    Html.div (class "center" :: details.attrs) details.kids
             , Html.footer [ id "footer" ] [ footer ]
             ]
         ]

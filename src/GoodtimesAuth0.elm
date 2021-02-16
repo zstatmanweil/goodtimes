@@ -13,6 +13,25 @@ type AuthStatus
     | Authenticated LoggedInUser
 
 
+isMidAuthentication : AuthStatus -> Bool
+isMidAuthentication authStatus =
+    case authStatus of
+        NotAuthed ->
+            False
+
+        AuthError _ ->
+            False
+
+        HasToken _ ->
+            True
+
+        HasUnverifiedUser _ _ ->
+            True
+
+        Authenticated _ ->
+            False
+
+
 auth0Endpoint : String
 auth0Endpoint =
     "https://goodtimes-staging.us.auth0.com"
