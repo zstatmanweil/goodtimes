@@ -56,17 +56,18 @@ update : LoggedInUser -> Msg -> Model -> ( Model, Cmd Msg )
 update loggedInUser msg model =
     case msg of
         SearchMedia ->
-            if model.selectedMediaType == BookSelection then
-                ( model, searchBooks loggedInUser model.query )
+            case model.selectedMediaType of
+                BookSelection ->
+                    ( model, searchBooks loggedInUser model.query )
 
-            else if model.selectedMediaType == MovieSelection then
-                ( model, searchMovies loggedInUser model.query )
+                MovieSelection ->
+                    ( model, searchMovies loggedInUser model.query )
 
-            else if model.selectedMediaType == TVSelection then
-                ( model, searchTV loggedInUser model.query )
+                TVSelection ->
+                    ( model, searchTV loggedInUser model.query )
 
-            else
-                ( model, Cmd.none )
+                _ ->
+                    ( model, Cmd.none )
 
         MediaResponse mediaResponse ->
             let

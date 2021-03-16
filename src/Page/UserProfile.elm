@@ -687,7 +687,7 @@ body loggedInUser model =
         LoggedInUserProfile ->
             Html.main_ [ class "content" ]
                 [ Html.div [ id "content-wrap" ]
-                    [ Html.div [ id "user-profile" ] [ Html.text ("welcome " ++ String.toLower loggedInUser.userInfo.fullName ++ "!") ]
+                    [ viewFriendProfileBanner model.profileUser
                     , Html.div [ class "tab" ]
                         [ createFirstTab model MediaTab "my media"
                         , createFirstTab model RecommendationTab "recommendations"
@@ -705,7 +705,7 @@ body loggedInUser model =
         FriendProfile ->
             Html.main_ [ class "content" ]
                 [ Html.div [ id "content-wrap" ]
-                    [ Html.div [ id "user-profile" ] [ Html.text (String.toLower (User.getUserFullName model.profileUser) ++ "'s profile!") ]
+                    [ viewFriendProfileBanner model.profileUser
                     , Html.div [ class "tab" ]
                         [ createFirstTab model MediaTab (User.getUserFirstName model.profileUser ++ "'s media")
                         , createFirstTab model OverlapTab "overlapping media"
@@ -723,7 +723,7 @@ body loggedInUser model =
         StrangerProfile userWithFriendStatus ->
             Html.main_ [ class "content" ]
                 [ Html.div [ id "content-wrap" ]
-                    [ Html.div [ id "user-profile" ] [ Html.text (String.toLower (User.getUserFullName model.profileUser) ++ "'s profile!") ]
+                    [ viewFriendProfileBanner model.profileUser
                     , Html.div [ class "results", class "page-text" ] [ Html.text ("Become " ++ User.getUserFullName model.profileUser ++ "'s friend to see their profile...") ]
                     , viewFriendButton userWithFriendStatus
                     ]
@@ -1351,6 +1351,11 @@ viewRecommendedMediaDropdown mediaType =
                                 [ Html.text (TV.statusAsString status) ]
                             ]
                         ]
+
+
+viewFriendProfileBanner : WebData UserInfo -> Html Msg
+viewFriendProfileBanner profileUser =
+    Html.div [ id "user-profile" ] [ Html.text (String.toLower (User.getUserFullName profileUser) ++ "'s profile!") ]
 
 
 
