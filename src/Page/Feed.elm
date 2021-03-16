@@ -199,7 +199,7 @@ getMediaStatus logged_in_user_id event =
     let
         ( actorName, actorTense ) =
             if event.userId == logged_in_user_id then
-                ( Html.text "you", Media.Second )
+                ( Html.text " you ", Media.Second )
 
             else
                 ( Html.a [ Attr.href <| Routes.user event.userId ]
