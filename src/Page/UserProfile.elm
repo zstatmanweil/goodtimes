@@ -574,7 +574,13 @@ addFriendLink loggedInUser currentUserId status =
         { token = loggedInUser.token
         , method = "POST"
         , url = "/friend"
-        , body = Just (Http.jsonBody (friendLinkEncoder loggedInUser.userInfo.goodTimesId currentUserId status))
+        , body =
+            case status of
+                Accepted ->
+                    Just (Http.jsonBody (friendLinkEncoder currentUserId loggedInUser.userInfo.goodTimesId status))
+
+                _ ->
+                    Just (Http.jsonBody (friendLinkEncoder loggedInUser.userInfo.goodTimesId currentUserId status))
         , expect = Http.expectJson FriendLinkAdded friendLinkDecoder
         }
 

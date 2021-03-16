@@ -11,7 +11,7 @@ from sqlalchemy.orm import sessionmaker
 sys.path.append(pathlib.Path(__file__).parent.parent.absolute().as_posix())
 from models.user import User
 
-config = ConfigFactory.parse_file('config/config')
+config = ConfigFactory.parse_file('../config/config')
 
 
 def add_users():
@@ -43,11 +43,11 @@ def add_users():
     )
 
     fifth_user = User(
-        auth0_sub='123',
-        email='alexfakeemail@gmail.com',
-        first_name='alex',
-        last_name='mcdermott',
-        full_name='alex mcdermott'
+        auth0_sub='456777666',
+        email='coolestbrother@gmail.com',
+        first_name='ron',
+        last_name='weasley',
+        full_name='ron weasley'
     )
 
     session = Session()
