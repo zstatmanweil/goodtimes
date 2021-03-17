@@ -190,11 +190,12 @@ update msg model =
                     )
 
                 Err err ->
-                    let
-                        _ =
-                            Debug.log "error" err
-                    in
-                    ( model, Cmd.none )
+                    case err of
+                        Http.BadStatus 401 ->
+                            ( { model | auth = NotAuthed }, Cmd.batch [ Nav.pushUrl model.key "about", removeAccessToken () ] )
+
+                        _ ->
+                            ( model, Cmd.none )
 
         VerifiedUser token result ->
             case result of
@@ -207,11 +208,12 @@ update msg model =
                     )
 
                 Err err ->
-                    let
-                        _ =
-                            Debug.log "error" err
-                    in
-                    ( model, Cmd.none )
+                    case err of
+                        Http.BadStatus 401 ->
+                            ( { model | auth = NotAuthed }, Cmd.batch [ Nav.pushUrl model.key "about", removeAccessToken () ] )
+
+                        _ ->
+                            ( model, Cmd.none )
 
         FeedMsg msge ->
             case model.page of
@@ -287,6 +289,7 @@ stepUser model loggedInUser ( user, cmds ) =
 parseToken : String -> Maybe String
 parseToken string =
     string
+        |> Debug.log "url"
         |> String.split "&"
         |> List.map (String.split "=")
         |> List.map intoTuple

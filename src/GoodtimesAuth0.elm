@@ -63,5 +63,5 @@ auth0LoginUrl =
         (Auth0.Auth0Config auth0Endpoint "68MpVR1fV03q6to9Al7JbNAYLTi2lRGT")
         "token"
         "http://localhost:1234/authorized"
-        [ "openid", "name", "email", "profile" ]
+        [ "openid", "name", "email", "profile", "offline_access" ]
         (Just "google-oauth2")
