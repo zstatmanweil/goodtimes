@@ -18,6 +18,7 @@ import User exposing (FriendLink, FriendStatus(..), LoggedInUser, UserWithFriend
 type alias Model =
     { searchResults : WebData (List UserWithFriendStatus)
     , query : String
+    , environment : Environment
     }
 
 
@@ -30,10 +31,11 @@ type Msg
     | FriendLinkAdded (Result Http.Error FriendLink)
 
 
-init : () -> ( Model, Cmd Msg )
-init _ =
+init : Environment -> ( Model, Cmd Msg )
+init environment =
     ( { searchResults = NotAsked
       , query = ""
+      , environment = environment
       }
     , Cmd.none
     )

@@ -1,5 +1,6 @@
 module GoodtimesAPI exposing (..)
 
+import Environment exposing (Environment)
 import Http exposing (..)
 
 
@@ -9,6 +10,7 @@ type alias GoodTimesRequestInfo msg =
     , url : String
     , body : Maybe Body
     , expect : Expect msg
+    , environment : Environment
     }
 
 
@@ -17,7 +19,7 @@ goodTimesRequest requestInfo =
     Http.request
         { method = requestInfo.method
         , headers = [ header "Authorization" ("Bearer " ++ requestInfo.token) ]
-        , url = "http://localhost:5000" ++ requestInfo.url
+        , url = Environment.apiUrl requestInfo.environment ++ requestInfo.url
         , body = Maybe.withDefault emptyBody requestInfo.body
         , expect = requestInfo.expect
         , timeout = Nothing

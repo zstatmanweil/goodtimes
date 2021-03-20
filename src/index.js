@@ -37,7 +37,10 @@ const startingAccessToken = localStorage.getItem('accessToken')
 
 const app = Elm.Main.init({
   node: document.getElementById('mount'),
-  flags: { maybeAccessToken: startingAccessToken }
+  flags: {
+    maybeAccessToken: startingAccessToken,
+    environment: 'local',
+  }
 })
 
 app.ports.saveAccessToken.subscribe( function(accessToken) {

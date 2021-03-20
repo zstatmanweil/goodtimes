@@ -3,6 +3,7 @@ port module Main exposing (..)
 import Browser exposing (..)
 import Browser.Navigation as Nav
 import Dict
+import Environment exposing (Environment(..))
 import GoodtimesAPI exposing (goodTimesRequest)
 import GoodtimesAuth0 exposing (AuthStatus(..), auth0Endpoint)
 import Html exposing (Html)
@@ -48,7 +49,9 @@ port removeAccessToken : () -> Cmd msg
 
 
 type alias Flags =
-    { maybeAccessToken : Maybe String }
+    { maybeAccessToken : Maybe String
+    , environment : String
+    }
 
 
 type alias Model =
@@ -57,6 +60,7 @@ type alias Model =
     , page : Page
     , isOpenMenu : Bool
     , auth : AuthStatus
+    , environment : Environment
     }
 
 
@@ -79,7 +83,12 @@ type LoggedInPage
 
 
 init : Flags -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
-init { maybeAccessToken } url key =
+init { maybeAccessToken, environment } url key =
+    let
+        decodedEnvironment =
+            Environment.toEnvironment environment
+                |> Result.withDefault Local
+    in
     stepUrl url
         { url = url
         , key = key
@@ -92,6 +101,7 @@ init { maybeAccessToken } url key =
 
                 Nothing ->
                     NotAuthed
+        , environment = decodedEnvironment
         }
 
 
@@ -99,14 +109,15 @@ init { maybeAccessToken } url key =
 -- VIEW
 
 
-verifyUser : String -> UnverifiedUser -> Cmd Msg
-verifyUser token unVerifiedUser =
+verifyUser : Environment -> String -> UnverifiedUser -> Cmd Msg
+verifyUser environment token unVerifiedUser =
     goodTimesRequest
         { token = token
         , method = "POST"
         , url = "/user"
         , body = Just (Http.jsonBody (unverifiedUserEncoder unVerifiedUser))
         , expect = Http.expectJson (VerifiedUser token) userInfoDecoder
+        , environment = environment
         }
 
 
@@ -186,7 +197,7 @@ update msg model =
             case result of
                 Ok profile ->
                     ( { model | auth = HasUnverifiedUser token profile }
-                    , verifyUser token profile
+                    , verifyUser model.environment token profile
                     )
 
                 Err err ->
@@ -382,7 +393,7 @@ stepUrl url model =
                         Routes.Feed ->
                             let
                                 ( feedModel, feedCommand ) =
-                                    Feed.init loggedInUser
+                                    Feed.init { loggedInUser = loggedInUser, environment = model.environment }
                             in
                             ( { model | page = LoggedIn loggedInUser (Feed feedModel) }
                             , Cmd.map FeedMsg feedCommand
@@ -398,12 +409,12 @@ stepUrl url model =
                             )
 
                         Routes.Search ->
-                            ( { model | page = LoggedIn loggedInUser (Search (Tuple.first (Search.init ()))) }
+                            ( { model | page = LoggedIn loggedInUser (Search (Tuple.first (Search.init { environment = environment }))) }
                             , Cmd.none
                             )
 
                         Routes.SearchUsers ->
-                            ( { model | page = LoggedIn loggedInUser (SearchUsers (Tuple.first (SearchUsers.init ()))) }
+                            ( { model | page = LoggedIn loggedInUser (SearchUsers (Tuple.first (SearchUsers.init model.environment))) }
                             , Cmd.none
                             )
 

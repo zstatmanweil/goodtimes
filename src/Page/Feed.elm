@@ -2,6 +2,7 @@ module Page.Feed exposing (..)
 
 import Book exposing (Book)
 import Consumption exposing (Status(..))
+import Environment exposing (Environment)
 import Event exposing (..)
 import GoodtimesAPI exposing (goodTimesRequest)
 import Html exposing (Html)
@@ -24,6 +25,7 @@ import User exposing (LoggedInUser, UserInfo)
 type alias Model =
     { friends : WebData (List UserInfo)
     , eventResults : WebData (List Event)
+    , environment : Environment
     }
 
 
@@ -32,12 +34,19 @@ type Msg
     | None
 
 
-init : LoggedInUser -> ( Model, Cmd Msg )
-init user =
+type alias Flags =
+    { loggedInUser : LoggedInUser
+    , environment : Environment
+    }
+
+
+init : Flags -> ( Model, Cmd Msg )
+init flags =
     ( { friends = NotAsked
       , eventResults = NotAsked
+      , environment = flags.environment
       }
-    , getUserAndFriendEvents user
+    , getUserAndFriendEvents flags
     )
 
 
@@ -63,8 +72,8 @@ update msg model =
             )
 
 
-getUserAndFriendEvents : LoggedInUser -> Cmd Msg
-getUserAndFriendEvents loggedInUser =
+getUserAndFriendEvents : Flags -> Cmd Msg
+getUserAndFriendEvents { loggedInUser, environment } =
     let
         _ =
             Debug.log loggedInUser.token 0
@@ -75,6 +84,7 @@ getUserAndFriendEvents loggedInUser =
         , url = "/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/friend/events"
         , body = Nothing
         , expect = Http.expectJson EventResponse (Decode.list Event.decoder)
+        , environment = environment
         }
 
 

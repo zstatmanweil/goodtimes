@@ -2,6 +2,7 @@ module Page.Search exposing (..)
 
 import Book exposing (..)
 import Consumption exposing (..)
+import Environment exposing (Environment)
 import GoodtimesAPI exposing (goodTimesRequest)
 import Html exposing (Attribute, Html)
 import Html.Attributes as Attr exposing (class, id, placeholder, type_)
@@ -25,7 +26,12 @@ type alias Model =
     { searchResults : WebData (List MediaType)
     , selectedMediaType : MediaSelection
     , query : String
+    , environment : Environment
     }
+
+
+type alias Flags =
+    { environment : environment }
 
 
 type Msg
@@ -38,11 +44,12 @@ type Msg
     | MediaAddedToProfile (Result Http.Error Consumption)
 
 
-init : () -> ( Model, Cmd Msg )
-init _ =
+init : Flags -> ( Model, Cmd Msg )
+init flags =
     ( { searchResults = NotAsked
       , selectedMediaType = NoSelection
       , query = ""
+      , environment = flags.environment
       }
     , Cmd.none
     )
