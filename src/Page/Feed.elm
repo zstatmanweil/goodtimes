@@ -1,7 +1,6 @@
 module Page.Feed exposing (..)
 
 import Book exposing (Book)
-import Consumption exposing (Status(..))
 import Environment exposing (Environment)
 import Event exposing (..)
 import GoodtimesAPI exposing (goodTimesRequest)

@@ -1,5 +1,6 @@
 module Page.SearchUsers exposing (..)
 
+import Environment exposing (Environment)
 import GoodtimesAPI exposing (goodTimesRequest)
 import Html exposing (Attribute, Html)
 import Html.Attributes as Attr exposing (class, id, placeholder)
@@ -49,7 +50,7 @@ update : LoggedInUser -> Msg -> Model -> ( Model, Cmd Msg )
 update loggedInUser msg model =
     case msg of
         SearchUsers ->
-            ( model, searchUsers loggedInUser model.query )
+            ( model, searchUsers model.environment loggedInUser model.query )
 
         UpdateQuery newString ->
             ( { model | query = newString }, Cmd.none )
@@ -62,12 +63,12 @@ update loggedInUser msg model =
             ( { model | searchResults = foundUsers }, Cmd.none )
 
         RequestFriend user status ->
-            ( model, addFriendLink loggedInUser user status )
+            ( model, addFriendLink model.environment loggedInUser user status )
 
         FriendLinkAdded result ->
             case result of
                 Ok _ ->
-                    ( model, searchUsers loggedInUser model.query )
+                    ( model, searchUsers model.environment loggedInUser model.query )
 
                 Err httpError ->
                     -- TODO handle error!
@@ -77,19 +78,20 @@ update loggedInUser msg model =
             ( model, Cmd.none )
 
 
-searchUsers : LoggedInUser -> String -> Cmd Msg
-searchUsers loggedInUser emailString =
+searchUsers : Environment -> LoggedInUser -> String -> Cmd Msg
+searchUsers environment loggedInUser emailString =
     goodTimesRequest
         { token = loggedInUser.token
         , method = "GET"
         , url = "/users?email=" ++ emailString ++ "&user_id=" ++ String.fromInt loggedInUser.userInfo.goodTimesId
         , body = Nothing
         , expect = Http.expectJson UserWithFriendStatusResponse (Decode.list User.userWithStatusDecoder)
+        , environment = environment
         }
 
 
-addFriendLink : LoggedInUser -> UserWithFriendStatus -> FriendStatus -> Cmd Msg
-addFriendLink loggedInUser user status =
+addFriendLink : Environment -> LoggedInUser -> UserWithFriendStatus -> FriendStatus -> Cmd Msg
+addFriendLink environment loggedInUser user status =
     goodTimesRequest
         { token = loggedInUser.token
         , method = "POST"
@@ -104,6 +106,7 @@ addFriendLink loggedInUser user status =
                     )
                 )
         , expect = Http.expectJson FriendLinkAdded friendLinkDecoder
+        , environment = environment
         }
 
 

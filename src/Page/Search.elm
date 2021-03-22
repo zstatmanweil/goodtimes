@@ -31,7 +31,7 @@ type alias Model =
 
 
 type alias Flags =
-    { environment : environment }
+    { environment : Environment }
 
 
 type Msg
@@ -65,13 +65,13 @@ update loggedInUser msg model =
         SearchMedia ->
             case model.selectedMediaType of
                 BookSelection ->
-                    ( model, searchBooks loggedInUser model.query )
+                    ( model, searchBooks model.environment loggedInUser model.query )
 
                 MovieSelection ->
-                    ( model, searchMovies loggedInUser model.query )
+                    ( model, searchMovies model.environment loggedInUser model.query )
 
                 TVSelection ->
-                    ( model, searchTV loggedInUser model.query )
+                    ( model, searchTV model.environment loggedInUser model.query )
 
                 _ ->
                     ( model, Cmd.none )
@@ -99,7 +99,7 @@ update loggedInUser msg model =
                 newBooks =
                     RemoteData.map mediaUpdater model.searchResults
             in
-            ( { model | searchResults = newBooks }, addMediaToProfile loggedInUser mediaType status )
+            ( { model | searchResults = newBooks }, addMediaToProfile model.environment loggedInUser mediaType status )
 
         MediaAddedToProfile result ->
             case result of
@@ -126,41 +126,44 @@ update loggedInUser msg model =
             ( model, Cmd.none )
 
 
-searchBooks : LoggedInUser -> String -> Cmd Msg
-searchBooks loggedInUser titleString =
+searchBooks : Environment -> LoggedInUser -> String -> Cmd Msg
+searchBooks environment loggedInUser titleString =
     goodTimesRequest
         { token = loggedInUser.token
         , method = "GET"
         , url = "/books?title=" ++ titleString
         , body = Nothing
         , expect = Http.expectJson MediaResponse (Decode.list (Media.bookToMediaDecoder Book.decoder))
+        , environment = environment
         }
 
 
-searchMovies : LoggedInUser -> String -> Cmd Msg
-searchMovies loggedInUser titleString =
+searchMovies : Environment -> LoggedInUser -> String -> Cmd Msg
+searchMovies environment loggedInUser titleString =
     goodTimesRequest
         { token = loggedInUser.token
         , method = "GET"
         , url = "/movies?title=" ++ titleString
         , body = Nothing
         , expect = Http.expectJson MediaResponse (Decode.list (Media.movieToMediaDecoder Movie.decoder))
+        , environment = environment
         }
 
 
-searchTV : LoggedInUser -> String -> Cmd Msg
-searchTV loggedInUser titleString =
+searchTV : Environment -> LoggedInUser -> String -> Cmd Msg
+searchTV environment loggedInUser titleString =
     goodTimesRequest
         { token = loggedInUser.token
         , method = "GET"
         , url = "/tv?title=" ++ titleString
         , body = Nothing
         , expect = Http.expectJson MediaResponse (Decode.list (Media.tvToMediaDecoder TV.decoder))
+        , environment = environment
         }
 
 
-addMediaToProfile : LoggedInUser -> MediaType -> Consumption.Status -> Cmd Msg
-addMediaToProfile loggedInUser mediaType status =
+addMediaToProfile : Environment -> LoggedInUser -> MediaType -> Consumption.Status -> Cmd Msg
+addMediaToProfile environment loggedInUser mediaType status =
     case mediaType of
         BookType book ->
             goodTimesRequest
@@ -169,6 +172,7 @@ addMediaToProfile loggedInUser mediaType status =
                 , url = "/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/book"
                 , body = Just <| Http.jsonBody (Book.encoderWithStatus book status)
                 , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
+                , environment = environment
                 }
 
         MovieType movie ->
@@ -178,6 +182,7 @@ addMediaToProfile loggedInUser mediaType status =
                 , url = "/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/movie"
                 , body = Just <| Http.jsonBody (Movie.encoderWithStatus movie status)
                 , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
+                , environment = environment
                 }
 
         TVType tv ->
@@ -187,6 +192,7 @@ addMediaToProfile loggedInUser mediaType status =
                 , url = "/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/tv"
                 , body = Just <| Http.jsonBody (TV.encoderWithStatus tv status)
                 , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
+                , environment = environment
                 }
 
 

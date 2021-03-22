@@ -2,6 +2,7 @@ module Page.UserProfile exposing (..)
 
 import Book exposing (Book)
 import Consumption exposing (Consumption, Status(..))
+import Environment exposing (Environment)
 import GoodtimesAPI exposing (goodTimesRequest)
 import Html exposing (Attribute, Html)
 import Html.Attributes as Attr exposing (class, id)
@@ -22,6 +23,12 @@ import User exposing (..)
 -- MODEL
 
 
+type alias Flags =
+    { loggedInUser : LoggedInUser
+    , environment : Environment
+    }
+
+
 type alias Model =
     { profileUser : WebData UserInfo
     , profileType : Profile
@@ -37,6 +44,7 @@ type alias Model =
     , consumptionSelectedTab : ConsumptionTabSelection
     , recommendationSelectedTab : RecommendationTabSelection
     , friendshipSelectedTab : FriendshipTabSelection
+    , environment : Environment
     }
 
 
@@ -62,8 +70,8 @@ type Msg
     | UserWithFriendStatusResponse (Result Http.Error (List UserWithFriendStatus))
 
 
-init : LoggedInUser -> Int -> ( Model, Cmd Msg )
-init loggedInUser profileUserId =
+init : Flags -> Int -> ( Model, Cmd Msg )
+init { loggedInUser, environment } profileUserId =
     ( { profileUser = NotAsked
       , profileType = NoProfile
       , loggedInUserFriends = NotAsked
@@ -78,8 +86,9 @@ init loggedInUser profileUserId =
       , consumptionSelectedTab = NoConsumptionTab
       , recommendationSelectedTab = NoRecommendationTab
       , friendshipSelectedTab = NoFriendshipTab
+      , environment = environment
       }
-    , getUser loggedInUser profileUserId
+    , getUser environment loggedInUser profileUserId
     )
 
 
@@ -121,24 +130,24 @@ update loggedInUser msg model =
                                 BookTab ->
                                     ( new_model
                                     , Cmd.batch
-                                        [ searchUserBooks loggedInUser loggedInUser.userInfo.goodTimesId
-                                        , getRecommendedByUserMedia loggedInUser (mediaTabSelectionToString mediaTabSelection)
+                                        [ searchUserBooks model.environment loggedInUser loggedInUser.userInfo.goodTimesId
+                                        , getRecommendedByUserMedia model.environment loggedInUser (mediaTabSelectionToString mediaTabSelection)
                                         ]
                                     )
 
                                 MovieTab ->
                                     ( new_model
                                     , Cmd.batch
-                                        [ searchUserMovies loggedInUser loggedInUser.userInfo.goodTimesId
-                                        , getRecommendedByUserMedia loggedInUser (mediaTabSelectionToString mediaTabSelection)
+                                        [ searchUserMovies model.environment loggedInUser loggedInUser.userInfo.goodTimesId
+                                        , getRecommendedByUserMedia model.environment loggedInUser (mediaTabSelectionToString mediaTabSelection)
                                         ]
                                     )
 
                                 TVTab ->
                                     ( new_model
                                     , Cmd.batch
-                                        [ searchUserTV loggedInUser loggedInUser.userInfo.goodTimesId
-                                        , getRecommendedByUserMedia loggedInUser (mediaTabSelectionToString mediaTabSelection)
+                                        [ searchUserTV model.environment loggedInUser loggedInUser.userInfo.goodTimesId
+                                        , getRecommendedByUserMedia model.environment loggedInUser (mediaTabSelectionToString mediaTabSelection)
                                         ]
                                     )
 
@@ -158,17 +167,17 @@ update loggedInUser msg model =
                             case mediaTabSelection of
                                 BookTab ->
                                     ( new_model
-                                    , searchUserBooks loggedInUser (getUserId model.profileUser)
+                                    , searchUserBooks model.environment loggedInUser (getUserId model.profileUser)
                                     )
 
                                 MovieTab ->
                                     ( new_model
-                                    , searchUserMovies loggedInUser (getUserId model.profileUser)
+                                    , searchUserMovies model.environment loggedInUser (getUserId model.profileUser)
                                     )
 
                                 TVTab ->
                                     ( new_model
-                                    , searchUserTV loggedInUser (getUserId model.profileUser)
+                                    , searchUserTV model.environment loggedInUser (getUserId model.profileUser)
                                     )
 
                                 _ ->
@@ -189,12 +198,12 @@ update loggedInUser msg model =
                     case model.recommendationSelectedTab of
                         ToUserTab ->
                             ( new_model
-                            , getRecommendedToUserMedia loggedInUser (mediaTabSelectionToString mediaTabSelection)
+                            , getRecommendedToUserMedia model.environment loggedInUser (mediaTabSelectionToString mediaTabSelection)
                             )
 
                         FromUserTab ->
                             ( new_model
-                            , getRecommendedByUserMedia loggedInUser (mediaTabSelectionToString mediaTabSelection)
+                            , getRecommendedByUserMedia model.environment loggedInUser (mediaTabSelectionToString mediaTabSelection)
                             )
 
                         _ ->
@@ -213,17 +222,17 @@ update loggedInUser msg model =
                     case mediaTabSelection of
                         BookTab ->
                             ( new_model
-                            , getOverlappingMedia "book" loggedInUser (getUserId model.profileUser)
+                            , getOverlappingMedia model.environment "book" loggedInUser (getUserId model.profileUser)
                             )
 
                         MovieTab ->
                             ( new_model
-                            , getOverlappingMedia "movie" loggedInUser (getUserId model.profileUser)
+                            , getOverlappingMedia model.environment "movie" loggedInUser (getUserId model.profileUser)
                             )
 
                         TVTab ->
                             ( new_model
-                            , getOverlappingMedia "tv" loggedInUser (getUserId model.profileUser)
+                            , getOverlappingMedia model.environment "tv" loggedInUser (getUserId model.profileUser)
                             )
 
                         _ ->
@@ -249,7 +258,7 @@ update loggedInUser msg model =
             )
 
         AddMediaToProfile mediaType status ->
-            ( model, addMediaToProfile loggedInUser mediaType status )
+            ( model, addMediaToProfile model.environment loggedInUser mediaType status )
 
         MediaAddedToProfile result ->
             case result of
@@ -258,44 +267,44 @@ update loggedInUser msg model =
                         ( MediaTab, LoggedInUserProfile, BookTab ) ->
                             ( model
                             , Cmd.batch
-                                [ searchUserBooks loggedInUser loggedInUser.userInfo.goodTimesId
-                                , getRecommendedByUserMedia loggedInUser (mediaTabSelectionToString model.mediaSelectedTab)
+                                [ searchUserBooks model.environment loggedInUser loggedInUser.userInfo.goodTimesId
+                                , getRecommendedByUserMedia model.environment loggedInUser (mediaTabSelectionToString model.mediaSelectedTab)
                                 ]
                             )
 
                         ( MediaTab, LoggedInUserProfile, MovieTab ) ->
                             ( model
                             , Cmd.batch
-                                [ searchUserMovies loggedInUser loggedInUser.userInfo.goodTimesId
-                                , getRecommendedByUserMedia loggedInUser (mediaTabSelectionToString model.mediaSelectedTab)
+                                [ searchUserMovies model.environment loggedInUser loggedInUser.userInfo.goodTimesId
+                                , getRecommendedByUserMedia model.environment loggedInUser (mediaTabSelectionToString model.mediaSelectedTab)
                                 ]
                             )
 
                         ( MediaTab, LoggedInUserProfile, TVTab ) ->
                             ( model
                             , Cmd.batch
-                                [ searchUserTV loggedInUser loggedInUser.userInfo.goodTimesId
-                                , getRecommendedByUserMedia loggedInUser (mediaTabSelectionToString model.mediaSelectedTab)
+                                [ searchUserTV model.environment loggedInUser loggedInUser.userInfo.goodTimesId
+                                , getRecommendedByUserMedia model.environment loggedInUser (mediaTabSelectionToString model.mediaSelectedTab)
                                 ]
                             )
 
                         ( MediaTab, FriendProfile, BookTab ) ->
-                            ( model, searchUserBooks loggedInUser (getUserId model.profileUser) )
+                            ( model, searchUserBooks model.environment loggedInUser (getUserId model.profileUser) )
 
                         ( MediaTab, FriendProfile, MovieTab ) ->
-                            ( model, searchUserMovies loggedInUser (getUserId model.profileUser) )
+                            ( model, searchUserMovies model.environment loggedInUser (getUserId model.profileUser) )
 
                         ( MediaTab, FriendProfile, TVTab ) ->
-                            ( model, searchUserTV loggedInUser (getUserId model.profileUser) )
+                            ( model, searchUserTV model.environment loggedInUser (getUserId model.profileUser) )
 
                         ( OverlapTab, FriendProfile, BookTab ) ->
-                            ( model, getOverlappingMedia "book" loggedInUser (getUserId model.profileUser) )
+                            ( model, getOverlappingMedia model.environment "book" loggedInUser (getUserId model.profileUser) )
 
                         ( OverlapTab, FriendProfile, MovieTab ) ->
-                            ( model, getOverlappingMedia "movie" loggedInUser (getUserId model.profileUser) )
+                            ( model, getOverlappingMedia model.environment "movie" loggedInUser (getUserId model.profileUser) )
 
                         ( OverlapTab, FriendProfile, TVTab ) ->
-                            ( model, getOverlappingMedia "tv" loggedInUser (getUserId model.profileUser) )
+                            ( model, getOverlappingMedia model.environment "tv" loggedInUser (getUserId model.profileUser) )
 
                         _ ->
                             ( model, Cmd.none )
@@ -333,12 +342,12 @@ update loggedInUser msg model =
                     case friendshipTab of
                         ExistingFriendsTab ->
                             ( new_model
-                            , getExistingFriends loggedInUser loggedInUser.userInfo.goodTimesId
+                            , getExistingFriends model.environment loggedInUser loggedInUser.userInfo.goodTimesId
                             )
 
                         RequestedFriendsTab ->
                             ( new_model
-                            , getFriendRequests loggedInUser
+                            , getFriendRequests model.environment loggedInUser
                             )
 
                         _ ->
@@ -357,7 +366,7 @@ update loggedInUser msg model =
                             }
                     in
                     ( new_model
-                    , getExistingFriends loggedInUser (getUserId model.profileUser)
+                    , getExistingFriends model.environment loggedInUser (getUserId model.profileUser)
                     )
 
                 _ ->
@@ -371,14 +380,14 @@ update loggedInUser msg model =
                             | profileType = LoggedInUserProfile
                             , profileUser = Success user
                           }
-                        , getExistingFriends loggedInUser loggedInUser.userInfo.goodTimesId
+                        , getExistingFriends model.environment loggedInUser loggedInUser.userInfo.goodTimesId
                         )
 
                     else
                         ( { model
                             | profileUser = Success user
                           }
-                        , searchUsers loggedInUser user.email
+                        , searchUsers model.environment loggedInUser user.email
                         )
 
                 -- TODO: handle error
@@ -428,17 +437,17 @@ update loggedInUser msg model =
                     ( model, Cmd.none )
 
         AddFriendLink userId friendStatus ->
-            ( model, addFriendLink loggedInUser userId friendStatus )
+            ( model, addFriendLink model.environment loggedInUser userId friendStatus )
 
         FriendLinkAdded result ->
             case result of
                 Ok _ ->
                     case model.profileType of
                         LoggedInUserProfile ->
-                            ( model, getFriendRequests loggedInUser )
+                            ( model, getFriendRequests model.environment loggedInUser )
 
                         _ ->
-                            ( model, searchUsers loggedInUser (getUserEmail model.profileUser) )
+                            ( model, searchUsers model.environment loggedInUser (getUserEmail model.profileUser) )
 
                 Err httpError ->
                     -- TODO handle error!
@@ -468,12 +477,12 @@ update loggedInUser msg model =
             )
 
         Recommend mediaType friend ->
-            ( model, recommendMedia loggedInUser friend.goodTimesId mediaType Recommendation.Pending )
+            ( model, recommendMedia model.environment loggedInUser friend.goodTimesId mediaType Recommendation.Pending )
 
         RecommendationResponse rec ->
             case rec of
                 Ok _ ->
-                    ( model, getRecommendedByUserMedia loggedInUser (mediaTabSelectionToString model.mediaSelectedTab) )
+                    ( model, getRecommendedByUserMedia model.environment loggedInUser (mediaTabSelectionToString model.mediaSelectedTab) )
 
                 -- TODO: handle error
                 Err resp ->
@@ -502,74 +511,80 @@ update loggedInUser msg model =
             ( model, Cmd.none )
 
 
-searchUserBooks : LoggedInUser -> Int -> Cmd Msg
-searchUserBooks loggedInUser userId =
+searchUserBooks : Environment -> LoggedInUser -> Int -> Cmd Msg
+searchUserBooks environment loggedInUser userId =
     goodTimesRequest
         { token = loggedInUser.token
         , method = "GET"
         , url = "/user/" ++ String.fromInt userId ++ "/media/book"
         , body = Nothing
         , expect = Http.expectJson MediaResponse (Decode.list (Media.bookToMediaDecoder Book.decoder))
+        , environment = environment
         }
 
 
-searchUserMovies : LoggedInUser -> Int -> Cmd Msg
-searchUserMovies loggedInUser userId =
+searchUserMovies : Environment -> LoggedInUser -> Int -> Cmd Msg
+searchUserMovies environment loggedInUser userId =
     goodTimesRequest
         { token = loggedInUser.token
         , method = "GET"
         , url = "/user/" ++ String.fromInt userId ++ "/media/movie"
         , body = Nothing
         , expect = Http.expectJson MediaResponse (Decode.list (Media.movieToMediaDecoder Movie.decoder))
+        , environment = environment
         }
 
 
-searchUserTV : LoggedInUser -> Int -> Cmd Msg
-searchUserTV loggedInUser userId =
+searchUserTV : Environment -> LoggedInUser -> Int -> Cmd Msg
+searchUserTV environment loggedInUser userId =
     goodTimesRequest
         { token = loggedInUser.token
         , method = "GET"
         , url = "/user/" ++ String.fromInt userId ++ "/media/tv"
         , body = Nothing
         , expect = Http.expectJson MediaResponse (Decode.list (Media.tvToMediaDecoder TV.decoder))
+        , environment = environment
         }
 
 
-getUser : LoggedInUser -> Int -> Cmd Msg
-getUser loggedInUser profileUserID =
+getUser : Environment -> LoggedInUser -> Int -> Cmd Msg
+getUser environment loggedInUser profileUserID =
     goodTimesRequest
         { token = loggedInUser.token
         , method = "GET"
         , url = "/user/" ++ String.fromInt profileUserID
         , body = Nothing
         , expect = Http.expectJson UserResponse userInfoDecoder
+        , environment = environment
         }
 
 
-getExistingFriends : LoggedInUser -> Int -> Cmd Msg
-getExistingFriends loggedInUser userId =
+getExistingFriends : Environment -> LoggedInUser -> Int -> Cmd Msg
+getExistingFriends environment loggedInUser userId =
     goodTimesRequest
         { token = loggedInUser.token
         , method = "GET"
         , url = "/user/" ++ String.fromInt userId ++ "/friends"
         , body = Nothing
         , expect = Http.expectJson FriendResponse (Decode.list userInfoDecoder)
+        , environment = environment
         }
 
 
-getFriendRequests : LoggedInUser -> Cmd Msg
-getFriendRequests loggedInUser =
+getFriendRequests : Environment -> LoggedInUser -> Cmd Msg
+getFriendRequests environment loggedInUser =
     goodTimesRequest
         { token = loggedInUser.token
         , method = "GET"
         , url = "/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/requests"
         , body = Nothing
         , expect = Http.expectJson FriendResponse (Decode.list userInfoDecoder)
+        , environment = environment
         }
 
 
-addFriendLink : LoggedInUser -> Int -> FriendStatus -> Cmd Msg
-addFriendLink loggedInUser currentUserId status =
+addFriendLink : Environment -> LoggedInUser -> Int -> FriendStatus -> Cmd Msg
+addFriendLink environment loggedInUser currentUserId status =
     goodTimesRequest
         { token = loggedInUser.token
         , method = "POST"
@@ -582,66 +597,72 @@ addFriendLink loggedInUser currentUserId status =
                 _ ->
                     Just (Http.jsonBody (friendLinkEncoder loggedInUser.userInfo.goodTimesId currentUserId status))
         , expect = Http.expectJson FriendLinkAdded friendLinkDecoder
+        , environment = environment
         }
 
 
-searchUsers : LoggedInUser -> String -> Cmd Msg
-searchUsers loggedInUser emailString =
+searchUsers : Environment -> LoggedInUser -> String -> Cmd Msg
+searchUsers environment loggedInUser emailString =
     goodTimesRequest
         { token = loggedInUser.token
         , method = "GET"
         , url = "/users?email=" ++ emailString ++ "&user_id=" ++ String.fromInt loggedInUser.userInfo.goodTimesId
         , body = Nothing
         , expect = Http.expectJson UserWithFriendStatusResponse (Decode.list User.userWithStatusDecoder)
+        , environment = environment
         }
 
 
-getRecommendedToUserMedia : LoggedInUser -> String -> Cmd Msg
-getRecommendedToUserMedia loggedInUser mediaType =
+getRecommendedToUserMedia : Environment -> LoggedInUser -> String -> Cmd Msg
+getRecommendedToUserMedia environment loggedInUser mediaType =
     goodTimesRequest
         { token = loggedInUser.token
         , method = "GET"
         , url = "/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/recommendations/" ++ mediaType
         , body = Nothing
         , expect = Http.expectJson RecommendedMediaResponse (Decode.list (recToUserToRecTypeDecoder recommendedToUserMediaDecoder))
+        , environment = environment
         }
 
 
-getRecommendedByUserMedia : LoggedInUser -> String -> Cmd Msg
-getRecommendedByUserMedia loggedInUser mediaType =
+getRecommendedByUserMedia : Environment -> LoggedInUser -> String -> Cmd Msg
+getRecommendedByUserMedia environment loggedInUser mediaType =
     goodTimesRequest
         { token = loggedInUser.token
         , method = "GET"
         , url = "/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/recommended/" ++ mediaType
         , body = Nothing
         , expect = Http.expectJson RecommendedMediaResponse (Decode.list (recByUserToRecTypeDecoder recommendedByUserMediaDecoder))
+        , environment = environment
         }
 
 
-recommendMedia : LoggedInUser -> Int -> MediaType -> Recommendation.Status -> Cmd Msg
-recommendMedia recommenderUser recommendedUserID mediaType recommendation =
+recommendMedia : Environment -> LoggedInUser -> Int -> MediaType -> Recommendation.Status -> Cmd Msg
+recommendMedia environment recommenderUser recommendedUserID mediaType recommendation =
     goodTimesRequest
         { token = recommenderUser.token
         , method = "POST"
         , url = "/media/" ++ Media.getMediaTypeAsString mediaType ++ "/recommendation"
         , body = Just (Http.jsonBody (Recommendation.encoder mediaType recommenderUser.userInfo.goodTimesId recommendedUserID recommendation))
         , expect = Http.expectJson RecommendationResponse Recommendation.decoder
+        , environment = environment
         }
 
 
-getOverlappingMedia : String -> LoggedInUser -> Int -> Cmd Msg
-getOverlappingMedia mediaType loggedInUser friendUserId =
+getOverlappingMedia : Environment -> String -> LoggedInUser -> Int -> Cmd Msg
+getOverlappingMedia environment mediaType loggedInUser friendUserId =
     goodTimesRequest
         { token = loggedInUser.token
         , method = "GET"
         , url = "/overlaps/" ++ mediaType ++ "/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/" ++ String.fromInt friendUserId
         , body = Nothing
         , expect = Http.expectJson OverlapResponse (Decode.list Overlap.overlapMediaDecoder)
+        , environment = environment
         }
 
 
-addMediaToProfile : LoggedInUser -> MediaType -> Consumption.Status -> Cmd Msg
-addMediaToProfile loggedInUser mediaType status =
+addMediaToProfile : Environment -> LoggedInUser -> MediaType -> Consumption.Status -> Cmd Msg
+addMediaToProfile environment loggedInUser mediaType status =
     case mediaType of
         BookType book ->
             goodTimesRequest
@@ -650,6 +671,7 @@ addMediaToProfile loggedInUser mediaType status =
                 , url = "/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/book"
                 , body = Just <| Http.jsonBody (Book.encoderWithStatus book status)
                 , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
+                , environment = environment
                 }
 
         MovieType movie ->
@@ -659,6 +681,7 @@ addMediaToProfile loggedInUser mediaType status =
                 , url = "/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/movie"
                 , body = Just <| Http.jsonBody (Movie.encoderWithStatus movie status)
                 , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
+                , environment = environment
                 }
 
         TVType tv ->
@@ -668,6 +691,7 @@ addMediaToProfile loggedInUser mediaType status =
                 , url = "/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/media/tv"
                 , body = Just <| Http.jsonBody (TV.encoderWithStatus tv status)
                 , expect = Http.expectJson MediaAddedToProfile Consumption.consumptionDecoder
+                , environment = environment
                 }
 
 

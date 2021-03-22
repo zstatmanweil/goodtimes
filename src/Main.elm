@@ -402,14 +402,14 @@ stepUrl url model =
                         Routes.User profileUserId ->
                             let
                                 ( userProfileModel, userProfileCommand ) =
-                                    UserProfile.init loggedInUser profileUserId
+                                    UserProfile.init { loggedInUser = loggedInUser, environment = model.environment } profileUserId
                             in
                             ( { model | page = LoggedIn loggedInUser (UserProfile userProfileModel) }
                             , Cmd.map UserProfileMsg userProfileCommand
                             )
 
                         Routes.Search ->
-                            ( { model | page = LoggedIn loggedInUser (Search (Tuple.first (Search.init { environment = environment }))) }
+                            ( { model | page = LoggedIn loggedInUser (Search (Tuple.first (Search.init { environment = model.environment }))) }
                             , Cmd.none
                             )
 
