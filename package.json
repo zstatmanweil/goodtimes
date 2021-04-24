@@ -4,7 +4,8 @@
   "description": "A really nice way to have a good time with or without your friends. But better with!",
   "main": "index.js",
   "scripts": {
-    "start": "parcel watch src/index.html --public-url='/static'"
+    "start": "parcel watch src/index.html --public-url='/static'",
+    "build": "parcel build src/index.html --public-url='/static'"
   },
   "repository": {
     "type": "git",

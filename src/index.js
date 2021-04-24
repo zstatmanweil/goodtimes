@@ -35,11 +35,19 @@ import 'regenerator-runtime/runtime'
 
 const startingAccessToken = localStorage.getItem('accessToken')
 
+if (process.env.NODE_ENV === 'production') { 
+  var environment = 'production'
+}
+
+if (process.env.NODE_ENV === 'development') { 
+  var environment = 'local'
+}
+
 const app = Elm.Main.init({
   node: document.getElementById('mount'),
   flags: {
     maybeAccessToken: startingAccessToken,
-    environment: 'local',
+    environment,
   }
 })
 
