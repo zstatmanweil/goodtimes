@@ -73,10 +73,6 @@ update msg model =
 
 getUserAndFriendEvents : Flags -> Cmd Msg
 getUserAndFriendEvents { loggedInUser, environment } =
-    let
-        _ =
-            Debug.log loggedInUser.token 0
-    in
     goodTimesRequest
         { token = loggedInUser.token
         , method = "GET"

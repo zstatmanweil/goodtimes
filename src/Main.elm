@@ -301,7 +301,6 @@ stepUser model loggedInUser ( user, cmds ) =
 parseToken : String -> Maybe String
 parseToken string =
     string
-        |> Debug.log "url"
         |> String.split "&"
         |> List.map (String.split "=")
         |> List.map intoTuple
