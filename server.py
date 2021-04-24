@@ -1,17 +1,22 @@
 from flask import Blueprint
 import json
+import os
 
 from six.moves.urllib.request import urlopen
 from functools import wraps
 
-from config import AUTH0_DOMAIN
+from config import PROD_AUTH0_DOMAIN, DEV_AUTH0_DOMAIN
 
 from flask import request, jsonify, _request_ctx_stack
 from jose import jwt
 
 
+if os.getenv("FLASK_ENV") == 'production':
+    auth_domain = PROD_AUTH0_DOMAIN
+else:
+    auth_domain = DEV_AUTH0_DOMAIN
 
-API_AUDIENCE = f"https://{AUTH0_DOMAIN}/api/v2/"
+API_AUDIENCE = f"https://{auth_domain}/api/v2/"
 ALGORITHMS = ["RS256"]
 
 auth = Blueprint("auth", __name__)

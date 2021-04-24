@@ -1,7 +1,7 @@
 import json
 import os
 
-from config import AUTH_CONFIG 
+from config import DEV_AUTH_CONFIG, PROD_AUTH_CONFIG
 from werkzeug.exceptions import HTTPException
 from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
@@ -35,10 +35,14 @@ app.register_blueprint(friend, url_prefix='/api')
 
 @app.route('/auth_config.json')
 def send_json():
-    auth_config = AUTH_CONFIG
+
+    if os.getenv("FLASK_ENV") == 'production':
+        auth_config = PROD_AUTH_CONFIG
+    else:
+        auth_config = DEV_AUTH_CONFIG
 
     response = app.response_class(
-        response=json.dumps(AUTH_CONFIG),
+        response=json.dumps(auth_config),
         status=200,
         mimetype='application/json'
     )
