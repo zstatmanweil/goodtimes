@@ -49,6 +49,7 @@ Parcel follows the dependencies and builds what it needs to. Since `src/index.js
   - [x] Host the backend
   - [ ] Setup so that deploying changes is fairly easy (github actions?)
   - [ ] Run with wsgi? Gunicorn? Productioner server, wasup?
+  - [ ] Automatically redirect from http to https
 
 
 

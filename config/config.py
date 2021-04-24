@@ -15,5 +15,14 @@ TMDB_TOKEN=os.getenv("TMDB_TOKEN")
 
 if os.getenv("FLASK_ENV") == 'production':
     AUTH0_DOMAIN = "goodtimes-production.us.auth0.com"
+    AUTH_CONFIG = {
+        "domain": AUTH0_DOMAIN,
+        "clientId": "plxal68Z4k1rlKCcNxjfq3IHY1Mr8sAx"
+    }
 else:
     AUTH0_DOMAIN = "goodtimes-staging.us.auth0.com"
+    AUTH_CONFIG = {
+        "domain": AUTH0_DOMAIN,
+        "clientId": "68MpVR1fV03q6to9Al7JbNAYLTi2lRGT"
+    }
+
