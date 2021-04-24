@@ -35,6 +35,9 @@ app.register_blueprint(friend, url_prefix='/api')
 @app.route('/', defaults={'u_path': ''})
 @app.route('/<path:u_path>')
 def send_foo(u_path):
+    print("((((((((()))))))))")
+    print(u_path)
+    print("((((((((()))))))))")
     return send_from_directory('public', "index.html")
 
 @app.errorhandler(HTTPException)
