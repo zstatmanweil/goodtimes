@@ -129,9 +129,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# specific to tis project
-alembic.ini
-
 # Frontend
 elm-stuff/
 node_modules/
