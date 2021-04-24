@@ -1,10 +1,12 @@
 from logging.config import fileConfig
-import os
+
+from config import DATABASE_URL
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -14,14 +16,7 @@ config = context.config
 # This line sets up loggers basically.
 fileConfig(config.config_file_name)
 
-# Do this weird hack because heroku doesnt play nice with the url scheme that
-# sqlalchemy expects
-# https://stackoverflow.com/questions/62688256/sqlalchemy-exc-nosuchmoduleerror-cant-load-plugin-sqlalchemy-dialectspostgre#comment118515587_66794960
-database_url = os.getenv("DATABASE_URL")
-if database_url.startswith("postgres://"):
-    database_url = database_url.replace("postgres://", "postgresql://", 1)
-
-config.set_main_option('sqlalchemy.url', database_url)
+config.set_main_option('sqlalchemy.url', DATABASE_URL)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
