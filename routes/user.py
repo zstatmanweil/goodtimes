@@ -7,7 +7,7 @@ import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker
 from werkzeug.exceptions import abort
 
-from config import POSTGRES_DATABASE_URL
+from config import DATABASE_URL
 
 from models.consumption import Consumption, ConsumptionStatus
 from models.recommendation import RecommendationStatus, Recommendation
@@ -19,7 +19,7 @@ from server import requires_auth
 
 user = Blueprint("user", __name__)
 
-engine = sa.create_engine(POSTGRES_DATABASE_URL, echo=True)
+engine = sa.create_engine(DATABASE_URL, echo=True)
 Session = sessionmaker(bind=engine)
 
 

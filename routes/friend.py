@@ -11,11 +11,11 @@ from db.helpers import get_user_friends, get_user_friend_requests
 from models.friend import Friend, FriendStatus
 from models.user import User
 from server import requires_auth
-from config import POSTGRES_DATABASE_URL
+from config import DATABASE_URL
 
 friend = Blueprint("friend", __name__)
 
-engine = sa.create_engine(POSTGRES_DATABASE_URL, echo=True)
+engine = sa.create_engine(DATABASE_URL, echo=True)
 Session = sessionmaker(bind=engine)
 
 
