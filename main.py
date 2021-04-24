@@ -19,7 +19,7 @@ from routes.user import user
 from routes.friend import friend
 from server import auth
 
-app = Flask(__name__, static_url_path='/static', static_folder='dist')
+app = Flask(__name__, static_url_path='/static', static_folder='public')
 app.secret_key = 'very secret key'  # Fix this later!
 
 CORS(app, resources={r"*": {"origins": "*"}})
@@ -35,7 +35,7 @@ app.register_blueprint(friend, url_prefix='/api')
 @app.route('/', defaults={'u_path': ''})
 @app.route('/<path:u_path>')
 def send_foo(u_path):
-    return send_from_directory('dist', "index.html")
+    return send_from_directory('public', "index.html")
 
 @app.errorhandler(HTTPException)
 def handle_exception(e):
