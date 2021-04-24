@@ -7,6 +7,8 @@ import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker
 from werkzeug.exceptions import abort
 
+from config import POSTGRES_DATABASE_URL
+
 from models.consumption import Consumption, ConsumptionStatus
 from models.recommendation import RecommendationStatus, Recommendation
 from models.user import User
@@ -15,10 +17,9 @@ from db.helpers import MEDIAS, get_consumption_records, get_users_and_friend_sta
 from routes.helpers import get_time_diff_hrs
 from server import requires_auth
 
-config = ConfigFactory.parse_file('config/config')
 user = Blueprint("user", __name__)
 
-engine = sa.create_engine(config.postgres_db, echo=True)
+engine = sa.create_engine(POSTGRES_DATABASE_URL, echo=True)
 Session = sessionmaker(bind=engine)
 
 

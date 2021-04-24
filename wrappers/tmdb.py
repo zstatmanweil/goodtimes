@@ -1,9 +1,10 @@
 from datetime import datetime
 from typing import List, Dict
-import os
 
 import requests
 from requests.adapters import HTTPAdapter, Retry
+
+from config import TMDB_TOKEN
 
 from models.movies import Movie
 from models.tv import TV
@@ -12,7 +13,7 @@ class TMDB:
     def __init__(self):
         self.search_base_uri = 'https://api.themoviedb.org/3'
         self.poster_cover_uri = 'http://image.tmdb.org/t/p/w185'
-        self.api_key = os.getenv("TMDB_TOKEN")
+        self.api_key = TMDB_TOKEN
         self.session = requests.Session()
         self.session.mount(self.search_base_uri, HTTPAdapter(max_retries=Retry(total=5,
                                                                                read=5,

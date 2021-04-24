@@ -1,6 +1,6 @@
 from typing import List, Dict
-import os
 
+from config import GOOGLE_BOOKS_API_KEY 
 import requests
 from requests.adapters import HTTPAdapter, Retry
 
@@ -15,7 +15,7 @@ RETRY_CODES = [429, 502, 503]
 class GoogleBooks:
     def __init__(self):
         self.base_uri = 'https://www.googleapis.com/books/v1/volumes'
-        self.api_key = os.getenv("GOOGLE_BOOKS_API_KEY")
+        self.api_key = GOOGLE_BOOKS_API_KEY
         self.session = requests.Session()
         self.session.mount(self.base_uri, HTTPAdapter(max_retries=Retry(total=5,
                                                                         read=5,
