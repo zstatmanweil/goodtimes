@@ -11,3 +11,9 @@ DATABASE_URL=database_url
 
 GOOGLE_BOOKS_API_KEY=os.getenv("GOOGLE_BOOKS_API_KEY")
 TMDB_TOKEN=os.getenv("TMDB_TOKEN")
+
+
+if os.getenv("FLASK_ENV") == 'production':
+    AUTH0_DOMAIN = "goodtimes-production.us.auth0.com"
+else:
+    AUTH0_DOMAIN = "goodtimes-staging.us.auth0.com"

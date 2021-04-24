@@ -1,15 +1,20 @@
 # goodtimes
 Web-app to track, share and recommend books and media our friends are enjoying
 
-# The Backend:
-
-## Quickstart
+# Quickstart
 
 ```sh
-# Install dependencies into virtual environment
+# Install Pythong dependencies into virtual environment
 pip install -r requirements
 
-# Run app
+# Install js dependencies
+npm run install
+
+# Run the frontend builder 
+npm run start
+
+# Run app locally (Ensuring in development environment)
+echo 'FLASK_ENV=development' > .flaskenv
 python main.py
 ```
 
@@ -28,19 +33,6 @@ Update a file `/config/config` to contain a variable postgres_db with your postg
 
 ```
 postgres_db="postgresql://username:password@localhost/goodtimes"
-```
-
-# The Frontend:
-
-## Quick Start
-
-``` sh
-# First - install the dependencies
-npm run install
-
-# Then - start the code
-npm run serve
-
 ```
 
 ## What it's using to work

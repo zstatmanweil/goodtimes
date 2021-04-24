@@ -4,12 +4,13 @@ import json
 from six.moves.urllib.request import urlopen
 from functools import wraps
 
+from config import AUTH0_DOMAIN
+
 from flask import request, jsonify, _request_ctx_stack
 from jose import jwt
 
 
 
-AUTH0_DOMAIN = "goodtimes-staging.us.auth0.com"
 API_AUDIENCE = f"https://{AUTH0_DOMAIN}/api/v2/"
 ALGORITHMS = ["RS256"]
 
