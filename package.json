@@ -3,9 +3,7 @@
   "version": "1.0.0",
   "description": "A really nice way to have a good time with or without your friends. But better with!",
   "main": "index.js",
-  "scripts": {
-    "serve": "parcel serve src/index.html"
-  },
+  "scripts": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zstatmanweil/goodtimes.git"

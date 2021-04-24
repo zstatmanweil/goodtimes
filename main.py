@@ -2,7 +2,7 @@ import json
 import os
 
 from werkzeug.exceptions import HTTPException
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 import json
 from six.moves.urllib.request import urlopen
@@ -19,19 +19,23 @@ from routes.user import user
 from routes.friend import friend
 from server import auth
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/static', static_folder='dist')
 app.secret_key = 'very secret key'  # Fix this later!
 
 CORS(app, resources={r"*": {"origins": "*"}})
 
 
-app.register_blueprint(auth)
-app.register_blueprint(books)
-app.register_blueprint(movies)
-app.register_blueprint(tv)
-app.register_blueprint(user)
-app.register_blueprint(friend)
+app.register_blueprint(auth, url_prefix='/api')
+app.register_blueprint(books, url_prefix='/api')
+app.register_blueprint(movies, url_prefix='/api')
+app.register_blueprint(tv, url_prefix='/api')
+app.register_blueprint(user, url_prefix='/api')
+app.register_blueprint(friend, url_prefix='/api')
 
+@app.route('/', defaults={'u_path': ''})
+@app.route('/<path:u_path>')
+def send_foo(u_path):
+    return send_from_directory('dist', "index.html")
 
 @app.errorhandler(HTTPException)
 def handle_exception(e):
@@ -49,4 +53,4 @@ def handle_exception(e):
 
 #  main thread of execution to start the server
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=os.getenv("PORT"))
+    app.run(host="0.0.0.0", port=os.getenv("PORT"), debug=True)

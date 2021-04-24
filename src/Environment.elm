@@ -35,7 +35,7 @@ canonicalUrl : Environment -> String
 canonicalUrl env =
     case env of
         Local ->
-            "http://localhost:1234"
+            "http://localhost:5000"
 
         Production ->
             "https://goodtimes.buzz"
@@ -45,7 +45,7 @@ apiUrl : Environment -> String
 apiUrl env =
     case env of
         Local ->
-            "http://127.0.0.1:5000"
+            "http://127.0.0.1:5000/api"
 
         Production ->
-            "https://api.greattimes.biz"
+            "https://goodtimes.buzz/api"
