@@ -50,3 +50,30 @@ Using [scss](https://sass-lang.com/), which is just like css but gives you some 
 The main entry point is the html file at `src/index.html`.
 Parcel follows the dependencies and builds what it needs to. Since `src/index.js` imports an elm file, it compiles the elm. Since `src/index.html` links to a `scss` file, it converts it to css!
 
+# TODO
+  - [ ] Update index.js to not hardcode 'local'
+  - [ ] Serve the frontend
+  - [x] Create managed database that we can run in production
+  - [x] Host the backend
+  - [ ] Setup so that deploying changes is fairly easy (github actions?)
+  - [ ] Run with wsgi? Gunicorn? Productioner server, wasup?
+
+
+
+# Interacting with the cloud:
+
+### Updating code
+
+Pushing to the heroku remote automatically redploys:
+
+`git push heroku main`
+
+
+### Database migrations
+
+`heroku run alembic upgrade head --app good-times-buzz`
+
+
+### View logs
+
+`heroku logs --tail`
