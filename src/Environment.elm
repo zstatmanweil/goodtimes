@@ -38,7 +38,7 @@ canonicalUrl env =
             "http://localhost:1234"
 
         Production ->
-            "https://greattimes.biz"
+            "https://goodtimes.buzz"
 
 
 apiUrl : Environment -> String
