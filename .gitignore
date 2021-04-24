@@ -132,7 +132,5 @@ dmypy.json
 # Frontend
 elm-stuff/
 node_modules/
-index.html
-
 
 .flaskenv
