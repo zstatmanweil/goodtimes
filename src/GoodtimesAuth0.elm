@@ -56,7 +56,7 @@ auth0AuthorizeURL auth0Config responseType redirectURL scopes maybeConn env =
 loginUrl : Environment -> String
 loginUrl env =
     auth0AuthorizeURL
-        (Auth0.Auth0Config (Environment.auth0Endpoint env) "68MpVR1fV03q6to9Al7JbNAYLTi2lRGT")
+        (Auth0.Auth0Config (Environment.auth0Endpoint env) (Environment.auth0ClientId env))
         "token"
         (Environment.canonicalUrl env ++ "/authorized")
         [ "openid", "name", "email", "profile", "offline_access" ]

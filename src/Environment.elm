@@ -21,6 +21,16 @@ toEnvironment string =
             Err (badString ++ " is not a valid environment")
 
 
+auth0ClientId : Environment -> String
+auth0ClientId env =
+    case env of
+        Local ->
+            "68MpVR1fV03q6to9Al7JbNAYLTi2lRGT"
+
+        Production ->
+            "plxal68Z4k1rlKCcNxjfq3IHY1Mr8sAx"
+
+
 auth0Endpoint : Environment -> String
 auth0Endpoint env =
     case env of

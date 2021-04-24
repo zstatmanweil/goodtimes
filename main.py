@@ -35,8 +35,6 @@ app.register_blueprint(friend, url_prefix='/api')
 
 @app.route('/auth_config.json')
 def send_json():
-
-    print(os.getenv("FLASK_ENV"))
     if os.getenv("FLASK_ENV") == 'production':
         auth_config = PROD_AUTH_CONFIG
     else:
