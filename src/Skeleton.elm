@@ -1,7 +1,8 @@
 module Skeleton exposing (..)
 
 import Browser exposing (Document)
-import GoodtimesAuth0 exposing (AuthStatus(..), auth0LoginUrl)
+import Environment exposing (Environment)
+import GoodtimesAuth0 exposing (AuthStatus(..))
 import Html exposing (Attribute, Html)
 import Html.Attributes as Attr exposing (class, id)
 import Html.Events
@@ -29,13 +30,13 @@ type alias Msgs msg =
     }
 
 
-view : Bool -> AuthStatus -> Msgs msg -> (a -> msg) -> Details a -> Document msg
-view menuOpen authStatus { toggleViewMenu, logOut } toMsg details =
+view : Environment -> Bool -> AuthStatus -> Msgs msg -> (a -> msg) -> Details a -> Document msg
+view env menuOpen authStatus { toggleViewMenu, logOut } toMsg details =
     { title = details.title
     , body =
         [ Html.div [ class "container", id "page-container" ]
             [ header authStatus toggleViewMenu
-            , sidebar authStatus logOut menuOpen
+            , sidebar env authStatus logOut menuOpen
             , if GoodtimesAuth0.isMidAuthentication authStatus then
                 -- Here's some fun options: https://projects.lukehaas.me/css-loaders/
                 Html.text "loading..."
@@ -68,8 +69,8 @@ homeUrl authStatus =
             "/about"
 
 
-sidebar : AuthStatus -> msg -> Bool -> Html msg
-sidebar authStatus logOut menuOpen =
+sidebar : Environment -> AuthStatus -> msg -> Bool -> Html msg
+sidebar env authStatus logOut menuOpen =
     case menuOpen of
         True ->
             Html.div [ class "sidenav" ] <|
@@ -86,7 +87,7 @@ sidebar authStatus logOut menuOpen =
 
                     _ ->
                         [ Html.a [ Attr.href "/about" ] [ Html.text "about goodtimes" ]
-                        , Html.a [ Attr.href auth0LoginUrl ] [ Html.text "login" ]
+                        , Html.a [ Attr.href <| GoodtimesAuth0.loginUrl env ] [ Html.text "login" ]
                         ]
 
         False ->

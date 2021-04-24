@@ -2,27 +2,28 @@ module Page.About exposing (..)
 
 -- MODEL
 
-import GoodtimesAuth0 exposing (auth0LoginUrl)
+import Environment exposing (Environment)
+import GoodtimesAuth0
 import Html exposing (Html)
 import Html.Attributes as Attr exposing (class, id)
 import Skeleton
 import User exposing (LoggedInUser)
 
 
-view : Maybe LoggedInUser -> Skeleton.Details msg
-view loggedInUser =
+view : Environment -> Maybe LoggedInUser -> Skeleton.Details msg
+view env loggedInUser =
     { title = "About"
     , attrs = []
     , kids =
         [ Html.div [ class "container", id "page-container" ]
-            [ body loggedInUser
+            [ body loggedInUser env
             ]
         ]
     }
 
 
-body : Maybe LoggedInUser -> Html msg
-body loggedInUser =
+body : Maybe LoggedInUser -> Environment -> Html msg
+body loggedInUser env =
     Html.main_ [ class "content" ]
         [ Html.div [ id "content-wrap" ] <|
             case loggedInUser of
@@ -45,12 +46,12 @@ body loggedInUser =
                             [ Html.text
                                 "Already a good times enthusiast?"
                             ]
-                        , Html.h2 [] [ Html.a [ Attr.href auth0LoginUrl ] [ Html.text "login" ] ]
+                        , Html.h2 [] [ Html.a [ Attr.href <| GoodtimesAuth0.loginUrl env ] [ Html.text "login" ] ]
                         , Html.div [ class "page-text-center" ]
                             [ Html.text
                                 "Need to make an account?"
                             ]
-                        , Html.h2 [] [ Html.a [ Attr.href auth0LoginUrl ] [ Html.text "sign up" ] ]
+                        , Html.h2 [] [ Html.a [ Attr.href <| GoodtimesAuth0.loginUrl env ] [ Html.text "sign up" ] ]
                         ]
                     ]
         ]

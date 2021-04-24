@@ -45,7 +45,7 @@ apiUrl : Environment -> String
 apiUrl env =
     case env of
         Local ->
-            "http://127.0.0.1:5000/"
+            "http://127.0.0.1:5000"
 
         Production ->
             "https://api.greattimes.biz"

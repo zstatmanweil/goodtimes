@@ -1,6 +1,7 @@
 module GoodtimesAuth0 exposing (..)
 
 import Auth0
+import Environment exposing (Environment)
 import Url
 import User exposing (LoggedInUser, UnverifiedUser)
 
@@ -32,12 +33,7 @@ isMidAuthentication authStatus =
             False
 
 
-auth0Endpoint : String
-auth0Endpoint =
-    "https://goodtimes-staging.us.auth0.com"
-
-
-auth0AuthorizeURL auth0Config responseType redirectURL scopes maybeConn =
+auth0AuthorizeURL auth0Config responseType redirectURL scopes maybeConn env =
     let
         connectionParam =
             maybeConn
@@ -54,14 +50,15 @@ auth0AuthorizeURL auth0Config responseType redirectURL scopes maybeConn =
         ++ connectionParam
         ++ ("&redirect_uri=" ++ redirectURL)
         ++ ("&scope=" ++ scopeParam)
-        ++ ("&audience=" ++ auth0Endpoint ++ "/api/v2/")
+        ++ ("&audience=" ++ Environment.auth0Endpoint env ++ "/api/v2/")
 
 
-auth0LoginUrl : String
-auth0LoginUrl =
+loginUrl : Environment -> String
+loginUrl env =
     auth0AuthorizeURL
-        (Auth0.Auth0Config auth0Endpoint "68MpVR1fV03q6to9Al7JbNAYLTi2lRGT")
+        (Auth0.Auth0Config (Environment.auth0Endpoint env) "68MpVR1fV03q6to9Al7JbNAYLTi2lRGT")
         "token"
-        "http://localhost:1234/authorized"
+        (Environment.canonicalUrl env ++ "/authorized")
         [ "openid", "name", "email", "profile", "offline_access" ]
         (Just "google-oauth2")
+        env

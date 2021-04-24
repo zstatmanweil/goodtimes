@@ -5,7 +5,7 @@ import Browser.Navigation as Nav
 import Dict
 import Environment exposing (Environment(..))
 import GoodtimesAPI exposing (goodTimesRequest)
-import GoodtimesAuth0 exposing (AuthStatus(..), auth0Endpoint)
+import GoodtimesAuth0 exposing (AuthStatus(..))
 import Html exposing (Html)
 import Http
 import Json.Encode as Encode
@@ -131,7 +131,8 @@ view model =
     in
     case model.page of
         NotFound ->
-            Skeleton.view model.isOpenMenu
+            Skeleton.view model.environment
+                model.isOpenMenu
                 model.auth
                 msgs
                 never
@@ -141,24 +142,24 @@ view model =
                 }
 
         About ->
-            Skeleton.view model.isOpenMenu model.auth msgs never (About.view Nothing)
+            Skeleton.view model.environment model.isOpenMenu model.auth msgs never (About.view model.environment Nothing)
 
         LoggedIn loggedInUser loggedInPage ->
             case loggedInPage of
                 AboutLoggedIn ->
-                    Skeleton.view model.isOpenMenu model.auth msgs never (About.view (Just loggedInUser))
+                    Skeleton.view model.environment model.isOpenMenu model.auth msgs never (About.view model.environment (Just loggedInUser))
 
                 Feed feedModel ->
-                    Skeleton.view model.isOpenMenu model.auth msgs FeedMsg (Feed.view loggedInUser feedModel)
+                    Skeleton.view model.environment model.isOpenMenu model.auth msgs FeedMsg (Feed.view loggedInUser feedModel)
 
                 Search searchModel ->
-                    Skeleton.view model.isOpenMenu model.auth msgs SearchMsg (Search.view searchModel)
+                    Skeleton.view model.environment model.isOpenMenu model.auth msgs SearchMsg (Search.view searchModel)
 
                 SearchUsers searchUsersModel ->
-                    Skeleton.view model.isOpenMenu model.auth msgs SearchUsersMsg (SearchUsers.view searchUsersModel)
+                    Skeleton.view model.environment model.isOpenMenu model.auth msgs SearchUsersMsg (SearchUsers.view searchUsersModel)
 
                 UserProfile userProfileModel ->
-                    Skeleton.view model.isOpenMenu model.auth msgs UserProfileMsg (UserProfile.view loggedInUser userProfileModel)
+                    Skeleton.view model.environment model.isOpenMenu model.auth msgs UserProfileMsg (UserProfile.view loggedInUser userProfileModel)
 
 
 
@@ -319,11 +320,11 @@ intoTuple list =
             Nothing
 
 
-auth0GetUser token =
+auth0GetUser token env =
     Http.request
         { method = "POST"
         , headers = []
-        , url = auth0Endpoint ++ "/userinfo"
+        , url = Environment.auth0Endpoint env ++ "/userinfo"
         , body =
             Http.jsonBody <|
                 Encode.object [ ( "access_token", Encode.string token ) ]
@@ -376,7 +377,7 @@ stepUrl url model =
             ( model, Cmd.none )
 
         HasToken token ->
-            ( model, auth0GetUser token )
+            ( model, auth0GetUser token model.environment )
 
         HasUnverifiedUser token unverifiedUser ->
             -- This is just an interim state, and we only expect
