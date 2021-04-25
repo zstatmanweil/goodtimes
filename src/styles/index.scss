@@ -200,6 +200,12 @@
   font-weight: bold;
 }
 
+.feed-user-info a {
+  color: theme.color('primary', 'base');
+  text-decoration: none;
+  font-weight: bold;
+}
+
 
 .user-button-wrapper {
     margin-left: 20px;

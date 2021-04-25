@@ -113,7 +113,7 @@ getUserFirstName user =
             "something went wrong"
 
         Success u ->
-            u.firstName
+            String.toLower u.firstName
 
 
 getUserEmail : WebData UserInfo -> String

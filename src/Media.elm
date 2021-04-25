@@ -162,34 +162,34 @@ conjugate : Person -> Status -> MediaType -> String
 conjugate person status mediaType =
     case ( mediaType, status, person ) of
         ( BookType _, WantToConsume, Second ) ->
-            "want to read"
+            " want to read"
 
         ( BookType _, WantToConsume, Third ) ->
-            "wants to read"
+            " wants to read"
 
         ( BookType _, Consuming, Second ) ->
-            "are reading"
+            " are reading"
 
         ( BookType _, Consuming, Third ) ->
-            "is reading"
+            " is reading"
 
         ( BookType _, Finished, _ ) ->
-            "read"
+            " read"
 
         ( _, WantToConsume, Second ) ->
-            "want to watch"
+            " want to watch"
 
         ( _, WantToConsume, Third ) ->
-            "wants to watch"
+            " wants to watch"
 
         ( _, Consuming, Second ) ->
-            "are watching "
+            " are watching "
 
         ( _, Consuming, Third ) ->
-            "is watching "
+            " is watching "
 
         ( _, Finished, _ ) ->
-            "watched"
+            " watched"
 
         ( _, Abandoned, _ ) ->
-            "abandoned"
+            " abandoned"
