@@ -33,6 +33,7 @@ type alias Model =
     { profileUser : WebData UserInfo
     , profileType : Profile
     , loggedInUserFriends : WebData (List UserInfo)
+    , loggedInUserFriendRequests : WebData (List UserInfo)
     , profileUserFriends : WebData (List UserInfo)
     , searchResults : WebData (List MediaType)
     , filteredMediaResults : WebData (List MediaType)
@@ -59,6 +60,7 @@ type Msg
     | SearchFriendsBasedOnTab FriendshipTabSelection
     | UserResponse (Result Http.Error UserInfo)
     | FriendResponse (Result Http.Error (List UserInfo))
+    | FriendRequestsResponse (Result Http.Error (List UserInfo))
     | AddFriendLink Int FriendStatus
     | FriendLinkAdded (Result Http.Error FriendLink)
     | AddRecommendationTabRow
@@ -75,6 +77,7 @@ init { loggedInUser, environment } profileUserId =
     ( { profileUser = NotAsked
       , profileType = NoProfile
       , loggedInUserFriends = NotAsked
+      , loggedInUserFriendRequests = NotAsked
       , profileUserFriends = NotAsked
       , searchResults = NotAsked
       , filteredMediaResults = NotAsked
@@ -380,7 +383,10 @@ update loggedInUser msg model =
                             | profileType = LoggedInUserProfile
                             , profileUser = Success user
                           }
-                        , getExistingFriends model.environment loggedInUser loggedInUser.userInfo.goodTimesId
+                        , Cmd.batch
+                            [ getExistingFriends model.environment loggedInUser loggedInUser.userInfo.goodTimesId
+                            , getFriendRequests model.environment loggedInUser
+                            ]
                         )
 
                     else
@@ -431,6 +437,20 @@ update loggedInUser msg model =
 
                         _ ->
                             ( { model | loggedInUserFriends = Success friends }, Cmd.none )
+
+                -- TODO: handle error
+                Err resp ->
+                    ( model, Cmd.none )
+
+        FriendRequestsResponse friendResponse ->
+            case friendResponse of
+                Ok friends ->
+                    case model.profileType of
+                        LoggedInUserProfile ->
+                            ( { model | loggedInUserFriendRequests = Success friends }, Cmd.none )
+
+                        _ ->
+                            ( model, Cmd.none )
 
                 -- TODO: handle error
                 Err resp ->
@@ -578,7 +598,7 @@ getFriendRequests environment loggedInUser =
         , method = "GET"
         , url = "/user/" ++ String.fromInt loggedInUser.userInfo.goodTimesId ++ "/requests"
         , body = Nothing
-        , expect = Http.expectJson FriendResponse (Decode.list userInfoDecoder)
+        , expect = Http.expectJson FriendRequestsResponse (Decode.list userInfoDecoder)
         , environment = environment
         }
 
@@ -797,7 +817,7 @@ viewTabContent model =
                     viewFriends model.loggedInUserFriends
 
                 ( LoggedInUserProfile, RequestedFriendsTab ) ->
-                    viewFriendRequests model.loggedInUserFriends
+                    viewFriendRequests model.loggedInUserFriendRequests
 
                 ( FriendProfile, _ ) ->
                     viewFriends model.profileUserFriends
@@ -856,10 +876,22 @@ viewFriendshipTabRow model =
     case model.profileType of
         LoggedInUserProfile ->
             if model.friendshipSelectedTab /= NoFriendshipTab then
-                Html.div [ class "tab" ]
-                    [ createFriendshipTab model ExistingFriendsTab "existing"
-                    , createFriendshipTab model RequestedFriendsTab "requests"
-                    ]
+                if getNumberFriendRequests model.loggedInUserFriendRequests == 0 then
+                    Html.div [ class "tab" ]
+                        [ createFriendshipTab model ExistingFriendsTab "existing"
+                        , createFriendshipTab model RequestedFriendsTab "requests"
+                        ]
+
+                else
+                    Html.div [ class "tab" ]
+                        [ createFriendshipTab model ExistingFriendsTab "existing"
+                        , Html.span []
+                            [ createFriendshipTab model RequestedFriendsTab "requests"
+                            , Html.span
+                                [ class "badge" ]
+                                [ Html.text (String.fromInt (getNumberFriendRequests model.loggedInUserFriendRequests)) ]
+                            ]
+                        ]
 
             else
                 Html.div [] []
@@ -1388,6 +1420,20 @@ viewFriendProfileBanner profileUser =
     Html.div [ id "user-profile" ] [ Html.text (String.toLower (User.getUserFullName profileUser) ++ "'s profile!") ]
 
 
+getNumberFriendRequests : WebData (List UserInfo) -> Int
+getNumberFriendRequests friends =
+    case friends of
+        Success users ->
+            if List.isEmpty users then
+                0
+
+            else
+                List.length users
+
+        _ ->
+            0
+
+
 
 -- TABS
 -- cascading tabs
@@ -1490,14 +1536,14 @@ consumptionTabSelectionToString mediaTab consumptionTab =
 createFirstTab : Model -> FirstTabSelection -> String -> Html Msg
 createFirstTab model firstTabSelection tabString =
     if model.firstSelectedTab == firstTabSelection then
-        createFirstTabWithActiveState firstTabSelection "tablinks active" tabString
+        createFirstTabWithActiveState model firstTabSelection "tablinks active" tabString
 
     else
-        createFirstTabWithActiveState firstTabSelection "tablinks" tabString
+        createFirstTabWithActiveState model firstTabSelection "tablinks" tabString
 
 
-createFirstTabWithActiveState : FirstTabSelection -> String -> String -> Html Msg
-createFirstTabWithActiveState firstTabSelection activeState tabString =
+createFirstTabWithActiveState : Model -> FirstTabSelection -> String -> String -> Html Msg
+createFirstTabWithActiveState model firstTabSelection activeState tabString =
     case firstTabSelection of
         MediaTab ->
             Html.button
@@ -1515,9 +1561,22 @@ createFirstTabWithActiveState firstTabSelection activeState tabString =
                 [ Html.text tabString ]
 
         FriendsTab ->
-            Html.button
-                [ class activeState, Html.Events.onClick (SearchFriendsBasedOnTab ExistingFriendsTab) ]
-                [ Html.text tabString ]
+            if getNumberFriendRequests model.loggedInUserFriendRequests == 0 then
+                Html.button
+                    [ class activeState, Html.Events.onClick (SearchFriendsBasedOnTab ExistingFriendsTab) ]
+                    [ Html.text tabString
+                    ]
+
+            else
+                Html.span []
+                    [ Html.button
+                        [ class activeState, Html.Events.onClick (SearchFriendsBasedOnTab ExistingFriendsTab) ]
+                        [ Html.text tabString
+                        ]
+                    , Html.span
+                        [ class "badge" ]
+                        [ Html.text (String.fromInt (getNumberFriendRequests model.loggedInUserFriendRequests)) ]
+                    ]
 
         _ ->
             Html.button [ class activeState ] [ Html.text tabString ]

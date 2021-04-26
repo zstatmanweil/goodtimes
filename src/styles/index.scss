@@ -356,6 +356,19 @@
   background-color: #ccc;
 }
 
+.tab .badge {
+  position: relative;
+  top: -1px;
+  right: 8px;
+  padding: 2px 5px;
+  border-radius: 50%;
+  background: red;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  z-index: 3;
+}
+
 // SIDEBAR
 .sidenav {
   height: 100%; /* Full-height: remove this if you want "auto" height */

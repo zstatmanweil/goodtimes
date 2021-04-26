@@ -35,6 +35,11 @@ type alias LoggedInUser =
     }
 
 
+type FriendType
+    = ExistingFriend
+    | RequestedFriend
+
+
 decodeFromAuth0 : Decoder UnverifiedUser
 decodeFromAuth0 =
     Decode.map6 UnverifiedUser

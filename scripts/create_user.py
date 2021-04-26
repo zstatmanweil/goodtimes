@@ -10,12 +10,10 @@ from sqlalchemy.orm import sessionmaker
 
 sys.path.append(pathlib.Path(__file__).parent.parent.absolute().as_posix())
 from models.user import User
-
-config = ConfigFactory.parse_file('../config/config')
-
+from config import DATABASE_URL
 
 def add_users():
-    engine = sa.create_engine(config.postgres_db, echo=True)
+    engine = sa.create_engine(DATABASE_URL, echo=True)
     Session = sessionmaker(bind=engine)
 
 
@@ -43,11 +41,11 @@ def add_users():
     )
 
     fifth_user = User(
-        auth0_sub='456777666',
-        email='coolestbrother@gmail.com',
-        first_name='ron',
-        last_name='weasley',
-        full_name='ron weasley'
+        auth0_sub='222',
+        email='cutiepie2@gmail.com',
+        first_name='pilot',
+        last_name='taylor-strick',
+        full_name='pilot taylor-strick'
     )
 
     session = Session()
